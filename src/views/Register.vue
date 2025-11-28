@@ -80,11 +80,11 @@
     <div class="w-3/5 flex items-center justify-center p-8 bg-gray-50">
       <div class="w-full max-w-md">
         <div class="text-center mb-8">
-          <div class="flex items-start justify-center gap-4 mb-4">
-            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-purple-600 to-pink-400 flex items-center justify-center">
+          <div class="flex items-center justify-center gap-4 mb-4">
+            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-purple-600 to-pink-400 flex items-center justify-center flex-shrink-0">
               <img src="/register_user.svg" alt="Register" class="w-7 h-7" style="filter: brightness(0) invert(1);" />
             </div>
-            <div class="text-left pt-2">
+            <div class="text-left">
               <h2 class="text-2xl font-bold text-purple-900">Let's Create</h2>
               <h2 class="text-2xl font-bold text-purple-900">Your Profile!</h2>
             </div>
