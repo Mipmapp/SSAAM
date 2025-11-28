@@ -722,7 +722,7 @@ const saveUser = async () => {
       middle_name: editingUser.value.middleName || editingUser.value.middle_name || '',
       last_name: editingUser.value.lastName || editingUser.value.last_name,
       email: editingUser.value.email,
-      rfid_code: editingUser.value.rfidCode || editingUser.value.rfid_code || '',
+      rfid_code: editingUser.value.rfidCode || editingUser.value.rfid_code || 'N/A',
       year_level: editingUser.value.yearLevel || editingUser.value.year_level,
       program: editingUser.value.program
     }
