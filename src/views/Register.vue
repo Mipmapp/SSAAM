@@ -12,6 +12,7 @@
             <span v-else>{{ dev.initials }}</span>
           </div>
           <p class="text-xs font-semibold text-purple-600 hover:text-purple-800 text-center">{{ dev.name }}</p>
+          <p class="text-xs text-gray-600 text-center font-medium">{{ dev.year_level }} - {{ dev.program }}</p>
           <p class="text-xs text-gray-500 text-center">{{ dev.role }}</p>
         </a>
       </div>
@@ -507,11 +508,11 @@ const imagePreview = ref('')
 const showDevelopersPopup = ref(false)
 
   const developers = [
-    { name: 'Jullan Maglinte', initials: 'JM', role: 'Backend Dev', facebook: 'https://facebook.com/jullan.maglinte', image: '/team/jullan.jpg' },
-    { name: 'Keith Laranjo', initials: 'KL', role: 'Backend Dev', facebook: 'https://facebook.com/kei.takun.5070', image: '/team/keith.jpg' },
-    { name: 'Kenzen Miñao', initials: 'KM', role: 'Frontend Dev', facebook: 'https://facebook.com/kenzen3131', image: '/team/kenzen.jpg' },
-    { name: 'Christoph Bagabuyo', initials: 'CB', role: 'Frontend Dev', facebook: 'https://facebook.com/christoph.bagabuyo', image: '/team/christoph.jpg' },
-    { name: 'Mischi Jeda Elumba', initials: 'MJ', role: 'UI/UX Designer', facebook: 'https://facebook.com/mischijeda.elumba.1', image: '/team/mischi.jpg' }
+    { name: 'Jullan Maglinte', initials: 'JM', role: 'Backend Dev', year_level: '1st year', program: 'CS', facebook: 'https://facebook.com/jullan.maglinte', image: '/team/jullan.jpg' },
+    { name: 'Keith Laranjo', initials: 'KL', role: 'Backend Dev', year_level: '2nd year', program: 'CS', facebook: 'https://facebook.com/kei.takun.5070', image: '/team/keith.jpg' },
+    { name: 'Kenzen Miñao', initials: 'KM', role: 'Frontend Dev', year_level: '1st year', program: 'CS', facebook: 'https://facebook.com/kenzen3131', image: '/team/kenzen.jpg' },
+    { name: 'Christoph Bagabuyo', initials: 'CB', role: 'Frontend Dev', year_level: '1st year', program: 'CS', facebook: 'https://facebook.com/christoph.bagabuyo', image: '/team/christoph.jpg' },
+    { name: 'Mischi Jeda Elumba', initials: 'MJ', role: 'UI/UX Designer', year_level: '2nd year', program: 'IS', facebook: 'https://facebook.com/mischijeda.elumba.1', image: '/team/mischi.jpg' }
   ]
 
 const formData = reactive({
