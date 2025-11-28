@@ -24,21 +24,21 @@
       
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         <div class="flex flex-col items-center text-center p-4 bg-purple-50 rounded-lg">
-          <img src="/mail.svg" alt="Email" class="w-8 h-8 mb-3" style="filter: brightness(0) invert(1);" />
+          <div class="w-8 h-8 mb-3 gradient-icon" style="-webkit-mask: url(/mail.svg) center/contain no-repeat; mask: url(/mail.svg) center/contain no-repeat;"></div>
           <p class="font-semibold text-purple-900 text-sm">Email Support</p>
           <p class="text-xs text-gray-600 mt-2">admin@ssaam.edu</p>
           <p class="text-xs text-gray-500 mt-1">For general inquiries</p>
         </div>
 
         <div class="flex flex-col items-center text-center p-4 bg-pink-50 rounded-lg">
-          <img src="/home.svg" alt="Office" class="w-8 h-8 mb-3" style="filter: brightness(0) invert(1);" />
+          <div class="w-8 h-8 mb-3 gradient-icon" style="-webkit-mask: url(/home.svg) center/contain no-repeat; mask: url(/home.svg) center/contain no-repeat;"></div>
           <p class="font-semibold text-purple-900 text-sm">JRMSU CCS Office</p>
           <p class="text-xs text-gray-600 mt-2">College of Computer Studies</p>
           <p class="text-xs text-gray-500 mt-1">Visit during office hours</p>
         </div>
 
         <div class="flex flex-col items-center text-center p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg">
-          <img src="/register_user.svg" alt="Developers" class="w-8 h-8 mb-3" style="filter: brightness(0) invert(1);" />
+          <div class="w-8 h-8 mb-3 gradient-icon" style="-webkit-mask: url(/register_user.svg) center/contain no-repeat; mask: url(/register_user.svg) center/contain no-repeat;"></div>
           <p class="font-semibold text-purple-900 text-sm">Meet Our Developers</p>
           <p class="text-xs text-gray-600 mt-2">CCS - Creatives Committee</p>
           <button @click="showDevelopersPopup = true; showContactModal = false" class="text-xs text-purple-600 hover:text-purple-800 font-medium mt-2 underline">View Team →</button>
@@ -276,12 +276,12 @@
                   <td class="border border-purple-300 px-4 py-3 text-center text-gray-700">{{ user.rfidCode || user.rfid_code || '—' }}</td>
                   <td class="border border-purple-300 px-4 py-3 text-center text-gray-700">{{ user.program }}</td>
                   <td class="border border-purple-300 px-4 py-3 text-center">
-                    <div class="flex items-center justify-center gap-2">
-                      <button @click="editUser(user)" class="bg-blue-500 text-white p-2 rounded-lg hover:bg-blue-600 transition-all duration-200 hover:scale-110 active:scale-95" title="Edit User">
-                        <img src="/edit.svg" alt="Edit" class="w-4 h-4" style="filter: brightness(0) invert(1);" />
+                    <div class="flex items-center justify-center gap-2 flex-nowrap">
+                      <button @click="editUser(user)" class="bg-blue-500 text-white p-2 rounded-lg hover:bg-blue-600 transition-all duration-200 hover:scale-110 active:scale-95 flex-shrink-0" title="Edit User">
+                        <img src="/edit.svg" alt="Edit" class="w-4 h-4 min-w-[16px] min-h-[16px]" style="filter: brightness(0) invert(1);" />
                       </button>
-                      <button @click="deleteUser(user.studentId || user.student_id)" class="bg-red-500 text-white p-2 rounded-lg hover:bg-red-600 transition-all duration-200 hover:scale-110 active:scale-95" title="Delete User">
-                        <img src="/delete.svg" alt="Delete" class="w-4 h-4" style="filter: brightness(0) invert(1);" />
+                      <button @click="deleteUser(user.studentId || user.student_id)" class="bg-red-500 text-white p-2 rounded-lg hover:bg-red-600 transition-all duration-200 hover:scale-110 active:scale-95 flex-shrink-0" title="Delete User">
+                        <img src="/delete.svg" alt="Delete" class="w-4 h-4 min-w-[16px] min-h-[16px]" style="filter: brightness(0) invert(1);" />
                       </button>
                     </div>
                   </td>
@@ -652,13 +652,41 @@ const closeEditModal = () => {
   editingUser.value = null
 }
 
-const saveUser = () => {
+const saveUser = async () => {
   if (!editingUser.value) return
-  const index = users.value.findIndex(u => (u.studentId || u.student_id) === (editingUser.value.studentId || editingUser.value.student_id))
-  if (index !== -1) {
-    users.value[index] = editingUser.value
-    localStorage.setItem('users', JSON.stringify(users.value))
+  const studentId = editingUser.value.studentId || editingUser.value.student_id
+  
+  try {
+    const updateData = {
+      student_id: studentId,
+      first_name: editingUser.value.firstName || editingUser.value.first_name,
+      middle_name: editingUser.value.middleName || editingUser.value.middle_name || '',
+      last_name: editingUser.value.lastName || editingUser.value.last_name,
+      email: editingUser.value.email,
+      rfid_code: editingUser.value.rfidCode || editingUser.value.rfid_code || '',
+      year_level: editingUser.value.yearLevel || editingUser.value.year_level,
+      program: editingUser.value.program
+    }
+    
+    const response = await fetch(`https://ssaam-api.vercel.app/apis/students/${studentId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updateData)
+    })
+    
+    if (response.ok) {
+      const index = users.value.findIndex(u => (u.studentId || u.student_id) === studentId)
+      if (index !== -1) {
+        users.value[index] = { ...editingUser.value, ...updateData, studentId }
+      }
+      console.log('User updated successfully')
+    } else {
+      console.error('Failed to update user:', await response.text())
+    }
+  } catch (error) {
+    console.error('Error updating user:', error)
   }
+  
   closeEditModal()
 }
 
@@ -667,10 +695,23 @@ const deleteUser = (studentId) => {
   showDeleteConfirm.value = true
 }
 
-const confirmDelete = () => {
+const confirmDelete = async () => {
   if (userToDelete.value) {
-    users.value = users.value.filter(u => (u.studentId || u.student_id) !== userToDelete.value)
-    localStorage.setItem('users', JSON.stringify(users.value))
+    try {
+      const response = await fetch(`https://ssaam-api.vercel.app/apis/students/${userToDelete.value}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' }
+      })
+      
+      if (response.ok) {
+        users.value = users.value.filter(u => (u.studentId || u.student_id) !== userToDelete.value)
+        console.log('User deleted successfully')
+      } else {
+        console.error('Failed to delete user:', await response.text())
+      }
+    } catch (error) {
+      console.error('Error deleting user:', error)
+    }
   }
   showDeleteConfirm.value = false
   userToDelete.value = null

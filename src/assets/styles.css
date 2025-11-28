@@ -884,3 +884,8 @@ input, textarea, select {
 .animate-slash {
   animation: slash 0.4s ease-in-out;
 }
+
+/* Gradient Icon for Contact Modal */
+.gradient-icon {
+  background: linear-gradient(135deg, #9333ea 0%, #ec4899 100%);
+}
