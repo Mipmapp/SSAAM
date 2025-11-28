@@ -454,11 +454,7 @@
     <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
       <h3 class="text-2xl font-bold text-purple-900 mb-6">Edit User</h3>
       <div v-if="editingUser" class="space-y-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Student ID</label>
-          <input v-model="editingUser.studentId" type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none" />
-        </div>
-        <div class="flex flex-col items-center mb-6 p-4 bg-gray-50 rounded-lg">
+        <div class="flex flex-col items-center mb-6">
           <div class="relative">
             <div class="w-24 h-24 rounded-full bg-gray-200 overflow-hidden mb-3 shadow-lg">
               <img v-if="editingUser.image || editingUser.photo" :src="editingUser.image || editingUser.photo" alt="User Photo" class="w-full h-full object-cover" />
@@ -469,7 +465,7 @@
               class="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center shadow-lg hover:from-pink-600 hover:to-purple-700 transition-all duration-200 hover:scale-110"
               title="Change Photo"
             >
-              <img src="/edit.svg" alt="Change Photo" class="w-4 h-4" style="filter: brightness(0) invert(1);" />
+              <img src="/change_photo.svg" alt="Change Photo" class="w-4 h-4" style="filter: brightness(0) invert(1);" />
             </button>
           </div>
           <input 
@@ -480,6 +476,10 @@
             class="hidden" 
           />
           <p v-if="editImageUploading" class="text-xs text-purple-600 mt-2">Uploading...</p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Student ID</label>
+          <input v-model="editingUser.studentId" type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none" />
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">First Name</label>
