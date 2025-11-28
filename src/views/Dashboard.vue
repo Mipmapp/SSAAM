@@ -452,8 +452,18 @@
   <!-- Edit User Modal -->
   <div v-if="showEditModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
     <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
-      <h3 class="text-2xl font-bold text-purple-900 mb-6">Edit User</h3>
+      <h3 class="text-2xl font-bold text-purple-900 mb-2">Edit User</h3>
+      <p v-if="editingUser" class="text-sm text-gray-600 mb-6">Student ID: {{ editingUser.studentId || editingUser.student_id }}</p>
       <div v-if="editingUser" class="space-y-4">
+        <div class="flex flex-col items-center mb-6">
+          <div class="w-24 h-24 rounded-full bg-gray-200 overflow-hidden mb-3 shadow-lg">
+            <img v-if="editingUser.image || editingUser.photo" :src="editingUser.image || editingUser.photo" alt="User Photo" class="w-full h-full object-cover" />
+            <div v-else class="w-full h-full flex items-center justify-center text-3xl text-gray-400">👤</div>
+          </div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Change Photo</label>
+          <input @change="handleEditImageUpload" type="file" accept="image/*" class="text-sm text-gray-600" />
+          <p v-if="editImageUploading" class="text-xs text-purple-600 mt-2">Uploading...</p>
+        </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">First Name</label>
           <input v-model="editingUser.firstName" type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none" />
@@ -537,6 +547,18 @@ const searchQuery = ref('')
 const searchFilter = ref('all')
 const isLoggingOut = ref(false)
 const showLogoutAnimation = ref(false)
+const editImageUploading = ref(false)
+
+// ImgBB API Keys (randomly selected to distribute traffic)
+const imgbbApiKeys = [
+  "b6a37178abd163036357a7ba35fd0364",
+  "3b523af3b0ffb526efddfb51b8928581"
+]
+
+// Get random ImgBB API key
+const getRandomApiKey = () => {
+  return imgbbApiKeys[Math.floor(Math.random() * imgbbApiKeys.length)]
+}
 
 const developers = [
     { name: 'Jullan Maglinte', initials: 'JM', role: 'Backend Dev', year_level: '1st year', program: 'CS', facebook: 'https://facebook.com/jullan.maglinte', image: '/team/jullan.jpg' },
@@ -711,6 +733,39 @@ const closeEditModal = () => {
   editingUser.value = null
 }
 
+const handleEditImageUpload = async (event) => {
+  const file = event.target.files[0]
+  if (!file) return
+
+  editImageUploading.value = true
+
+  try {
+    const formData = new FormData()
+    const apiKey = getRandomApiKey()
+    formData.append("key", apiKey)
+    formData.append("image", file, "photo.jpg")
+
+    const res = await fetch("https://api.imgbb.com/1/upload", {
+      method: "POST",
+      body: formData,
+    })
+
+    const data = await res.json()
+
+    if (data.success) {
+      editingUser.value.image = data.data.url
+      editingUser.value.photo = data.data.url
+      console.log("Uploaded Image URL:", editingUser.value.image)
+    } else {
+      console.error("Image upload failed:", data)
+    }
+  } catch (error) {
+    console.error("Upload error:", error)
+  }
+
+  editImageUploading.value = false
+}
+
 const saveUser = async () => {
   if (!editingUser.value) return
   const studentId = editingUser.value.studentId || editingUser.value.student_id
@@ -724,7 +779,8 @@ const saveUser = async () => {
       email: editingUser.value.email,
       rfid_code: editingUser.value.rfidCode || editingUser.value.rfid_code || 'N/A',
       year_level: editingUser.value.yearLevel || editingUser.value.year_level,
-      program: editingUser.value.program
+      program: editingUser.value.program,
+      photo: editingUser.value.image || editingUser.value.photo || ''
     }
     
     const response = await fetch(`https://ssaam-api.vercel.app/apis/students/${studentId}`, {
