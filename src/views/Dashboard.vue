@@ -540,6 +540,7 @@ onMounted(async () => {
         ...s,
         studentId: s.student_id,
         firstName: s.first_name,
+        middleName: s.middle_name || '',
         lastName: s.last_name,
         yearLevel: s.year_level,
         rfidCode: s.rfid_code,
