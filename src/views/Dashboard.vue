@@ -135,13 +135,13 @@
         </button>
         <button v-if="currentUser.role === 'admin'" @click="currentPage = 'users'; showMobileMenu = false" :class="['flex items-center space-x-3 px-4 py-3 rounded-lg w-full text-left mt-2', currentPage === 'users' ? 'bg-white bg-opacity-20' : 'hover:bg-white hover:bg-opacity-10']">
           <img src="/user.svg" alt="Users" class="w-5 h-5" style="filter: brightness(0) invert(1);" />
-          <span>User Management</span>
+          <span>Manage</span>
         </button>
         <button 
-          @click="handleLogout"
-          class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-white hover:bg-opacity-10 w-full text-left mt-2"
+          @click="handleLogoutWithAnimation"
+          :class="['flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-white hover:bg-opacity-10 w-full text-left mt-2 transition-all duration-300', isLoggingOut ? 'scale-95 opacity-70' : '']"
         >
-          <img src="/logout.svg" alt="Log Out" class="w-5 h-5" style="filter: brightness(0) invert(1);" />
+          <img src="/logout.svg" alt="Log Out" :class="['w-5 h-5 transition-transform duration-300', isLoggingOut ? 'rotate-180' : '']" style="filter: brightness(0) invert(1);" />
           <span>Log Out</span>
         </button>
       </nav>
@@ -183,13 +183,13 @@
           </button>
           <button v-if="currentUser.role === 'admin'" @click="currentPage = 'users'; showMobileMenu = false" :class="['flex items-center space-x-3 px-4 py-3 rounded-lg w-full text-left mt-2', currentPage === 'users' ? 'bg-white bg-opacity-20' : 'hover:bg-white hover:bg-opacity-10']">
             <img src="/user.svg" alt="Users" class="w-5 h-5" style="filter: brightness(0) invert(1);" />
-            <span>User Management</span>
+            <span>Manage</span>
           </button>
           <button 
-            @click="handleLogout"
-            class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-white hover:bg-opacity-10 w-full text-left mt-2"
+            @click="handleLogoutWithAnimation"
+            :class="['flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-white hover:bg-opacity-10 w-full text-left mt-2 transition-all duration-300', isLoggingOut ? 'scale-95 opacity-70' : '']"
           >
-            <img src="/logout.svg" alt="Log Out" class="w-5 h-5" style="filter: brightness(0) invert(1);" />
+            <img src="/logout.svg" alt="Log Out" :class="['w-5 h-5 transition-transform duration-300', isLoggingOut ? 'rotate-180' : '']" style="filter: brightness(0) invert(1);" />
             <span>Log Out</span>
           </button>
         </nav>
@@ -214,26 +214,42 @@
         </div>
       </div>
 
-      <!-- Desktop Help Button (top right) -->
-      <div class="hidden md:block fixed top-4 right-4 z-20">
-        <button @click="showContactModal = true" class="bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-full w-12 h-12 flex items-center justify-center hover:from-purple-700 hover:to-pink-600 transition shadow-lg">
-          <img src="/help.svg" alt="Help" class="w-5 h-5" style="filter: brightness(0) invert(1);" />
+      <!-- Desktop Help Button (bottom right, with spacing from scrollbar) -->
+      <div class="hidden md:block fixed bottom-8 right-8 z-20">
+        <button @click="showContactModal = true" class="bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-full w-14 h-14 flex items-center justify-center hover:from-purple-700 hover:to-pink-600 transition-all duration-300 shadow-lg hover:scale-110 active:scale-95 hover:shadow-xl">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
         </button>
       </div>
 
       <div class="p-4 md:p-8">
-        <h1 class="hidden md:block text-2xl md:text-4xl font-bold text-purple-900 mb-8 pb-4 border-b-2 border-purple-900">{{ currentPage === 'users' ? 'User Management' : 'Dashboard' }}</h1>
+        <h1 class="hidden md:block text-2xl md:text-4xl font-bold text-purple-900 mb-8 pb-4 border-b-2 border-purple-900">{{ currentPage === 'users' ? 'Manage' : 'Dashboard' }}</h1>
 
         <!-- User Management Page -->
         <div v-if="currentPage === 'users' && currentUser.role === 'admin'" class="bg-white rounded-lg shadow-lg p-4 md:p-8">
-          <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-            <h2 class="text-xl md:text-2xl font-bold text-purple-900">Manage Users</h2>
-            <div class="w-full md:w-auto flex gap-3">
-              <div class="flex-1 md:flex-none relative">
-                <img src="/user.svg" alt="Search" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5" />
-                <input v-model="searchQuery" type="text" placeholder="Search by name or ID..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent outline-none text-sm" />
-              </div>
+          <div class="flex flex-col gap-4 mb-6">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <h2 class="text-xl md:text-2xl font-bold text-purple-900">Manage Users</h2>
               <span class="text-sm text-gray-600 whitespace-nowrap">Total: {{ filteredUsers.length }} users</span>
+            </div>
+            <div class="flex flex-col sm:flex-row gap-3">
+              <div class="relative">
+                <select v-model="searchFilter" class="appearance-none bg-white border border-gray-300 rounded-lg px-4 py-2 pr-8 focus:ring-2 focus:ring-purple-600 focus:border-transparent outline-none text-sm">
+                  <option value="all">All Fields</option>
+                  <option value="student_id">Student ID</option>
+                  <option value="first_name">First Name</option>
+                  <option value="middle_name">Middle Name</option>
+                  <option value="last_name">Last Name</option>
+                  <option value="email">Email</option>
+                  <option value="rfid_code">RFID Code</option>
+                  <option value="program">Program</option>
+                  <option value="school_level">School Level</option>
+                </select>
+                <svg class="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+              </div>
+              <div class="flex-1 relative">
+                <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                <input v-model="searchQuery" type="text" :placeholder="searchPlaceholder" class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent outline-none text-sm" />
+              </div>
             </div>
           </div>
 
@@ -260,8 +276,14 @@
                   <td class="border border-purple-300 px-4 py-3 text-center text-gray-700">{{ user.rfidCode || user.rfid_code || '—' }}</td>
                   <td class="border border-purple-300 px-4 py-3 text-center text-gray-700">{{ user.program }}</td>
                   <td class="border border-purple-300 px-4 py-3 text-center">
-                    <button @click="editUser(user)" class="bg-blue-500 text-white px-3 py-1 rounded mr-2 hover:bg-blue-600 transition text-xs">Edit</button>
-                    <button @click="deleteUser(user.studentId || user.student_id)" class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition text-xs">Delete</button>
+                    <div class="flex items-center justify-center gap-2">
+                      <button @click="editUser(user)" class="bg-blue-500 text-white p-2 rounded-lg hover:bg-blue-600 transition-all duration-200 hover:scale-110 active:scale-95" title="Edit User">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                      </button>
+                      <button @click="deleteUser(user.studentId || user.student_id)" class="bg-red-500 text-white p-2 rounded-lg hover:bg-red-600 transition-all duration-200 hover:scale-110 active:scale-95" title="Delete User">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               </tbody>
@@ -458,13 +480,15 @@ const showDeleteConfirm = ref(false)
 const editingUser = ref(null)
 const userToDelete = ref(null)
 const searchQuery = ref('')
+const searchFilter = ref('all')
+const isLoggingOut = ref(false)
 
-  const developers = [
-    { name: 'Jullan Maglinte', initials: 'JM', role: 'Backend Dev', facebook: 'https://facebook.com/jullan.maglinte', image: '' },
-    { name: 'Keith Laranjo', initials: 'KL', role: 'Backend Dev', facebook: 'https://facebook.com/kei.takun.5070', image: '' },
-    { name: 'Kenzen Miñao', initials: 'KM', role: 'Frontend Dev', facebook: 'https://facebook.com/kenzen3131', image: '' },
-    { name: 'Cristoph Bagabuyo', initials: 'CB', role: 'Frontend Dev', facebook: 'https://facebook.com/cristoph.bagabuyo', image: '' },
-    { name: 'Mischi Jeda Elumba', initials: 'MJ', role: 'UI/UX Designer', facebook: 'https://facebook.com/mischijeda.elumba.1', image: '' }
+const developers = [
+    { name: 'Jullan Maglinte', initials: 'JM', role: 'Backend Dev', facebook: 'https://facebook.com/jullan.maglinte', image: '/team/jullan.jpg' },
+    { name: 'Keith Laranjo', initials: 'KL', role: 'Backend Dev', facebook: 'https://facebook.com/kei.takun.5070', image: '/team/keith.jpg' },
+    { name: 'Kenzen Miñao', initials: 'KM', role: 'Frontend Dev', facebook: 'https://facebook.com/kenzen3131', image: '/team/kenzen.jpg' },
+    { name: 'Christoph Bagabuyo', initials: 'CB', role: 'Frontend Dev', facebook: 'https://facebook.com/christoph.bagabuyo', image: '/team/christoph.jpg' },
+    { name: 'Mischi Jeda Elumba', initials: 'MJ', role: 'UI/UX Designer', facebook: 'https://facebook.com/mischijeda.elumba.1', image: '/team/mischi.jpg' }
   ]
 
 const displayName = computed(() => {
@@ -538,6 +562,21 @@ const totalStudents = computed(() => {
   return stats.value.BSCS.total + stats.value.BSIS.total + stats.value.BSIT.total
 })
 
+const searchPlaceholder = computed(() => {
+  const placeholders = {
+    'all': 'Search all fields...',
+    'student_id': 'Search by Student ID...',
+    'first_name': 'Search by First Name...',
+    'middle_name': 'Search by Middle Name...',
+    'last_name': 'Search by Last Name...',
+    'email': 'Search by Email...',
+    'rfid_code': 'Search by RFID Code...',
+    'program': 'Search by Program...',
+    'school_level': 'Search by School Level...'
+  }
+  return placeholders[searchFilter.value] || 'Search...'
+})
+
 const filteredUsers = computed(() => {
   if (!searchQuery.value.trim()) {
     return users.value
@@ -546,14 +585,55 @@ const filteredUsers = computed(() => {
   return users.value.filter(user => {
     const studentId = (user.studentId || user.student_id || '').toLowerCase()
     const firstName = (user.firstName || user.first_name || '').toLowerCase()
+    const middleName = (user.middleName || user.middle_name || '').toLowerCase()
     const lastName = (user.lastName || user.last_name || '').toLowerCase()
-    const fullName = `${firstName} ${lastName}`.toLowerCase()
-    return studentId.includes(query) || firstName.includes(query) || lastName.includes(query) || fullName.includes(query)
+    const email = (user.email || '').toLowerCase()
+    const rfidCode = (user.rfidCode || user.rfid_code || '').toLowerCase()
+    const program = (user.program || '').toLowerCase()
+    const yearLevel = (user.yearLevel || user.year_level || '').toLowerCase()
+    const fullName = `${firstName} ${middleName} ${lastName}`.toLowerCase()
+
+    switch (searchFilter.value) {
+      case 'student_id':
+        return studentId.includes(query)
+      case 'first_name':
+        return firstName.includes(query)
+      case 'middle_name':
+        return middleName.includes(query)
+      case 'last_name':
+        return lastName.includes(query)
+      case 'email':
+        return email.includes(query)
+      case 'rfid_code':
+        return rfidCode.includes(query)
+      case 'program':
+        return program.includes(query)
+      case 'school_level':
+        return yearLevel.includes(query)
+      default:
+        return studentId.includes(query) || 
+               firstName.includes(query) || 
+               middleName.includes(query) ||
+               lastName.includes(query) || 
+               email.includes(query) ||
+               rfidCode.includes(query) ||
+               program.includes(query) ||
+               yearLevel.includes(query) ||
+               fullName.includes(query)
+    }
   })
 })
 
 const handleLogout = () => {
   showLogoutConfirmation.value = true
+}
+
+const handleLogoutWithAnimation = () => {
+  isLoggingOut.value = true
+  setTimeout(() => {
+    showLogoutConfirmation.value = true
+    isLoggingOut.value = false
+  }, 300)
 }
 
 const confirmLogout = () => {
