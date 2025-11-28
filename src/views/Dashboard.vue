@@ -327,6 +327,18 @@
             </div>
             <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
+                <p class="text-sm text-gray-500 font-medium">First Name</p>
+                <p class="text-base text-gray-900">{{ currentUser.firstName || currentUser.first_name || 'N/A' }}</p>
+              </div>
+              <div>
+                <p class="text-sm text-gray-500 font-medium">Middle Name</p>
+                <p class="text-base text-gray-900">{{ currentUser.middleName || currentUser.middle_name || 'N/A' }}</p>
+              </div>
+              <div>
+                <p class="text-sm text-gray-500 font-medium">Last Name</p>
+                <p class="text-base text-gray-900">{{ currentUser.lastName || currentUser.last_name || 'N/A' }}</p>
+              </div>
+              <div>
                 <p class="text-sm text-gray-500 font-medium">Email</p>
                 <p class="text-base text-gray-900">{{ currentUser.email || 'Not provided' }}</p>
               </div>
