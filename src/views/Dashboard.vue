@@ -217,7 +217,7 @@
       <!-- Desktop Help Button (bottom right, with spacing from scrollbar) -->
       <div class="hidden md:block fixed bottom-8 right-8 z-20">
         <button @click="showContactModal = true" class="bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-full w-14 h-14 flex items-center justify-center hover:from-purple-700 hover:to-pink-600 transition-all duration-300 shadow-lg hover:scale-110 active:scale-95 hover:shadow-xl">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          <img src="/help.svg" alt="Help" class="w-6 h-6" style="filter: brightness(0) invert(1);" />
         </button>
       </div>
 
@@ -278,10 +278,10 @@
                   <td class="border border-purple-300 px-4 py-3 text-center">
                     <div class="flex items-center justify-center gap-2">
                       <button @click="editUser(user)" class="bg-blue-500 text-white p-2 rounded-lg hover:bg-blue-600 transition-all duration-200 hover:scale-110 active:scale-95" title="Edit User">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                        <img src="/edit.svg" alt="Edit" class="w-4 h-4" style="filter: brightness(0) invert(1);" />
                       </button>
                       <button @click="deleteUser(user.studentId || user.student_id)" class="bg-red-500 text-white p-2 rounded-lg hover:bg-red-600 transition-all duration-200 hover:scale-110 active:scale-95" title="Delete User">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        <img src="/delete.svg" alt="Delete" class="w-4 h-4" style="filter: brightness(0) invert(1);" />
                       </button>
                     </div>
                   </td>
@@ -514,7 +514,7 @@ onMounted(async () => {
   // If admin, fetch students from API
   if (user.role === 'admin') {
     try {
-      const response = await fetch('https://ssaam.vercel.app/students')
+      const response = await fetch('https://ssaam-api.vercel.app/apis/students')
       const apiStudents = await response.json()
       // Normalize API data to match expected field names
       users.value = apiStudents.map(s => ({

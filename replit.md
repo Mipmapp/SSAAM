@@ -43,8 +43,8 @@ The application is configured to run on Replit with:
 ## Latest Updates (2025-11-28)
 
 ### Admin Dashboard Enhancements (LATEST)
-- **Icon Buttons**: Edit and Delete buttons replaced with professional icon buttons (pencil/trash) with hover animations
-- **Help Button Repositioned**: "Need Help" button moved to bottom-right corner with proper spacing from scrollbar
+- **Icon Buttons**: Edit and Delete buttons use `edit.svg` and `delete.svg` with hover animations
+- **Help Button Repositioned**: "Need Help" button moved to bottom-right corner using `help.svg` with purple gradient background
 - **Logout Animation**: Added scale and rotate animation when clicking logout button
 - **Renamed Navigation**: "User Management" renamed to "Manage" throughout the app
 - **Advanced Search Filter**: Dropdown to filter search by specific fields:
@@ -52,6 +52,7 @@ The application is configured to run on Replit with:
   - Email, RFID Code, Program, School Level
 - **Dynamic Placeholder**: Search input placeholder updates based on selected filter
 - **Mobile Responsive**: Filter dropdown and search stack vertically on mobile
+- **API Updated**: All API calls now use `https://ssaam-api.vercel.app/apis/students`
 
 ### Admin User Management
 - **User List**: Admin can view all registered users in a table format

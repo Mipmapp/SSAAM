@@ -310,7 +310,7 @@ const handleLogin = async () => {
     }
 
     // Fetch all students from API
-    const response = await fetch("https://ssaam.vercel.app/students");
+    const response = await fetch("https://ssaam-api.vercel.app/apis/students");
     const students = await response.json();
 
     console.log("API STUDENTS:", students);
