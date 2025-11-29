@@ -290,7 +290,7 @@
 
     <div class="text-center text-white pt-12 pb-8 px-4 relative z-10">
       <div v-if="currentStep !== 3" class="w-16 h-16 mx-auto mb-4 rounded-full bg-white bg-opacity-20 flex items-center justify-center">
-        <img src="/register_user.svg" alt="Register" class="w-10 h-10" style="filter: brightness(0) invert(1);" />
+        <img src="/user_plus.svg" alt="Register" class="w-10 h-10" style="filter: brightness(0) invert(1);" />
       </div>
       <h1 class="text-3xl font-bold mb-2">Let's Create</h1>
       <h2 class="text-3xl font-bold mb-4">Your Profile!</h2>
