@@ -327,8 +327,8 @@ const handleLogin = async () => {
           'Authorization': `Bearer ${import.meta.env.VITE_SSAAM_API_KEY}`
         },
         body: JSON.stringify({
-          student_id: enteredId,
-          last_name: enteredPass
+          username: enteredId,
+          password: enteredPass
         })
       });
       user = await response.json();
