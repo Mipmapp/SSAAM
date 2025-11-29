@@ -83,8 +83,8 @@
     </div>
   </div>
 
-  <div class="hidden md:flex min-h-screen bg-white">
-    <div class="w-2/5 desktop-bg-panel">
+  <div class="hidden md:flex min-h-screen bg-white w-full">
+    <div class="w-2/5 desktop-bg-panel flex-shrink-0">
       <div class="relative z-10 text-center">
         <div class="mb-4">
           <div class="w-40 h-40 mx-auto flex items-center justify-center">
@@ -166,7 +166,7 @@
     </div>
   </div>
 
-  <div class="mobile-bg-panel md:hidden min-h-screen flex flex-col">
+  <div class="mobile-bg-panel md:hidden min-h-screen flex flex-col w-full">
 
     <div class="text-center text-white pt-12 pb-8 px-4 relative z-10">
       <div class="w-32 h-32 mx-auto mb-4">
