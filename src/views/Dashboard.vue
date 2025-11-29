@@ -495,7 +495,6 @@
           </div>
           <input 
             ref="photoInput" 
-            @change="handleEditImageUpload" 
             type="file" 
             accept="image/*" 
             class="hidden" 
@@ -566,21 +565,6 @@
     </div>
   </div>
 
-  <!-- Image Crop Modal -->
-  <div v-if="showCropModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-      <h3 class="text-2xl font-bold text-purple-900 mb-2">Adjust Image (1:1 Ratio)</h3>
-      <p class="text-sm text-gray-600 mb-6">Drag to move • Scroll to zoom</p>
-      <div class="mb-6 mx-auto bg-gray-100 rounded-lg" style="width: 500px; height: 500px; overflow: hidden;">
-        <img v-if="croppedImageData" :src="croppedImageData" alt="Image Preview" ref="cropImageRef" style="width: 100%; height: 100%;" />
-      </div>
-      <div class="flex gap-3">
-        <button @click="cancelCrop" class="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-lg font-medium hover:bg-gray-300 transition">Cancel</button>
-        <button @click="confirmCrop" class="flex-1 bg-gradient-to-r from-purple-600 to-pink-500 text-white py-2 px-4 rounded-lg font-medium hover:from-purple-700 hover:to-pink-600 transition">Use This Image</button>
-      </div>
-    </div>
-  </div>
-
   <!-- Notification Toast -->
   <div v-if="notification.show" :class="['fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white font-medium transition-all duration-300 z-40', notification.type === 'success' ? 'bg-green-500' : notification.type === 'error' ? 'bg-red-500' : 'bg-blue-500']">
     <div class="flex items-center gap-2">
@@ -593,9 +577,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import Cropper from 'cropperjs'
 
 const router = useRouter()
 const currentUser = ref({})
@@ -621,15 +604,11 @@ const editImageUploading = ref(false)
 const editImageLoading = ref(false)
 const isRefreshing = ref(false)
 const notification = ref({ show: false, message: '', type: 'info' })
-const showCropModal = ref(false)
-const cropperInstance = ref(null)
-const croppedImageData = ref(null)
 const profileImageFailed = ref(false)
 const sidebarImageFailed = ref(false)
 const profileImageRetries = ref(0)
 const sidebarImageRetries = ref(0)
 const maxRetries = 3
-const cropImageRef = ref(null)
 
 // ImgBB API Keys (randomly selected to distribute traffic)
 const imgbbApiKeys = [
@@ -850,95 +829,7 @@ const showNotification = (message, type = 'info') => {
   }, 3000)
 }
 
-const handleEditImageUpload = async (event) => {
-  const file = event.target.files[0]
-  if (!file) return
 
-  const reader = new FileReader()
-  reader.onload = async (e) => {
-    croppedImageData.value = e.target.result
-    showCropModal.value = true
-    await nextTick()
-    
-    if (cropImageRef.value && !cropperInstance.value) {
-      cropperInstance.value = new Cropper(cropImageRef.value, {
-        aspectRatio: 1,
-        autoCropArea: 1,
-        responsive: true,
-        restore: true,
-        guides: true,
-        center: true,
-        highlight: true,
-        cropBoxMovable: true,
-        cropBoxResizable: false,
-        toggleDragModeOnDblclick: false,
-        viewMode: 1,
-        dragMode: 'move',
-        wheelZoomRatio: 0.1,
-        modal: true,
-        background: true,
-        zoomable: true,
-      })
-    }
-  }
-  reader.readAsDataURL(file)
-}
-
-const confirmCrop = async () => {
-  if (!cropperInstance.value) return
-  
-  editImageUploading.value = true
-  showNotification('Uploading image...', 'info')
-  
-  try {
-    const canvas = cropperInstance.value.getCroppedCanvas()
-    canvas.toBlob(async (blob) => {
-      try {
-        const formData = new FormData()
-        const apiKey = getRandomApiKey()
-        formData.append("key", apiKey)
-        formData.append("image", blob, "photo.jpg")
-
-        const res = await fetch("https://api.imgbb.com/1/upload", {
-          method: "POST",
-          body: formData,
-        })
-
-        const data = await res.json()
-
-        if (data.success) {
-          editingUser.value.image = data.data.url
-          editingUser.value.photo = data.data.url
-          showNotification('Image uploaded!', 'success')
-          showCropModal.value = false
-          if (cropperInstance.value) {
-            cropperInstance.value.destroy()
-            cropperInstance.value = null
-          }
-        } else {
-          showNotification('Upload failed', 'error')
-        }
-      } catch (error) {
-        showNotification('Upload error', 'error')
-        console.error("Upload error:", error)
-      }
-      editImageUploading.value = false
-    }, 'image/jpeg', 0.9)
-  } catch (error) {
-    showNotification('Error processing image', 'error')
-    console.error("Error:", error)
-    editImageUploading.value = false
-  }
-}
-
-const cancelCrop = () => {
-  showCropModal.value = false
-  if (cropperInstance.value) {
-    cropperInstance.value.destroy()
-    cropperInstance.value = null
-  }
-  croppedImageData.value = null
-}
 
 const handleProfileImageError = () => {
   if (profileImageRetries.value < maxRetries) {
