@@ -889,3 +889,22 @@ input, textarea, select {
 .gradient-icon {
   background: linear-gradient(135deg, #9333ea 0%, #ec4899 100%);
 }
+
+/* Hide browser default password visibility toggle */
+input[type="password"]::-webkit-credentials-auto-fill-button,
+input[type="password"]::-webkit-outer-spin-button,
+input[type="password"]::-webkit-inner-spin-button {
+  display: none !important;
+}
+
+/* Chrome/Edge/Opera - hide default visibility toggle */
+input[type="password"]::placeholder {
+  pointer-events: none;
+}
+
+input[type="password"] {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}
