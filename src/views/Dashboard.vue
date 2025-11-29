@@ -915,6 +915,7 @@ const handleEditImageUpload = async (event) => {
 }
 
 const handleProfileImageError = () => {
+  profileImageLoading.value = false
   if (profileImageRetries.value < maxRetries) {
     profileImageRetries.value++
     setTimeout(() => {
@@ -926,11 +927,11 @@ const handleProfileImageError = () => {
     }, 1000)
   } else {
     profileImageFailed.value = true
-    profileImageLoading.value = false
   }
 }
 
 const handleSidebarImageError = () => {
+  sidebarImageLoading.value = false
   if (sidebarImageRetries.value < maxRetries) {
     sidebarImageRetries.value++
     setTimeout(() => {
@@ -941,7 +942,6 @@ const handleSidebarImageError = () => {
     }, 1000)
   } else {
     sidebarImageFailed.value = true
-    sidebarImageLoading.value = false
   }
 }
 
