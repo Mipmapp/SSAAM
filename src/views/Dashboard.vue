@@ -863,7 +863,7 @@ const handleEditImageUpload = async (event) => {
     if (cropImageRef.value && !cropperInstance.value) {
       cropperInstance.value = new Cropper(cropImageRef.value, {
         aspectRatio: 1,
-        autoCropArea: 0.9,
+        autoCropArea: 1,
         responsive: true,
         restore: true,
         guides: true,
@@ -872,11 +872,12 @@ const handleEditImageUpload = async (event) => {
         cropBoxMovable: true,
         cropBoxResizable: false,
         toggleDragModeOnDblclick: false,
-        viewMode: 0,
+        viewMode: 1,
         dragMode: 'move',
         wheelZoomRatio: 0.1,
-        initialAspectRatio: 1,
         modal: true,
+        background: true,
+        zoomable: true,
       })
     }
   }
