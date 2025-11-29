@@ -612,23 +612,30 @@ onMounted(async () => {
       const response = await fetch('https://ssaam-api.vercel.app/apis/students', {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_SSAAM_STUDENTS_API_KEY}`
+          'Authorization': `${import.meta.env.VITE_SSAAM_STUDENTS_API_KEY}`
         }
       })
+      console.log('Response status:', response.status, 'OK:', response.ok)
       const apiStudents = await response.json()
-      console.log('Fetched students:', apiStudents)
-      // Normalize API data to match expected field names
-      users.value = apiStudents.map(s => ({
-        ...s,
-        studentId: s.student_id,
-        firstName: s.first_name,
-        middleName: s.middle_name || '',
-        lastName: s.last_name,
-        yearLevel: s.year_level,
-        rfidCode: s.rfid_code,
-        schoolYear: s.school_year,
-        image: s.photo || s.image || ''
-      }))
+      console.log('Fetched students response:', apiStudents)
+      
+      if (response.ok && Array.isArray(apiStudents)) {
+        // Normalize API data to match expected field names
+        users.value = apiStudents.map(s => ({
+          ...s,
+          studentId: s.student_id,
+          firstName: s.first_name,
+          middleName: s.middle_name || '',
+          lastName: s.last_name,
+          yearLevel: s.year_level,
+          rfidCode: s.rfid_code,
+          schoolYear: s.school_year,
+          image: s.photo || s.image || ''
+        }))
+      } else {
+        console.error('API returned error or invalid data:', apiStudents)
+        users.value = []
+      }
     } catch (error) {
       console.error('Failed to fetch students:', error)
       users.value = []
