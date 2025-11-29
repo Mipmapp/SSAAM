@@ -298,6 +298,7 @@ const handleLogin = async () => {
   try {
     const enteredId = studentId.value.trim();
     const enteredPass = password.value.trim().toLowerCase();
+    const startsWithLetter = /^[a-zA-Z]/.test(enteredId);
 
     // Check for admin user in localStorage first
     const localUsers = JSON.parse(localStorage.getItem('users') || '[]');
@@ -315,17 +316,21 @@ const handleLogin = async () => {
       return;
     }
 
-    // Fetch all students from API
-    const response = await fetch("https://ssaam-api.vercel.app/apis/students");
-    const students = await response.json();
+    // If ID starts with a letter, use masters API; otherwise use students API
+    const apiUrl = startsWithLetter 
+      ? "https://ssaam-api.vercel.app/apis/masters"
+      : "https://ssaam-api.vercel.app/apis/students";
+    
+    const response = await fetch(apiUrl);
+    const data = await response.json();
 
-    console.log("API STUDENTS:", students);
+    console.log(startsWithLetter ? "API MASTERS:" : "API STUDENTS:", data);
 
-    // Find the matching student
-    const user = students.find(
-      (s) =>
-        s.student_id === enteredId &&
-        s.last_name.toLowerCase() === enteredPass
+    // Find the matching user
+    const user = data.find(
+      (u) =>
+        u.student_id === enteredId &&
+        u.last_name.toLowerCase() === enteredPass
     );
 
     if (user) {
@@ -342,8 +347,9 @@ const handleLogin = async () => {
         semester: user.semester || '',
         schoolYear: user.school_year || '',
         program: user.program || '',
-        role: user.role || 'student',
-        image: user.photo || user.image || ''
+        role: startsWithLetter ? 'master' : (user.role || 'student'),
+        image: user.photo || user.image || '',
+        isMaster: startsWithLetter
       };
       localStorage.setItem("currentUser", JSON.stringify(normalizedUser));
       router.push("/dashboard");
