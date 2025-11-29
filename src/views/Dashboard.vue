@@ -568,11 +568,11 @@
 
   <!-- Image Crop Modal -->
   <div v-if="showCropModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
       <h3 class="text-2xl font-bold text-purple-900 mb-2">Adjust Image (1:1 Ratio)</h3>
-      <p class="text-sm text-gray-600 mb-4">Drag to move • Scroll to zoom</p>
-      <div class="mb-6 flex justify-center bg-gray-100 rounded-lg p-4" style="max-height: 400px; overflow: hidden;">
-        <img v-if="croppedImageData" :src="croppedImageData" alt="Image Preview" ref="cropImageRef" style="max-height: 350px;" />
+      <p class="text-sm text-gray-600 mb-6">Drag to move • Scroll to zoom</p>
+      <div class="mb-6 flex justify-center bg-gray-100 rounded-lg" style="width: 100%; height: 550px; overflow: hidden;">
+        <img v-if="croppedImageData" :src="croppedImageData" alt="Image Preview" ref="cropImageRef" style="max-width: 100%; max-height: 100%;" />
       </div>
       <div class="flex gap-3">
         <button @click="cancelCrop" class="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-lg font-medium hover:bg-gray-300 transition">Cancel</button>
@@ -862,11 +862,11 @@ const handleEditImageUpload = async (event) => {
     
     if (cropImageRef.value && !cropperInstance.value) {
       cropperInstance.value = new Cropper(cropImageRef.value, {
-        aspectRatio: 1,
+        aspectRatio: 1 / 1,
         autoCropArea: 1,
         responsive: true,
         restore: true,
-        guides: false,
+        guides: true,
         center: true,
         highlight: true,
         cropBoxMovable: true,
@@ -875,6 +875,8 @@ const handleEditImageUpload = async (event) => {
         viewMode: 1,
         dragMode: 'move',
         wheelZoomRatio: 0.1,
+        minContainerWidth: 500,
+        minContainerHeight: 500,
       })
     }
   }
