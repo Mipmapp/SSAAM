@@ -596,7 +596,6 @@
 import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import Cropper from 'cropperjs'
-import 'cropperjs/dist/cropper.css'
 
 const router = useRouter()
 const currentUser = ref({})
