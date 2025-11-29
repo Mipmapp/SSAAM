@@ -578,28 +578,29 @@ const compressImage = (file) => {
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(img, 0, 0, width, height);
         
-        // Try compression with decreasing quality until under 1MB
+        // Try compression with decreasing quality until under 200KB
         let quality = 0.9;
         let compressedBlob;
         let attempts = 0;
-        const maxAttempts = 10;
+        const maxAttempts = 15;
+        const targetSizeKB = 200;
         
         const tryCompress = () => {
           if (attempts >= maxAttempts) {
-            canvas.toBlob(resolve, 'image/jpeg', 0.3); // Final fallback
+            canvas.toBlob(resolve, 'image/jpeg', 0.1); // Final fallback
             return;
           }
           
           canvas.toBlob((blob) => {
-            const sizeInMB = blob.size / (1024 * 1024);
-            console.log(`Compression attempt ${attempts + 1}: ${sizeInMB.toFixed(2)}MB at quality ${quality}`);
+            const sizeInKB = blob.size / 1024;
+            console.log(`Compression attempt ${attempts + 1}: ${sizeInKB.toFixed(2)}KB at quality ${quality}`);
             
-            if (sizeInMB <= 1) {
+            if (sizeInKB <= targetSizeKB) {
               resolve(blob);
             } else {
-              quality -= 0.08;
+              quality -= 0.06;
               attempts++;
-              if (quality >= 0.1) {
+              if (quality >= 0.05) {
                 tryCompress();
               } else {
                 resolve(blob); // Use best available
@@ -634,36 +635,59 @@ const handleImageUpload = async (event) => {
   isUploading.value = true;
   formData.photo = "";
 
+  const maxRetries = 3;
+  let uploadSuccess = false;
+
   try {
-    // Compress image to 1MB or below
+    // Compress image to 200KB or below
     const compressedBlob = await compressImage(file);
-    const sizeInMB = (compressedBlob.size / (1024 * 1024)).toFixed(2);
-    console.log(`Final compressed image size: ${sizeInMB}MB`);
+    const sizeInKB = (compressedBlob.size / 1024).toFixed(2);
+    console.log(`Final compressed image size: ${sizeInKB}KB`);
     
-    // Upload compressed image to imgbb with random key
-    const apiKey = getRandomApiKey();
-    const uploadForm = new FormData();
-    uploadForm.append("key", apiKey);
-    uploadForm.append("image", compressedBlob, "photo.jpg");
+    // Retry upload logic
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        // Upload compressed image to imgbb with random key
+        const apiKey = getRandomApiKey();
+        const uploadForm = new FormData();
+        uploadForm.append("key", apiKey);
+        uploadForm.append("image", compressedBlob, "photo.jpg");
 
-    const res = await fetch("https://api.imgbb.com/1/upload", {
-      method: "POST",
-      body: uploadForm,
-    });
+        const res = await fetch("https://api.imgbb.com/1/upload", {
+          method: "POST",
+          body: uploadForm,
+        });
 
-    const data = await res.json();
+        const data = await res.json();
 
-    if (data.success) {
-      formData.photo = data.data.url;
-      console.log("Uploaded Image URL:", formData.photo);
-    } else {
-      console.error("Image upload failed:", data);
-      errorMessage.value = "Image upload failed. Please try again.";
+        if (data.success) {
+          formData.photo = data.data.url;
+          console.log("Uploaded Image URL:", formData.photo);
+          uploadSuccess = true;
+          break;
+        } else {
+          console.error(`Upload attempt ${attempt} failed:`, data);
+          if (attempt < maxRetries) {
+            console.log(`Retrying upload (${attempt}/${maxRetries})...`);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+        }
+      } catch (error) {
+        console.error(`Upload attempt ${attempt} error:`, error);
+        if (attempt < maxRetries) {
+          console.log(`Retrying upload (${attempt}/${maxRetries})...`);
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
+    }
+
+    if (!uploadSuccess) {
+      errorMessage.value = "Image upload failed after multiple attempts. Please try again.";
       showErrorNotification.value = true;
     }
   } catch (error) {
-    console.error("Upload error:", error);
-    errorMessage.value = "Image upload error. Please try again.";
+    console.error("Image compression error:", error);
+    errorMessage.value = "Image processing error. Please try again.";
     showErrorNotification.value = true;
   }
 
