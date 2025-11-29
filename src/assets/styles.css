@@ -899,25 +899,6 @@ input, textarea, select {
   animation: wipe 0.4s ease-in-out;
 }
 
-/* Pop Animation for Error Notification */
-@keyframes pop {
-  0% {
-    transform: scale(0.3);
-    opacity: 0;
-  }
-  50% {
-    transform: scale(1.05);
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-.animate-pop {
-  animation: pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
 /* Gradient Icon for Contact Modal */
 .gradient-icon {
   background: linear-gradient(135deg, #9333ea 0%, #ec4899 100%);
