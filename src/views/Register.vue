@@ -685,12 +685,12 @@ const handleNext = async () => {
       showErrorNotification.value = true
       return
     }
-    if (!/^[a-zA-Z\s]+$/.test(formData.first_name)) {
+    if (!/^[\p{L}\s'-]+$/u.test(formData.first_name)) {
       errorMessage.value = "First name can only contain letters and spaces."
       showErrorNotification.value = true
       return
     }
-    if (formData.middle_name && !/^[a-zA-Z\s]+$/.test(formData.middle_name)) {
+    if (formData.middle_name && !/^[\p{L}\s'-]+$/u.test(formData.middle_name)) {
       errorMessage.value = "Middle name can only contain letters and spaces."
       showErrorNotification.value = true
       return
@@ -700,7 +700,7 @@ const handleNext = async () => {
       showErrorNotification.value = true
       return
     }
-    if (!/^[a-zA-Z\s]+$/.test(formData.last_name)) {
+    if (!/^[\p{L}\s'-]+$/u.test(formData.last_name)) {
       errorMessage.value = "Last name can only contain letters and spaces."
       showErrorNotification.value = true
       return
