@@ -568,12 +568,11 @@
 
   <!-- Image Crop Modal -->
   <div v-if="showCropModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full max-h-[90vh] overflow-y-auto">
-      <h3 class="text-2xl font-bold text-purple-900 mb-6">Image Preview (1:1)</h3>
-      <div class="mb-6 flex justify-center">
-        <div class="w-64 h-64 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
-          <img v-if="croppedImageData" :src="croppedImageData" alt="Image Preview" ref="cropImageRef" class="w-full h-full object-cover" />
-        </div>
+    <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <h3 class="text-2xl font-bold text-purple-900 mb-2">Adjust Image (1:1 Ratio)</h3>
+      <p class="text-sm text-gray-600 mb-4">Drag to move • Scroll to zoom</p>
+      <div class="mb-6 flex justify-center bg-gray-100 rounded-lg p-4" style="max-height: 400px; overflow: hidden;">
+        <img v-if="croppedImageData" :src="croppedImageData" alt="Image Preview" ref="cropImageRef" style="max-height: 350px;" />
       </div>
       <div class="flex gap-3">
         <button @click="cancelCrop" class="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-lg font-medium hover:bg-gray-300 transition">Cancel</button>
@@ -859,46 +858,82 @@ const handleEditImageUpload = async (event) => {
   reader.onload = async (e) => {
     croppedImageData.value = e.target.result
     showCropModal.value = true
+    await nextTick()
+    
+    if (cropImageRef.value && !cropperInstance.value) {
+      cropperInstance.value = new Cropper(cropImageRef.value, {
+        aspectRatio: 1,
+        autoCropArea: 1,
+        responsive: true,
+        restore: true,
+        guides: false,
+        center: true,
+        highlight: true,
+        cropBoxMovable: true,
+        cropBoxResizable: false,
+        toggleDragModeOnDblclick: false,
+        viewMode: 1,
+        dragMode: 'move',
+        wheelZoomRatio: 0.1,
+      })
+    }
   }
   reader.readAsDataURL(file)
 }
 
 const confirmCrop = async () => {
+  if (!cropperInstance.value) return
+  
   editImageUploading.value = true
   showNotification('Uploading image...', 'info')
   
   try {
-    const blob = await (await fetch(croppedImageData.value)).blob()
-    const formData = new FormData()
-    const apiKey = getRandomApiKey()
-    formData.append("key", apiKey)
-    formData.append("image", blob, "photo.jpg")
+    const canvas = cropperInstance.value.getCroppedCanvas()
+    canvas.toBlob(async (blob) => {
+      try {
+        const formData = new FormData()
+        const apiKey = getRandomApiKey()
+        formData.append("key", apiKey)
+        formData.append("image", blob, "photo.jpg")
 
-    const res = await fetch("https://api.imgbb.com/1/upload", {
-      method: "POST",
-      body: formData,
-    })
+        const res = await fetch("https://api.imgbb.com/1/upload", {
+          method: "POST",
+          body: formData,
+        })
 
-    const data = await res.json()
+        const data = await res.json()
 
-    if (data.success) {
-      editingUser.value.image = data.data.url
-      editingUser.value.photo = data.data.url
-      showNotification('Image uploaded!', 'success')
-      showCropModal.value = false
-    } else {
-      showNotification('Upload failed', 'error')
-    }
+        if (data.success) {
+          editingUser.value.image = data.data.url
+          editingUser.value.photo = data.data.url
+          showNotification('Image uploaded!', 'success')
+          showCropModal.value = false
+          if (cropperInstance.value) {
+            cropperInstance.value.destroy()
+            cropperInstance.value = null
+          }
+        } else {
+          showNotification('Upload failed', 'error')
+        }
+      } catch (error) {
+        showNotification('Upload error', 'error')
+        console.error("Upload error:", error)
+      }
+      editImageUploading.value = false
+    }, 'image/jpeg', 0.9)
   } catch (error) {
-    showNotification('Upload error', 'error')
-    console.error("Upload error:", error)
+    showNotification('Error processing image', 'error')
+    console.error("Error:", error)
+    editImageUploading.value = false
   }
-  editImageUploading.value = false
 }
 
 const cancelCrop = () => {
   showCropModal.value = false
-  if (cropperInstance.value) cropperInstance.value.destroy()
+  if (cropperInstance.value) {
+    cropperInstance.value.destroy()
+    cropperInstance.value = null
+  }
   croppedImageData.value = null
 }
 
