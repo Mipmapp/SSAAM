@@ -772,7 +772,7 @@ const handleNext = async () => {
           lastName: newUser.last_name || '',
           middleName: newUser.middle_name || '',
           email: newUser.email || '',
-          rfidCode: newUser.rfid_code || '',
+          rfidCode: newUser.rfid_code || 'N/A',
           yearLevel: newUser.year_level || '',
           semester: newUser.semester || '',
           schoolYear: newUser.school_year || '',

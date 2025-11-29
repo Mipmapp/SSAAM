@@ -467,9 +467,9 @@
       <div v-if="editingUser" class="space-y-4">
         <div class="flex flex-col items-center mb-6">
           <div class="relative">
-            <div class="w-24 h-24 rounded-full bg-gray-200 overflow-hidden mb-3 shadow-lg">
+            <div class="w-24 h-24 rounded-full bg-gradient-to-r from-pink-400 to-purple-600 overflow-hidden mb-3 shadow-lg flex items-center justify-center">
               <img v-if="editingUser.image || editingUser.photo" :src="editingUser.image || editingUser.photo" alt="User Photo" class="w-full h-full object-cover" />
-              <div v-else class="w-full h-full flex items-center justify-center text-3xl text-gray-400">👤</div>
+              <img v-else src="/user.svg" alt="Profile" class="w-12 h-12" style="filter: brightness(0) invert(1);" />
             </div>
             <button 
               @click="$refs.photoInput.click()" 
@@ -637,7 +637,7 @@ onMounted(async () => {
           middleName: s.middle_name || '',
           lastName: s.last_name,
           yearLevel: s.year_level,
-          rfidCode: s.rfid_code,
+          rfidCode: s.rfid_code || 'N/A',
           schoolYear: s.school_year,
           image: s.photo || s.image || ''
         }))
@@ -735,7 +735,7 @@ const refreshStudents = async () => {
         middleName: s.middle_name || '',
         lastName: s.last_name,
         yearLevel: s.year_level,
-        rfidCode: s.rfid_code,
+        rfidCode: s.rfid_code || 'N/A',
         schoolYear: s.school_year,
         image: s.photo || s.image || ''
       }))
