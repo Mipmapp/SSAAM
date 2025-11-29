@@ -885,6 +885,26 @@ input, textarea, select {
   animation: slash 0.4s ease-in-out;
 }
 
+/* Wipe Animation for Visibility Icon */
+@keyframes wipe {
+  0% {
+    clip-path: inset(0 0 0 0);
+    opacity: 1;
+  }
+  50% {
+    clip-path: inset(0 50% 0 50%);
+    opacity: 0.6;
+  }
+  100% {
+    clip-path: inset(0 0 0 0);
+    opacity: 1;
+  }
+}
+
+.animate-wipe {
+  animation: wipe 0.4s ease-in-out;
+}
+
 /* Gradient Icon for Contact Modal */
 .gradient-icon {
   background: linear-gradient(135deg, #9333ea 0%, #ec4899 100%);
