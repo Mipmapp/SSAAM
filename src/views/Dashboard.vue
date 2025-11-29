@@ -605,8 +605,8 @@ onMounted(async () => {
   }
   currentUser.value = user
   
-  // If admin, fetch students from API
-  if (user.role === 'admin') {
+  // If admin or master, fetch students from API
+  if (user.role === 'admin' || user.isMaster) {
     try {
       const response = await fetch('https://ssaam-api.vercel.app/apis/students', {
         headers: {
