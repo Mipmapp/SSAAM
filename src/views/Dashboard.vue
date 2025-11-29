@@ -334,7 +334,7 @@
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
                 </div>
-                <img v-else-if="currentUser.image || currentUser.photo" :src="currentUser.image || currentUser.photo" alt="Profile Picture" class="w-full h-full object-cover" @load="profileImageLoading = false" @error="profileImageLoading = false" />
+                <img v-else-if="!profileImageFailed && (currentUser.image || currentUser.photo)" :src="currentUser.image || currentUser.photo" alt="Profile Picture" class="w-full h-full object-cover" @load="profileImageLoading = false; profileImageFailed = false" @error="handleProfileImageError" />
                 <img v-else src="/user.svg" alt="Profile" class="w-16 h-16" style="filter: brightness(0) invert(1);" />
               </div>
               <div class="text-center md:text-left">
@@ -622,6 +622,11 @@ const notification = ref({ show: false, message: '', type: 'info' })
 const showCropModal = ref(false)
 const cropperInstance = ref(null)
 const croppedImageData = ref(null)
+const profileImageFailed = ref(false)
+const sidebarImageFailed = ref(false)
+const profileImageRetries = ref(0)
+const sidebarImageRetries = ref(0)
+const maxRetries = 3
 
 // ImgBB API Keys (randomly selected to distribute traffic)
 const imgbbApiKeys = [
@@ -914,6 +919,37 @@ const cancelCrop = () => {
   showCropModal.value = false
   if (cropperInstance.value) cropperInstance.value.destroy()
   croppedImageData.value = null
+}
+
+const handleProfileImageError = () => {
+  if (profileImageRetries.value < maxRetries) {
+    profileImageRetries.value++
+    setTimeout(() => {
+      // Force re-render by toggling loading state
+      profileImageLoading.value = true
+      setTimeout(() => {
+        profileImageLoading.value = false
+      }, 100)
+    }, 1000)
+  } else {
+    profileImageFailed.value = true
+    profileImageLoading.value = false
+  }
+}
+
+const handleSidebarImageError = () => {
+  if (sidebarImageRetries.value < maxRetries) {
+    sidebarImageRetries.value++
+    setTimeout(() => {
+      sidebarImageLoading.value = true
+      setTimeout(() => {
+        sidebarImageLoading.value = false
+      }, 100)
+    }, 1000)
+  } else {
+    sidebarImageFailed.value = true
+    sidebarImageLoading.value = false
+  }
 }
 
 const saveUser = async () => {
