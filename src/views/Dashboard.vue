@@ -501,6 +501,7 @@
             class="hidden" 
           />
           <p v-if="editImageUploading" class="text-xs text-purple-600 mt-2">Uploading...</p>
+          <a v-if="editingUser.image && editingUser.image.includes('imgbb')" :href="editingUser.image" target="_blank" class="text-xs text-blue-500 hover:text-blue-700 underline mt-2 block">View Image Link</a>
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">Student ID</label>
@@ -569,8 +570,9 @@
   <div v-if="showCropModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
     <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
       <h3 class="text-2xl font-bold text-purple-900 mb-6">Crop Image (1:1 Ratio)</h3>
-      <div class="mb-6 flex justify-center">
-        <img v-if="croppedImageData" :src="croppedImageData" alt="Crop Preview" class="max-w-full max-h-96" ref="cropImage" />
+      <p class="text-sm text-gray-600 mb-4">Drag to reposition • Scroll to zoom • Adjust the square area to crop</p>
+      <div class="mb-6 flex justify-center bg-gray-100 rounded-lg p-4" style="max-height: 400px;">
+        <img v-if="croppedImageData" :src="croppedImageData" alt="Crop Preview" ref="cropImageRef" style="max-width: 100%; max-height: 350px;" />
       </div>
       <div class="flex gap-3">
         <button @click="cancelCrop" class="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-lg font-medium hover:bg-gray-300 transition">Cancel</button>
@@ -591,9 +593,10 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import Cropper from 'cropperjs'
+import 'cropperjs/dist/cropper.css'
 
 const router = useRouter()
 const currentUser = ref({})
@@ -627,6 +630,7 @@ const sidebarImageFailed = ref(false)
 const profileImageRetries = ref(0)
 const sidebarImageRetries = ref(0)
 const maxRetries = 3
+const cropImageRef = ref(null)
 
 // ImgBB API Keys (randomly selected to distribute traffic)
 const imgbbApiKeys = [
@@ -852,27 +856,29 @@ const handleEditImageUpload = async (event) => {
   if (!file) return
 
   const reader = new FileReader()
-  reader.onload = (e) => {
+  reader.onload = async (e) => {
     croppedImageData.value = e.target.result
     showCropModal.value = true
-    setTimeout(() => {
-      const cropImg = document.querySelector('[ref="cropImage"]')
-      if (cropImg) {
-        if (cropperInstance.value) cropperInstance.value.destroy()
-        cropperInstance.value = new Cropper(cropImg, {
-          aspectRatio: 1,
-          autoCropArea: 0.8,
-          responsive: true,
-          restore: true,
-          guides: true,
-          center: true,
-          highlight: true,
-          cropBoxMovable: true,
-          cropBoxResizable: true,
-          toggleDragModeOnDblclick: true,
-        })
+    await nextTick()
+    
+    if (cropImageRef.value) {
+      if (cropperInstance.value) {
+        cropperInstance.value.destroy()
       }
-    }, 100)
+      cropperInstance.value = new Cropper(cropImageRef.value, {
+        aspectRatio: 1,
+        autoCropArea: 0.8,
+        responsive: true,
+        restore: true,
+        guides: true,
+        center: true,
+        highlight: true,
+        cropBoxMovable: true,
+        cropBoxResizable: true,
+        toggleDragModeOnDblclick: true,
+        viewMode: 1,
+      })
+    }
   }
   reader.readAsDataURL(file)
 }
