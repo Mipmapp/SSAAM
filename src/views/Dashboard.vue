@@ -288,6 +288,7 @@
                   <th class="border border-purple-300 px-4 py-3 text-left font-semibold text-purple-900">Name</th>
                   <th class="border border-purple-300 px-4 py-3 text-left font-semibold text-purple-900">Email</th>
                   <th class="border border-purple-300 px-4 py-3 text-center font-semibold text-purple-900">RFID Code</th>
+                  <th class="border border-purple-300 px-4 py-3 text-center font-semibold text-purple-900">Photo Link</th>
                   <th class="border border-purple-300 px-4 py-3 text-center font-semibold text-purple-900">Program</th>
                   <th class="border border-purple-300 px-4 py-3 text-center font-semibold text-purple-900">School Level</th>
                   <th class="border border-purple-300 px-4 py-3 text-center font-semibold text-purple-900">Actions</th>
@@ -295,13 +296,17 @@
               </thead>
               <tbody>
                 <tr v-if="filteredUsers.length === 0" class="hover:bg-gray-50">
-                  <td colspan="7" class="border border-purple-300 px-4 py-8 text-center text-gray-600">No users found matching your search.</td>
+                  <td colspan="8" class="border border-purple-300 px-4 py-8 text-center text-gray-600">No users found matching your search.</td>
                 </tr>
                 <tr v-for="user in filteredUsers" :key="user.studentId || user.student_id" class="hover:bg-gray-50">
                   <td class="border border-purple-300 px-4 py-3 text-gray-700">{{ user.studentId || user.student_id }}</td>
                   <td class="border border-purple-300 px-4 py-3 text-gray-700">{{ (user.firstName || user.first_name) }} {{ (user.lastName || user.last_name) }}</td>
                   <td class="border border-purple-300 px-4 py-3 text-gray-700">{{ user.email }}</td>
                   <td class="border border-purple-300 px-4 py-3 text-center text-gray-700">{{ user.rfidCode || user.rfid_code || '—' }}</td>
+                  <td class="border border-purple-300 px-4 py-3 text-center">
+                    <a v-if="user.image && user.image.includes('imgbb')" :href="user.image" target="_blank" class="text-xs text-blue-500 hover:text-blue-700 underline">View Link</a>
+                    <span v-else class="text-xs text-gray-400">—</span>
+                  </td>
                   <td class="border border-purple-300 px-4 py-3 text-center text-gray-700">{{ user.program }}</td>
                   <td class="border border-purple-300 px-4 py-3 text-center text-gray-700">{{ user.yearLevel || user.year_level }}</td>
                   <td class="border border-purple-300 px-4 py-3 text-center">
