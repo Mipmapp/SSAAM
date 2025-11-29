@@ -300,22 +300,6 @@ const handleLogin = async () => {
     const enteredPass = password.value.trim().toLowerCase();
     const startsWithLetter = /^[a-zA-Z]/.test(enteredId);
 
-    // Check for admin user in localStorage first
-    const localUsers = JSON.parse(localStorage.getItem('users') || '[]');
-    const adminUser = localUsers.find(
-      (u) =>
-        u.role === 'admin' &&
-        u.studentId === enteredId &&
-        u.lastName.toLowerCase() === enteredPass
-    );
-
-    if (adminUser) {
-      console.log("ADMIN LOGIN SUCCESS:", adminUser);
-      localStorage.setItem("currentUser", JSON.stringify(adminUser));
-      router.push("/dashboard");
-      return;
-    }
-
     let user;
     
     if (startsWithLetter) {
