@@ -662,6 +662,14 @@ onMounted(async () => {
   }
   currentUser.value = user
   
+  // Show loading spinner if profile image exists
+  if (user.image || user.photo) {
+    profileImageLoading.value = true
+  }
+  if (user.image || user.photo) {
+    sidebarImageLoading.value = true
+  }
+  
   // If admin or master, fetch students from API
   if (user.role === 'admin' || user.isMaster) {
     try {
