@@ -321,7 +321,11 @@ const handleLogin = async () => {
       ? "https://ssaam-api.vercel.app/apis/masters"
       : "https://ssaam-api.vercel.app/apis/students";
     
-    const response = await fetch(apiUrl);
+    const response = await fetch(apiUrl, {
+      headers: {
+        'Authorization': `Bearer ${import.meta.env.VITE_SSAAM_API_KEY}`
+      }
+    });
     const data = await response.json();
 
     console.log(startsWithLetter ? "API MASTERS:" : "API STUDENTS:", data);

@@ -608,7 +608,11 @@ onMounted(async () => {
   // If admin, fetch students from API
   if (user.role === 'admin') {
     try {
-      const response = await fetch('https://ssaam-api.vercel.app/apis/students')
+      const response = await fetch('https://ssaam-api.vercel.app/apis/students', {
+        headers: {
+          'Authorization': `Bearer ${import.meta.env.VITE_SSAAM_API_KEY}`
+        }
+      })
       const apiStudents = await response.json()
       // Normalize API data to match expected field names
       users.value = apiStudents.map(s => ({
@@ -802,7 +806,10 @@ const saveUser = async () => {
     
     const response = await fetch(`https://ssaam-api.vercel.app/apis/students/${studentId}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${import.meta.env.VITE_SSAAM_API_KEY}`
+      },
       body: JSON.stringify(updateData)
     })
     
@@ -832,7 +839,10 @@ const confirmDelete = async () => {
     try {
       const response = await fetch(`https://ssaam-api.vercel.app/apis/students/${userToDelete.value}`, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SSAAM_API_KEY}`
+        }
       })
       
       if (response.ok) {
