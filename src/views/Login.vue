@@ -324,21 +324,24 @@ const handleLogin = async () => {
         user.token = data.token;
       }
     } else {
-      // Fetch all students from API
-      const response = await fetch("https://ssaam-api.vercel.app/apis/students", {
+      // Use POST login endpoint for students
+      const response = await fetch("https://ssaam-api.vercel.app/apis/students/login", {
+        method: 'POST',
         headers: {
+          'Content-Type': 'application/json',
           'Authorization': `Bearer SSAAMStudents`
-        }
+        },
+        body: JSON.stringify({
+          student_id: enteredId,
+          last_name: enteredPass
+        })
       });
-      const students = await response.json();
-      console.log("API STUDENTS:", students);
+      const data = await response.json();
+      console.log("API STUDENT LOGIN RESPONSE:", data);
       
-      // Find the matching student
-      user = students.find(
-        (s) =>
-          s.student_id === enteredId &&
-          s.last_name.toLowerCase() === enteredPass
-      );
+      if (data.student && data.message === "Login successful") {
+        user = data.student;
+      }
     }
 
     if (user) {

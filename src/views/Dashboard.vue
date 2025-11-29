@@ -595,6 +595,10 @@ const showLogoutConfirmation = ref(false)
 const showMobileMenu = ref(false)
 const showContactModal = ref(false)
 const currentPage = ref('dashboard')
+const currentPageNum = ref(1)
+const itemsPerPage = ref(10)
+const totalStudents = ref(0)
+const totalPages = ref(0)
 const showEditModal = ref(false)
 const showDeleteConfirm = ref(false)
 const editingUser = ref(null)
@@ -657,16 +661,17 @@ onMounted(async () => {
   profileImageLoading.value = false
   sidebarImageLoading.value = false
   
-  // If admin or master, fetch students from API
+  // If admin or master, fetch students from API with pagination
   if (user.role === 'admin' || user.isMaster) {
     try {
-      const response = await fetch('https://ssaam-api.vercel.app/apis/students', {
+      const response = await fetch(`https://ssaam-api.vercel.app/apis/students?page=${currentPageNum.value}&limit=${itemsPerPage.value}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer SSAAMStudents`
         }
       })
-      const apiStudents = await response.json()
+      const result = await response.json()
+      const apiStudents = result.data || result
       
       if (response.ok && Array.isArray(apiStudents)) {
         // Normalize API data to match expected field names
@@ -681,6 +686,11 @@ onMounted(async () => {
           schoolYear: s.school_year,
           image: s.photo || s.image || ''
         }))
+        // Update pagination info if available
+        if (result.pagination) {
+          totalStudents.value = result.pagination.total
+          totalPages.value = result.pagination.totalPages
+        }
       } else {
         console.error('API returned error or invalid data:', apiStudents)
         users.value = []
@@ -760,13 +770,14 @@ const refreshStudents = async () => {
   
   isRefreshing.value = true
   try {
-    const response = await fetch('https://ssaam-api.vercel.app/apis/students', {
+    const response = await fetch(`https://ssaam-api.vercel.app/apis/students?page=${currentPageNum.value}&limit=${itemsPerPage.value}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer SSAAMStudents`
       }
     })
-    const apiStudents = await response.json()
+    const result = await response.json()
+    const apiStudents = result.data || result
     
     if (response.ok && Array.isArray(apiStudents)) {
       users.value = apiStudents.map(s => ({
@@ -780,6 +791,11 @@ const refreshStudents = async () => {
         schoolYear: s.school_year,
         image: s.photo || s.image || ''
       }))
+      // Update pagination info if available
+      if (result.pagination) {
+        totalStudents.value = result.pagination.total
+        totalPages.value = result.pagination.totalPages
+      }
     }
   } catch (error) {
     console.error('Failed to refresh students:', error)
