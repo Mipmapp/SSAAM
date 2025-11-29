@@ -499,8 +499,11 @@
             accept="image/*" 
             class="hidden" 
           />
-          <p v-if="editImageUploading" class="text-xs text-purple-600 mt-2">Uploading...</p>
-          <a v-if="editingUser.image && editingUser.image.includes('imgbb')" :href="editingUser.image" target="_blank" class="text-xs text-blue-500 hover:text-blue-700 underline mt-2 block">View Image Link</a>
+          <p v-if="editImageUploading" class="text-xs text-purple-600 mt-3 font-medium">Uploading...</p>
+          <div v-if="editingUser.image && editingUser.image.includes('imgbb')" class="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+            <p class="text-xs font-medium text-gray-700 mb-1">Photo URL:</p>
+            <a :href="editingUser.image" target="_blank" class="text-xs text-blue-600 hover:text-blue-800 underline break-all font-medium">{{ editingUser.image }}</a>
+          </div>
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">Student ID</label>
