@@ -571,8 +571,8 @@
     <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
       <h3 class="text-2xl font-bold text-purple-900 mb-2">Adjust Image (1:1 Ratio)</h3>
       <p class="text-sm text-gray-600 mb-6">Drag to move • Scroll to zoom</p>
-      <div class="mb-6 flex justify-center bg-gray-100 rounded-lg" style="width: 100%; height: 550px; overflow: hidden;">
-        <img v-if="croppedImageData" :src="croppedImageData" alt="Image Preview" ref="cropImageRef" style="max-width: 100%; max-height: 100%;" />
+      <div class="mb-6 mx-auto bg-gray-100 rounded-lg" style="width: 500px; height: 500px; overflow: hidden;">
+        <img v-if="croppedImageData" :src="croppedImageData" alt="Image Preview" ref="cropImageRef" style="width: 100%; height: 100%;" />
       </div>
       <div class="flex gap-3">
         <button @click="cancelCrop" class="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-lg font-medium hover:bg-gray-300 transition">Cancel</button>
@@ -862,8 +862,8 @@ const handleEditImageUpload = async (event) => {
     
     if (cropImageRef.value && !cropperInstance.value) {
       cropperInstance.value = new Cropper(cropImageRef.value, {
-        aspectRatio: 1 / 1,
-        autoCropArea: 1,
+        aspectRatio: 1,
+        autoCropArea: 0.9,
         responsive: true,
         restore: true,
         guides: true,
@@ -872,11 +872,11 @@ const handleEditImageUpload = async (event) => {
         cropBoxMovable: true,
         cropBoxResizable: false,
         toggleDragModeOnDblclick: false,
-        viewMode: 1,
+        viewMode: 0,
         dragMode: 'move',
         wheelZoomRatio: 0.1,
-        minContainerWidth: 500,
-        minContainerHeight: 500,
+        initialAspectRatio: 1,
+        modal: true,
       })
     }
   }
