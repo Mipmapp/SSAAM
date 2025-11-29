@@ -318,6 +318,21 @@
               </tbody>
             </table>
           </div>
+
+          <!-- Pagination Controls -->
+          <div v-if="paginationTotal > 0" class="flex items-center justify-between mt-6 pt-6 border-t border-gray-200">
+            <div class="text-sm text-gray-600">
+              Showing page <span class="font-semibold text-purple-900">{{ currentPageNum }}</span> of <span class="font-semibold text-purple-900">{{ totalPages }}</span> ({{ paginationTotal }} total students)
+            </div>
+            <div class="flex gap-3">
+              <button @click="goToPreviousPage" :disabled="currentPageNum === 1" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm">
+                ← Previous
+              </button>
+              <button @click="goToNextPage" :disabled="currentPageNum >= totalPages" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm">
+                Next →
+              </button>
+            </div>
+          </div>
         </div>
 
         <!-- Dashboard Page -->
@@ -943,6 +958,20 @@ const handleProfileImageError = () => {
     }, 1000)
   } else {
     profileImageFailed.value = true
+  }
+}
+
+const goToNextPage = () => {
+  if (currentPageNum.value < totalPages.value) {
+    currentPageNum.value++
+    refreshStudents()
+  }
+}
+
+const goToPreviousPage = () => {
+  if (currentPageNum.value > 1) {
+    currentPageNum.value--
+    refreshStudents()
   }
 }
 
