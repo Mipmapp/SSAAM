@@ -820,6 +820,14 @@ const handleEditImageUpload = async (event) => {
   const file = event.target.files[0]
   if (!file) return
 
+  // Create preview and show immediately
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    editingUser.value.image = e.target.result
+    editingUser.value.photo = e.target.result
+  }
+  reader.readAsDataURL(file)
+
   editImageUploading.value = true
   showNotification(`Processing image: ${file.name}...`, 'info')
 
