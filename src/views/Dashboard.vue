@@ -815,9 +815,7 @@ const confirmLogout = () => {
 
 const editUser = (user) => {
   editingUser.value = JSON.parse(JSON.stringify(user))
-  if (editingUser.value.image || editingUser.value.photo) {
-    editImageLoading.value = true
-  }
+  editImageLoading.value = false
   showEditModal.value = true
 }
 
@@ -905,11 +903,14 @@ const handleEditImageUpload = async (event) => {
     if (data.success) {
       editingUser.value.image = data.data.url
       editingUser.value.photo = data.data.url
+      editImageLoading.value = false
       showNotification('Image uploaded successfully!', 'success')
     } else {
+      editImageLoading.value = false
       showNotification('Upload failed', 'error')
     }
   } catch (error) {
+    editImageLoading.value = false
     showNotification('Upload error', 'error')
     console.error("Upload error:", error)
   } finally {
