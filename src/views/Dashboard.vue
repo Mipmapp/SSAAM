@@ -815,7 +815,7 @@ const saveUser = async () => {
       method: 'PUT',
       headers: { 
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${import.meta.env.VITE_SSAAM_API_KEY}`
+        'Authorization': `Bearer ${import.meta.env.VITE_SSAAM_STUDENTS_API_KEY}`
       },
       body: JSON.stringify(updateData)
     })
@@ -848,7 +848,7 @@ const confirmDelete = async () => {
         method: 'DELETE',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SSAAM_API_KEY}`
+          'Authorization': `Bearer ${import.meta.env.VITE_SSAAM_STUDENTS_API_KEY}`
         }
       })
       
