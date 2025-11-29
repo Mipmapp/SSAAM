@@ -749,12 +749,6 @@ const handleNext = async () => {
       await new Promise(resolve => setTimeout(resolve, 300))
     }
 
-    if (!formData.photo) {
-      console.error("Photo missing after upload.")
-      isRegistering.value = false
-      return
-    }
-
     try {
       const response = await fetch('https://ssaam-api.vercel.app/apis/students', {
         method: 'POST',
