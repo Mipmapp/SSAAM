@@ -131,9 +131,7 @@
               <div class="relative">
                 <img src="/key.svg" alt="Password" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input v-model="password" :type="showPassword ? 'text' : 'password'" placeholder="Your Password (Last Name)" class="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent outline-none" required />
-                <button type="button" @click="showPassword = !showPassword" class="absolute right-4 top-1/2 transform -translate-y-1/2 flex items-center justify-center w-5 h-5">
-                  <img :src="showPassword ? '/visibility_on.svg' : '/visibility_off.svg'" alt="Toggle password" class="w-5 h-5" />
-                </button>
+                <img @click="showPassword = !showPassword" :src="showPassword ? '/visibility_on.svg' : '/visibility_off.svg'" alt="Toggle password" class="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 cursor-pointer hover:opacity-70" />
               </div>
             </div>
 
@@ -204,9 +202,7 @@
             <div class="relative">
               <img src="/key.svg" alt="Password" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input v-model="password" :type="showPassword ? 'text' : 'password'" placeholder="Your Password (Last Name)" class="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent outline-none" required />
-              <button type="button" @click="showPassword = !showPassword" class="absolute right-4 top-1/2 transform -translate-y-1/2 flex items-center justify-center w-5 h-5">
-                <img :src="showPassword ? '/visibility_on.svg' : '/visibility_off.svg'" alt="Toggle password" class="w-5 h-5" />
-              </button>
+              <img @click="showPassword = !showPassword" :src="showPassword ? '/visibility_on.svg' : '/visibility_off.svg'" alt="Toggle password" class="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 cursor-pointer hover:opacity-70" />
             </div>
           </div>
 
