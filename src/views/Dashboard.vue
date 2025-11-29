@@ -601,6 +601,7 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 const currentUser = ref({})
 const users = ref([])
+const allStudents = ref([])
 const isPageLoading = ref(true)
 const profileImageLoading = ref(false)
 const sidebarImageLoading = ref(false)
@@ -678,18 +679,25 @@ onMounted(async () => {
   // If admin or master, fetch students from API with pagination
   if (user.role === 'admin' || user.isMaster) {
     try {
-      const response = await fetch(`https://ssaam-api.vercel.app/apis/students?page=${currentPageNum.value}&limit=${itemsPerPage.value}`, {
+      // First, fetch page 1 to get total pages
+      const firstResponse = await fetch(`https://ssaam-api.vercel.app/apis/students?page=1&limit=${itemsPerPage.value}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer SSAAMStudents`
         }
       })
-      const result = await response.json()
-      const apiStudents = result.data || result
+      const firstResult = await firstResponse.json()
+      const firstPageData = firstResult.data || firstResult
       
-      if (response.ok && Array.isArray(apiStudents)) {
-        // Normalize API data to match expected field names
-        users.value = apiStudents.map(s => ({
+      if (firstResponse.ok && Array.isArray(firstPageData)) {
+        // Get pagination info
+        if (firstResult.pagination) {
+          paginationTotal.value = firstResult.pagination.total
+          totalPages.value = firstResult.pagination.totalPages
+        }
+        
+        // Normalize and store first page
+        const normalizedFirst = firstPageData.map(s => ({
           ...s,
           studentId: s.student_id,
           firstName: s.first_name,
@@ -700,18 +708,53 @@ onMounted(async () => {
           schoolYear: s.school_year,
           image: s.photo || s.image || ''
         }))
-        // Update pagination info if available
-        if (result.pagination) {
-          paginationTotal.value = result.pagination.total
-          totalPages.value = result.pagination.totalPages
+        
+        users.value = normalizedFirst
+        allStudents.value = [...normalizedFirst]
+        
+        // Auto-fetch remaining pages for statistics
+        if (totalPages.value > 1) {
+          for (let page = 2; page <= totalPages.value; page++) {
+            try {
+              const response = await fetch(`https://ssaam-api.vercel.app/apis/students?page=${page}&limit=${itemsPerPage.value}`, {
+                method: 'GET',
+                headers: {
+                  'Authorization': `Bearer SSAAMStudents`
+                }
+              })
+              const result = await response.json()
+              const pageData = result.data || result
+              
+              if (response.ok && Array.isArray(pageData)) {
+                const normalized = pageData.map(s => ({
+                  ...s,
+                  studentId: s.student_id,
+                  firstName: s.first_name,
+                  middleName: s.middle_name || '',
+                  lastName: s.last_name,
+                  yearLevel: s.year_level,
+                  rfidCode: s.rfid_code || 'N/A',
+                  schoolYear: s.school_year,
+                  image: s.photo || s.image || ''
+                }))
+                allStudents.value.push(...normalized)
+              }
+            } catch (error) {
+              console.error(`Failed to fetch page ${page}:`, error)
+            }
+            // Add 1 second delay between requests
+            await new Promise(resolve => setTimeout(resolve, 1000))
+          }
         }
       } else {
-        console.error('API returned error or invalid data:', apiStudents)
+        console.error('API returned error or invalid data:', firstPageData)
         users.value = []
+        allStudents.value = []
       }
     } catch (error) {
       console.error('Failed to fetch students:', error)
       users.value = []
+      allStudents.value = []
     }
   } else {
     users.value = JSON.parse(localStorage.getItem('users') || '[]')
@@ -728,7 +771,10 @@ const stats = computed(() => {
     BSIT: { '1st year': 0, '2nd year': 0, '3rd year': 0, '4th year': 0, total: 0 }
   }
   
-  users.value.forEach(user => {
+  // Use allStudents for complete statistics (all registered students)
+  const studentsToCount = allStudents.value.length > 0 ? allStudents.value : users.value
+  
+  studentsToCount.forEach(user => {
     const program = user.program
     const yearLevel = user.yearLevel || user.year_level
     if (result[program] && result[program][yearLevel] !== undefined) {
