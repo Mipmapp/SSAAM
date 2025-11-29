@@ -331,8 +331,14 @@ const handleLogin = async () => {
           password: enteredPass
         })
       });
-      user = await response.json();
-      console.log("API MASTERS LOGIN:", user);
+      const data = await response.json();
+      console.log("API MASTERS LOGIN RESPONSE:", data);
+      
+      // Extract master object from response
+      if (data.master && data.message === "Login successful") {
+        user = data.master;
+        user.token = data.token;
+      }
     } else {
       // Fetch all students from API
       const response = await fetch("https://ssaam-api.vercel.app/apis/students", {
@@ -355,9 +361,9 @@ const handleLogin = async () => {
       console.log("LOGIN SUCCESS:", user);
       const normalizedUser = {
         ...user,
-        studentId: user.student_id,
-        firstName: user.first_name,
-        lastName: user.last_name,
+        studentId: user.student_id || user.username || enteredId,
+        firstName: user.first_name || '',
+        lastName: user.last_name || '',
         middleName: user.middle_name || '',
         email: user.email || '',
         rfidCode: user.rfid_code || '',
@@ -367,9 +373,12 @@ const handleLogin = async () => {
         program: user.program || '',
         role: startsWithLetter ? 'master' : (user.role || 'student'),
         image: user.photo || user.image || '',
-        isMaster: startsWithLetter
+        isMaster: startsWithLetter,
+        token: user.token || ''
       };
       localStorage.setItem("currentUser", JSON.stringify(normalizedUser));
+      localStorage.setItem("authToken", normalizedUser.token);
+      console.log("Navigating to dashboard...");
       router.push("/dashboard");
       return;
     }
