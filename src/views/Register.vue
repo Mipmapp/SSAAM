@@ -169,6 +169,7 @@
                   <img src="/user.svg" alt="Student ID" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5" />
                   <input v-model="formData.student_id" @input="formData.student_id = formatStudentId(formData.student_id)" type="text" placeholder="25-A-12345" maxlength="12" class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent outline-none uppercase" required />
                 </div>
+                <p class="text-xs text-gray-400 mt-1 pl-10">Format: XX-A-XXXXX</p>
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">RFID Code <span class="text-gray-500 text-xs">(optional)</span></label>
@@ -376,6 +377,7 @@
                 <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">👤</span>
                 <input v-model="formData.student_id" @input="formData.student_id = formatStudentId(formData.student_id)" type="text" placeholder="25-A-12345" maxlength="12" class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent outline-none uppercase" required />
               </div>
+              <p class="text-xs text-gray-400 mt-1">Format: XX-A-XXXXX</p>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">RFID Code <span class="text-gray-500 text-xs">(optional)</span></label>
