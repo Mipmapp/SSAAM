@@ -531,6 +531,7 @@ const formData = reactive({
 })
 
 const isUploading = ref(false);
+const previousStudentIdLength = ref(0);
 
 // ImgBB API Keys (randomly selected to distribute traffic)
 const imgbbApiKeys = [
@@ -553,6 +554,15 @@ const formatStudentId = (value) => {
   
   // Remove all dashes to get clean input
   let noDashes = cleaned.replace(/-/g, '');
+  
+  // Check if user is deleting (length decreased) or typing (length increased)
+  const isDeleting = noDashes.length < previousStudentIdLength.value;
+  previousStudentIdLength.value = noDashes.length;
+  
+  // If deleting, just return clean input without auto-formatting dashes
+  if (isDeleting) {
+    return noDashes.slice(0, 8); // Max 8 chars without dashes (00000A00000)
+  }
   
   // Extract parts based on expected format
   const digits1 = noDashes.slice(0, 2); // First 2 digits
