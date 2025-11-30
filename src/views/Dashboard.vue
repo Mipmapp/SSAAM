@@ -783,10 +783,13 @@ const refreshStudents = async () => {
   
   isRefreshing.value = true
   try {
-    let url = `https://ssaam-api.vercel.app/apis/students?page=${currentPageNum.value}&limit=${itemsPerPage.value}`
+    const hasFilters = searchQuery.value.trim() || filterProgram.value || filterSchoolLevel.value
+    const limit = hasFilters ? 1000 : itemsPerPage.value
     
-    if (searchQuery.value.trim() || filterProgram.value || filterSchoolLevel.value) {
-      url = `https://ssaam-api.vercel.app/apis/students/search?page=${currentPageNum.value}&limit=${itemsPerPage.value}`
+    let url = `https://ssaam-api.vercel.app/apis/students?page=${currentPageNum.value}&limit=${limit}`
+    
+    if (hasFilters) {
+      url = `https://ssaam-api.vercel.app/apis/students/search?page=1&limit=${limit}`
       if (searchQuery.value.trim()) {
         url += `&search=${encodeURIComponent(searchQuery.value)}`
       }
