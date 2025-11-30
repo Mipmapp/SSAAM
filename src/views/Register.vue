@@ -561,8 +561,10 @@ const formatStudentId = (value) => {
   
   // Build formatted string with dashes
   let formatted = digits1;
-  if (letter) formatted += '-' + letter;
-  if (digits2) formatted += '-' + digits2;
+  if (digits1.length === 2) formatted += '-'; // Add dash after 2 digits
+  if (letter) formatted += letter;
+  if (letter) formatted += '-'; // Add dash after letter
+  if (digits2) formatted += digits2;
   
   return formatted.slice(0, 10); // Max length: 00-A-00000 (10 chars)
 };
