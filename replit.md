@@ -107,9 +107,22 @@ Frontend SPA with efficient pagination:
 - Backend aggregates all student data for statistics
 - No client-side filtering - all search/filter done server-side
 
-## Latest Updates (2025-11-30)
+## Latest Updates (2025-12-04)
 
-### Pagination & Statistics Separation (LATEST)
+### Security & Validation Enhancements (LATEST)
+- **Encrypted Timestamp Authentication**: All protected API calls (POST, PUT, DELETE, login) now include an encrypted timestamp
+  - Frontend: Uses `src/utils/ssaamCrypto.js` with XOR+Base64 encoding
+  - Backend: Validates timestamp freshness (5-minute window) before processing requests
+  - No secret key needed - uses shared key `SSAAM2025CCS` on both ends
+  - Requests with missing/expired timestamps are rejected with 401 Unauthorized
+- **Student ID Validation**: Registration now only allows student IDs from 21-A-XXXXX to 25-A-XXXXX
+  - Frontend validation with user-friendly error messages
+  - Backend validation as additional security layer
+- **Updated Backend**: `SSAAM_VERCEL_BACKEND_COMPLETE.js` includes new `timestampAuth` middleware
+
+## Updates (2025-11-30)
+
+### Pagination & Statistics Separation
 - **New Endpoint**: `/apis/students/stats` for dashboard statistics
 - **New Endpoint**: `/apis/students/search` for search/filter with pagination
 - **Frontend Changes**: 
