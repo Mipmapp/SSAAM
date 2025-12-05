@@ -20,7 +20,8 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 // Explicit OPTIONS handler for preflight requests (required for Vercel)
-app.options('*', cors(corsOptions));
+// Using '/*' pattern for Express v5 compatibility (plain '*' not supported)
+app.options('/*', cors(corsOptions));
 
 app.use(express.json());
 
