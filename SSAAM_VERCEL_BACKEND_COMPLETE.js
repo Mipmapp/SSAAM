@@ -531,12 +531,20 @@ app.post('/apis/students/send-verification', studentAuth, antiBotProtection, asy
         const code = generateVerificationCode();
         const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
-        const full_name = `${data.first_name} ${data.middle_name || ""} ${data.last_name} ${data.suffix || ""}`
+        // Convert names to uppercase
+        const firstName = data.first_name.toUpperCase().trim();
+        const middleName = (data.middle_name || "").toUpperCase().trim();
+        const lastName = data.last_name.toUpperCase().trim();
+        
+        const full_name = `${firstName} ${middleName} ${lastName} ${data.suffix || ""}`
             .replace(/\s+/g, " ")
             .trim();
 
         const studentData = {
             ...data,
+            first_name: firstName,
+            middle_name: middleName,
+            last_name: lastName,
             full_name,
             role: "student",
             status: "pending"
@@ -636,14 +644,22 @@ app.post('/apis/students', studentAuth, antiBotProtection, timestampAuth, async 
         return res.status(400).json({ message: "Program must be one of: BSCS, BSIT, or BSIS" });
     }
 
+    // Convert names to uppercase
+    const firstName = data.first_name.toUpperCase().trim();
+    const middleName = (data.middle_name || "").toUpperCase().trim();
+    const lastName = data.last_name.toUpperCase().trim();
+    
     const full_name =
-        `${data.first_name} ${data.middle_name || ""} ${data.last_name} ${data.suffix || ""}`
+        `${firstName} ${middleName} ${lastName} ${data.suffix || ""}`
             .replace(/\s+/g, " ")
             .trim();
 
     try {
         const student = new Student({ 
             ...data, 
+            first_name: firstName,
+            middle_name: middleName,
+            last_name: lastName,
             full_name,
             role: "student",
             status: "pending"
@@ -721,16 +737,24 @@ app.put('/apis/students/:student_id/reject', auth, async (req, res) => {
     }
 });
 
-app.put('/apis/students/:student_id', studentAuth, timestampAuth, async (req, res) => {
+// Admin-only endpoint: Edit student (requires admin authentication)
+app.put('/apis/students/:student_id', auth, timestampAuth, async (req, res) => {
     try {
         const updates = { ...req.body };
         delete updates.student_id;
         delete updates.status;
         delete updates.role;
 
-        updates.first_name = updates.first_name?.trim();
-        updates.middle_name = updates.middle_name?.trim();
-        updates.last_name = updates.last_name?.trim();
+        // Convert names to uppercase
+        if (updates.first_name) {
+            updates.first_name = updates.first_name.toUpperCase().trim();
+        }
+        if (updates.middle_name) {
+            updates.middle_name = updates.middle_name.toUpperCase().trim();
+        }
+        if (updates.last_name) {
+            updates.last_name = updates.last_name.toUpperCase().trim();
+        }
 
         if (updates.first_name && !NAME_REGEX.test(updates.first_name))
             return res.status(400).json({ message: "Invalid first_name" });
@@ -747,7 +771,7 @@ app.put('/apis/students/:student_id', studentAuth, timestampAuth, async (req, re
             const mid = updates.middle_name || "";
             const last = updates.last_name || "";
             const suf = updates.suffix || "";
-            updates.full_name = `${first} ${mid} ${last} ${suf}`.trim();
+            updates.full_name = `${first} ${mid} ${last} ${suf}`.replace(/\s+/g, " ").trim();
         }
 
         const updated = await Student.findOneAndUpdate(
@@ -764,7 +788,8 @@ app.put('/apis/students/:student_id', studentAuth, timestampAuth, async (req, re
     }
 });
 
-app.delete('/apis/students/:student_id', studentAuth, timestampAuth, async (req, res) => {
+// Admin-only endpoint: Delete student (requires admin authentication)
+app.delete('/apis/students/:student_id', auth, timestampAuth, async (req, res) => {
     try {
         const deleted = await Student.findOneAndDelete({ student_id: req.params.student_id });
 

@@ -1539,14 +1539,29 @@ const handleStudentPhotoUpload = async (event) => {
 
 const saveUser = async () => {
   if (!editingUser.value) return
+  
+  // Check if user is admin
+  if (!currentUser.value.isMaster && currentUser.value.role !== 'admin') {
+    showNotification('Only administrators can edit users', 'error')
+    closeEditModal()
+    return
+  }
+  
   const studentId = editingUser.value.studentId || editingUser.value.student_id
+  const token = localStorage.getItem('adminToken')
+  
+  if (!token) {
+    showNotification('Admin authentication required', 'error')
+    closeEditModal()
+    return
+  }
   
   try {
     const updateData = {
       student_id: studentId,
-      first_name: editingUser.value.firstName || editingUser.value.first_name,
-      middle_name: editingUser.value.middleName || editingUser.value.middle_name || '',
-      last_name: editingUser.value.lastName || editingUser.value.last_name,
+      first_name: (editingUser.value.firstName || editingUser.value.first_name || '').toUpperCase(),
+      middle_name: (editingUser.value.middleName || editingUser.value.middle_name || '').toUpperCase(),
+      last_name: (editingUser.value.lastName || editingUser.value.last_name || '').toUpperCase(),
       email: editingUser.value.email,
       rfid_code: editingUser.value.rfidCode || editingUser.value.rfid_code || 'N/A',
       year_level: editingUser.value.yearLevel || editingUser.value.year_level,
@@ -1559,7 +1574,8 @@ const saveUser = async () => {
       method: 'PUT',
       headers: { 
         'Content-Type': 'application/json',
-        'Authorization': `Bearer SSAAMStudents`
+        'Authorization': `Bearer ${token}`,
+        'X-SSAAM-TS': encodeTimestamp()
       },
       body: JSON.stringify(updateData)
     })
@@ -1569,12 +1585,14 @@ const saveUser = async () => {
       if (index !== -1) {
         users.value[index] = { ...editingUser.value, ...updateData, studentId }
       }
-      console.log('User updated successfully')
+      showNotification('User updated successfully', 'success')
     } else {
-      console.error('Failed to update user:', await response.text())
+      const errorData = await response.json()
+      showNotification(errorData.message || 'Failed to update user', 'error')
     }
   } catch (error) {
     console.error('Error updating user:', error)
+    showNotification('Error updating user', 'error')
   }
   
   closeEditModal()
@@ -1586,25 +1604,45 @@ const deleteUser = (studentId) => {
 }
 
 const confirmDelete = async () => {
+  // Check if user is admin
+  if (!currentUser.value.isMaster && currentUser.value.role !== 'admin') {
+    showNotification('Only administrators can delete users', 'error')
+    showDeleteConfirm.value = false
+    userToDelete.value = null
+    return
+  }
+  
+  const token = localStorage.getItem('adminToken')
+  
+  if (!token) {
+    showNotification('Admin authentication required', 'error')
+    showDeleteConfirm.value = false
+    userToDelete.value = null
+    return
+  }
+  
   if (userToDelete.value) {
     try {
       const response = await fetch(`https://ssaam-api.vercel.app/apis/students/${userToDelete.value}`, {
         method: 'DELETE',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer SSAAMStudents`,
+          'Authorization': `Bearer ${token}`,
           'X-SSAAM-TS': encodeTimestamp()
         }
       })
       
       if (response.ok) {
         users.value = users.value.filter(u => (u.studentId || u.student_id) !== userToDelete.value)
-        console.log('User deleted successfully')
+        showNotification('User deleted successfully', 'success')
+        fetchStats()
       } else {
-        console.error('Failed to delete user:', await response.text())
+        const errorData = await response.json()
+        showNotification(errorData.message || 'Failed to delete user', 'error')
       }
     } catch (error) {
       console.error('Error deleting user:', error)
+      showNotification('Error deleting user', 'error')
     }
   }
   showDeleteConfirm.value = false
