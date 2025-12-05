@@ -9,7 +9,19 @@ import nodemailer from 'nodemailer';
 const app = express();
 dotenv.config();
 
-app.use(cors());
+// CORS configuration for Vercel - MUST be before all routes
+const corsOptions = {
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-SSAAM-TS'],
+  credentials: true
+};
+
+app.use(cors(corsOptions));
+
+// Explicit OPTIONS handler for preflight requests (required for Vercel)
+app.options('*', cors(corsOptions));
+
 app.use(express.json());
 
 const PORT = process.env.PORT || 5000;
