@@ -168,6 +168,10 @@
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="filter: brightness(0) invert(1);"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
           <span>Settings</span>
         </button>
+        <button @click="currentPage = 'notifications'; fetchNotifications()" :class="['flex items-center space-x-3 px-4 py-3 rounded-lg w-full text-left mt-2', currentPage === 'notifications' ? 'bg-white bg-opacity-20' : 'hover:bg-white hover:bg-opacity-10']">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="filter: brightness(0) invert(1);"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+          <span>Notifications</span>
+        </button>
         <button 
           @click="handleLogoutWithAnimation"
           :class="['flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-white hover:bg-opacity-10 w-full text-left mt-2 transition-all duration-300', isLoggingOut ? 'scale-95 opacity-70' : '']"
@@ -232,6 +236,10 @@
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="filter: brightness(0) invert(1);"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
             <span>Settings</span>
           </button>
+          <button @click="currentPage = 'notifications'; showMobileMenu = false; fetchNotifications()" :class="['flex items-center space-x-3 px-4 py-3 rounded-lg w-full text-left mt-2', currentPage === 'notifications' ? 'bg-white bg-opacity-20' : 'hover:bg-white hover:bg-opacity-10']">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="filter: brightness(0) invert(1);"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+            <span>Notifications</span>
+          </button>
           <button 
             @click="handleLogoutWithAnimation"
             :class="['flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-white hover:bg-opacity-10 w-full text-left mt-2 transition-all duration-300', isLoggingOut ? 'scale-95 opacity-70' : '']"
@@ -269,7 +277,7 @@
       </div>
 
       <div class="p-4 md:p-8">
-        <h1 class="hidden md:block text-2xl md:text-4xl font-bold text-purple-900 mb-8 pb-4 border-b-2 border-purple-900">{{ currentPage === 'users' ? 'Manage' : currentPage === 'settings' ? 'Settings' : currentPage === 'pending' ? 'Pending Approvals' : 'Dashboard' }}</h1>
+        <h1 class="hidden md:block text-2xl md:text-4xl font-bold text-purple-900 mb-8 pb-4 border-b-2 border-purple-900">{{ currentPage === 'users' ? 'Manage' : currentPage === 'settings' ? 'Settings' : currentPage === 'pending' ? 'Pending Approvals' : currentPage === 'notifications' ? 'Notifications' : 'Dashboard' }}</h1>
 
         <!-- Settings Page -->
         <div v-if="currentPage === 'settings' && (currentUser.role === 'admin' || currentUser.isMaster)" class="bg-white rounded-lg shadow-lg p-4 md:p-8">
@@ -367,6 +375,85 @@
                 <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                 {{ settingsSaving ? 'Saving...' : 'Save Settings' }}
               </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Notifications Page -->
+        <div v-if="currentPage === 'notifications'" class="space-y-6">
+          <div v-if="currentUser.role === 'admin' || currentUser.isMaster || currentUser.role === 'medpub'" class="bg-white rounded-lg shadow-lg p-4 md:p-6">
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="text-lg font-bold text-purple-900">Post New Announcement</h2>
+            </div>
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Title</label>
+                <input v-model="newNotification.title" type="text" placeholder="Announcement title..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Content</label>
+                <textarea v-model="newNotification.content" placeholder="Write your announcement here..." rows="4" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none resize-none"></textarea>
+              </div>
+              <div class="flex justify-end">
+                <button @click="postNotification" :disabled="postingNotification || !newNotification.title.trim() || !newNotification.content.trim()" class="bg-gradient-to-r from-purple-600 to-pink-500 text-white px-6 py-2 rounded-lg font-medium hover:from-purple-700 hover:to-pink-600 transition-all duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                  <svg v-if="postingNotification" class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                  <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                  {{ postingNotification ? 'Posting...' : 'Post Announcement' }}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-lg shadow-lg p-4 md:p-6">
+            <div class="flex items-center justify-between mb-6">
+              <h2 class="text-lg font-bold text-purple-900">Announcements Feed</h2>
+              <button @click="fetchNotifications" :disabled="notificationsLoading" class="text-purple-600 hover:text-purple-800 p-2 rounded-lg hover:bg-purple-50 transition">
+                <svg :class="{'animate-spin': notificationsLoading}" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+              </button>
+            </div>
+
+            <div v-if="notificationsLoading" class="flex items-center justify-center py-12">
+              <svg class="animate-spin h-10 w-10 text-purple-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            </div>
+
+            <div v-else-if="notifications.length === 0" class="text-center py-12">
+              <div class="w-20 h-20 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+              </div>
+              <h3 class="text-lg font-semibold text-gray-700 mb-2">No announcements yet</h3>
+              <p class="text-gray-500">Check back later for updates.</p>
+            </div>
+
+            <div v-else class="space-y-4">
+              <div v-for="notif in notifications" :key="notif._id" :class="['rounded-xl p-4 md:p-6 border-l-4', notif.posted_by === 'admin' ? 'bg-gradient-to-r from-purple-50 to-pink-50 border-purple-500' : 'bg-yellow-50 border-yellow-400']">
+                <div class="flex items-start gap-4">
+                  <div :class="['w-12 h-12 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden', notif.posted_by === 'admin' ? 'bg-gradient-to-br from-purple-500 to-pink-500' : 'bg-yellow-400']">
+                    <img v-if="notif.posted_by === 'admin'" src="/src/assets/jrmsu-logo.webp" alt="JRMSU" class="w-10 h-10 object-contain" />
+                    <img v-else-if="notif.poster_photo" :src="notif.poster_photo" alt="Poster" class="w-full h-full object-cover" />
+                    <svg v-else class="w-6 h-6 text-yellow-900" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" /></svg>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex flex-wrap items-center gap-2 mb-2">
+                      <span class="font-bold text-purple-900">{{ notif.poster_name || 'Admin' }}</span>
+                      <span :class="['text-xs px-2 py-0.5 rounded-full font-medium', notif.posted_by === 'admin' ? 'bg-purple-200 text-purple-800' : 'bg-yellow-200 text-yellow-800']">
+                        {{ notif.posted_by === 'admin' ? 'Admin' : 'MedPub' }}
+                      </span>
+                      <span class="text-xs text-gray-500">{{ formatDate(notif.created_at) }}</span>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">{{ notif.title }}</h3>
+                    <p class="text-gray-700 whitespace-pre-wrap">{{ notif.content }}</p>
+                    <div v-if="(currentUser.role === 'admin' || currentUser.isMaster) || (currentUser.role === 'medpub' && notif.poster_id === currentUser.student_id)" class="flex gap-2 mt-4">
+                      <button @click="deleteNotification(notif._id)" class="text-red-600 hover:text-red-800 text-sm font-medium flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -702,6 +789,23 @@
               </div>
             </div>
           </div>
+
+          <!-- Account Security Section -->
+          <div class="mt-8">
+            <h3 class="text-lg font-bold text-purple-900 mb-4 pb-2 border-b-2 border-purple-300">Account Security</h3>
+            <div class="bg-gray-50 p-4 rounded-lg">
+              <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                  <p class="text-base font-semibold text-gray-900">Password</p>
+                  <p class="text-sm text-gray-600 mt-1">Keep your account secure by updating your password regularly</p>
+                </div>
+                <button @click="showPasswordChangeModal = true" class="bg-gradient-to-r from-purple-600 to-pink-500 text-white px-6 py-2 rounded-lg font-medium hover:from-purple-700 hover:to-pink-600 transition-all duration-200 hover:scale-105 active:scale-95 flex items-center gap-2">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
+                  Change Password
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div v-if="currentPage === 'dashboard' && (currentUser.role === 'admin' || currentUser.isMaster)" class="bg-white rounded-lg shadow-lg p-4 md:p-8 mb-8">
@@ -879,6 +983,40 @@
     </div>
   </div>
 
+  <!-- Password Change Modal -->
+  <div v-if="showPasswordChangeModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="showPasswordChangeModal = false">
+    <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-2xl font-bold text-purple-900">Change Password</h3>
+        <button @click="showPasswordChangeModal = false" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+      </div>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Current Password</label>
+          <input v-model="passwordForm.currentPassword" type="password" placeholder="Enter current password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none" />
+          <p v-if="passwordErrors.currentPassword" class="text-red-500 text-xs mt-1">{{ passwordErrors.currentPassword }}</p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">New Password</label>
+          <input v-model="passwordForm.newPassword" type="password" placeholder="Enter new password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none" />
+          <p v-if="passwordErrors.newPassword" class="text-red-500 text-xs mt-1">{{ passwordErrors.newPassword }}</p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Confirm New Password</label>
+          <input v-model="passwordForm.confirmPassword" type="password" placeholder="Confirm new password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none" />
+          <p v-if="passwordErrors.confirmPassword" class="text-red-500 text-xs mt-1">{{ passwordErrors.confirmPassword }}</p>
+        </div>
+        <div class="flex gap-3 mt-6">
+          <button @click="showPasswordChangeModal = false" class="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-lg font-medium hover:bg-gray-300 transition">Cancel</button>
+          <button @click="changePassword" :disabled="changingPassword" class="flex-1 bg-gradient-to-r from-purple-600 to-pink-500 text-white py-2 px-4 rounded-lg font-medium hover:from-purple-700 hover:to-pink-600 transition flex items-center justify-center gap-2">
+            <svg v-if="changingPassword" class="animate-spin w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+            {{ changingPassword ? 'Changing...' : 'Change Password' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Notification Toast -->
   <div v-if="notification.show" :class="['fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white font-medium transition-all duration-300 z-40', notification.type === 'success' ? 'bg-green-500' : notification.type === 'error' ? 'bg-red-500' : 'bg-blue-500']">
     <div class="flex items-center gap-2">
@@ -950,6 +1088,23 @@ const rejectingStudent = ref(false)
 const showRejectModal = ref(false)
 const studentToReject = ref(null)
 const rejectReason = ref('')
+
+// Notifications management
+const notifications = ref([])
+const notificationsLoading = ref(false)
+const showNotificationModal = ref(false)
+const newNotification = ref({ title: '', content: '', type: 'announcement' })
+const postingNotification = ref(false)
+const editingNotification = ref(null)
+const showDeleteNotificationConfirm = ref(false)
+const notificationToDelete = ref(null)
+const deletingNotification = ref(false)
+
+// Password change management
+const showPasswordChangeModal = ref(false)
+const passwordForm = ref({ currentPassword: '', newPassword: '', confirmPassword: '' })
+const changingPassword = ref(false)
+const passwordErrors = ref({})
 
 // ImgBB API Keys (randomly selected to distribute traffic)
 const imgbbApiKeys = [
@@ -1710,5 +1865,142 @@ const confirmDelete = async () => {
   }
   showDeleteConfirm.value = false
   userToDelete.value = null
+}
+
+const fetchNotifications = async () => {
+  notificationsLoading.value = true
+  try {
+    const response = await fetch('https://ssaam-api.vercel.app/apis/notifications', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer SSAAMStudents`
+      }
+    })
+    const result = await response.json()
+    if (response.ok) {
+      notifications.value = result.data || result || []
+    }
+  } catch (error) {
+    console.error('Failed to fetch notifications:', error)
+    notifications.value = []
+  } finally {
+    notificationsLoading.value = false
+  }
+}
+
+const postNotification = async () => {
+  if (!newNotification.value.title.trim() || !newNotification.value.content.trim()) return
+  
+  postingNotification.value = true
+  try {
+    const token = localStorage.getItem('authToken') || localStorage.getItem('adminToken')
+    const studentId = currentUser.value.studentId || currentUser.value.student_id
+    
+    const response = await fetch('https://ssaam-api.vercel.app/apis/notifications', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        title: newNotification.value.title,
+        content: newNotification.value.content,
+        posted_by: currentUser.value.role === 'admin' || currentUser.value.isMaster ? 'admin' : 'medpub',
+        poster_id: studentId,
+        poster_name: currentUser.value.isMaster ? 'Admin' : `${currentUser.value.firstName || currentUser.value.first_name} ${currentUser.value.lastName || currentUser.value.last_name}`,
+        poster_photo: currentUser.value.photo || currentUser.value.image || ''
+      })
+    })
+    
+    if (response.ok) {
+      showNotification('Announcement posted successfully!', 'success')
+      newNotification.value = { title: '', content: '', type: 'announcement' }
+      fetchNotifications()
+    } else {
+      const error = await response.json()
+      showNotification(error.message || 'Failed to post announcement', 'error')
+    }
+  } catch (error) {
+    console.error('Failed to post notification:', error)
+    showNotification('Failed to post announcement', 'error')
+  } finally {
+    postingNotification.value = false
+  }
+}
+
+const deleteNotification = async (notifId) => {
+  if (!confirm('Are you sure you want to delete this announcement?')) return
+  
+  try {
+    const token = localStorage.getItem('authToken') || localStorage.getItem('adminToken')
+    const response = await fetch(`https://ssaam-api.vercel.app/apis/notifications/${notifId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    
+    if (response.ok) {
+      notifications.value = notifications.value.filter(n => n._id !== notifId)
+      showNotification('Announcement deleted successfully', 'success')
+    } else {
+      const error = await response.json()
+      showNotification(error.message || 'Failed to delete announcement', 'error')
+    }
+  } catch (error) {
+    console.error('Failed to delete notification:', error)
+    showNotification('Failed to delete announcement', 'error')
+  }
+}
+
+const changePassword = async () => {
+  passwordErrors.value = {}
+  
+  if (!passwordForm.value.currentPassword) {
+    passwordErrors.value.currentPassword = 'Current password is required'
+  }
+  if (!passwordForm.value.newPassword) {
+    passwordErrors.value.newPassword = 'New password is required'
+  } else if (passwordForm.value.newPassword.length < 6) {
+    passwordErrors.value.newPassword = 'Password must be at least 6 characters'
+  }
+  if (passwordForm.value.newPassword !== passwordForm.value.confirmPassword) {
+    passwordErrors.value.confirmPassword = 'Passwords do not match'
+  }
+  
+  if (Object.keys(passwordErrors.value).length > 0) return
+  
+  changingPassword.value = true
+  try {
+    const token = localStorage.getItem('authToken')
+    const studentId = currentUser.value.studentId || currentUser.value.student_id
+    
+    const response = await fetch('https://ssaam-api.vercel.app/apis/students/change-password', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        student_id: studentId,
+        current_password: passwordForm.value.currentPassword,
+        new_password: passwordForm.value.newPassword
+      })
+    })
+    
+    if (response.ok) {
+      showNotification('Password changed successfully!', 'success')
+      showPasswordChangeModal.value = false
+      passwordForm.value = { currentPassword: '', newPassword: '', confirmPassword: '' }
+    } else {
+      const error = await response.json()
+      showNotification(error.message || 'Failed to change password', 'error')
+    }
+  } catch (error) {
+    console.error('Failed to change password:', error)
+    showNotification('Failed to change password', 'error')
+  } finally {
+    changingPassword.value = false
+  }
 }
 </script>
