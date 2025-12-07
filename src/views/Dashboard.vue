@@ -1,4 +1,10 @@
 <template>
+  <!-- Image Preview Modal -->
+  <div v-if="showImagePreviewModal" class="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50" @click="showImagePreviewModal = false">
+    <button @click="showImagePreviewModal = false" class="absolute top-4 right-4 text-white text-4xl hover:text-gray-300">&times;</button>
+    <img :src="imagePreviewUrl" alt="Preview" class="max-w-[90vw] max-h-[90vh] object-contain rounded-lg" />
+  </div>
+
   <div v-if="showLogoutConfirmation" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="showLogoutConfirmation = false">
     <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full mx-4">
       <h3 class="text-2xl font-bold text-purple-900 mb-4">Confirm Logout</h3>
@@ -151,7 +157,7 @@
         </div>
       </div>
 
-      <nav class="flex-1 p-4 overflow-y-auto min-h-0">
+      <nav class="flex-1 p-4 overflow-y-auto min-h-0 sidebar-scroll">
         <button @click="currentPage = 'dashboard'" :class="['flex items-center space-x-3 px-4 py-3 rounded-lg w-full text-left', currentPage === 'dashboard' ? 'bg-white bg-opacity-20' : 'hover:bg-white hover:bg-opacity-10']">
           <img src="/home.svg" alt="Dashboard" class="w-5 h-5" style="filter: brightness(0) invert(1);" />
           <span>Dashboard</span>
@@ -219,7 +225,7 @@
           </div>
         </div>
 
-        <nav class="flex-1 p-4 overflow-y-auto min-h-0">
+        <nav class="flex-1 p-4 overflow-y-auto min-h-0 sidebar-scroll">
           <button @click="currentPage = 'dashboard'" :class="['flex items-center space-x-3 px-4 py-3 rounded-lg w-full text-left', currentPage === 'dashboard' ? 'bg-white bg-opacity-20' : 'hover:bg-white hover:bg-opacity-10']">
             <img src="/home.svg" alt="Dashboard" class="w-5 h-5" style="filter: brightness(0) invert(1);" />
             <span>Dashboard</span>
@@ -388,11 +394,28 @@
             <div class="space-y-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Title</label>
-                <input v-model="newNotification.title" type="text" placeholder="Announcement title..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none" />
+                <input v-model="newNotification.title" type="text" placeholder="Announcement title..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none" maxlength="200" />
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Content</label>
-                <textarea v-model="newNotification.content" placeholder="Write your announcement here..." rows="4" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none resize-none"></textarea>
+                <textarea v-model="newNotification.content" placeholder="Write your announcement here..." rows="4" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none resize-none" maxlength="2000"></textarea>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Image (Optional - 1 image only)</label>
+                <div class="flex items-center gap-4">
+                  <label class="cursor-pointer flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                    <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    <span class="text-sm text-gray-600">{{ notificationImage ? 'Change Image' : 'Choose Image' }}</span>
+                    <input type="file" accept="image/*" @change="handleNotificationImage" class="hidden" />
+                  </label>
+                  <button v-if="notificationImage" @click="clearNotificationImage" class="text-red-500 hover:text-red-700 text-sm flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    Remove
+                  </button>
+                </div>
+                <div v-if="notificationImagePreview" class="mt-3">
+                  <img :src="notificationImagePreview" alt="Preview" class="max-h-48 rounded-lg border border-gray-200 object-contain" />
+                </div>
               </div>
               <div class="flex justify-end">
                 <button @click="postNotification" :disabled="postingNotification || !newNotification.title.trim() || !newNotification.content.trim()" class="bg-gradient-to-r from-purple-600 to-pink-500 text-white px-6 py-2 rounded-lg font-medium hover:from-purple-700 hover:to-pink-600 transition-all duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
@@ -437,15 +460,27 @@
                   </div>
                   <div class="flex-1 min-w-0">
                     <div class="flex flex-wrap items-center gap-2 mb-2">
-                      <span class="font-bold text-purple-900">{{ notif.poster_name || 'Admin' }}</span>
+                      <span class="font-bold text-purple-900">{{ notif.posted_by_name || notif.poster_name || 'Admin' }}</span>
                       <span :class="['text-xs px-2 py-0.5 rounded-full font-medium', notif.posted_by === 'admin' ? 'bg-purple-200 text-purple-800' : 'bg-yellow-200 text-yellow-800']">
                         {{ notif.posted_by === 'admin' ? 'Admin' : 'MedPub' }}
                       </span>
-                      <span class="text-xs text-gray-500">{{ formatDate(notif.created_at) }}</span>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2 text-xs text-gray-500 mb-2">
+                      <span class="flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        {{ formatNotificationDate(notif.created_at) }}
+                      </span>
+                      <span v-if="notif.updated_at && notif.updated_at !== notif.created_at" class="flex items-center gap-1 text-gray-400">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                        Updated: {{ formatNotificationDate(notif.updated_at) }}
+                      </span>
                     </div>
                     <h3 class="text-lg font-semibold text-gray-900 mb-2">{{ notif.title }}</h3>
-                    <p class="text-gray-700 whitespace-pre-wrap">{{ notif.content }}</p>
-                    <div v-if="(currentUser.role === 'admin' || currentUser.isMaster) || (currentUser.role === 'medpub' && notif.poster_id === currentUser.student_id)" class="flex gap-2 mt-4">
+                    <p class="text-gray-700 whitespace-pre-wrap mb-3">{{ notif.message || notif.content }}</p>
+                    <div v-if="notif.image_url" class="mb-3">
+                      <img :src="notif.image_url" alt="Announcement image" class="max-w-full max-h-80 rounded-lg border border-gray-200 object-contain cursor-pointer hover:opacity-90 transition" @click="openImagePreview(notif.image_url)" />
+                    </div>
+                    <div v-if="(currentUser.role === 'admin' || currentUser.isMaster) || (currentUser.role === 'medpub' && (notif.posted_by_id === currentUser._id || notif.poster_id === currentUser.student_id))" class="flex gap-2 mt-4">
                       <button @click="deleteNotification(notif._id)" class="text-red-600 hover:text-red-800 text-sm font-medium flex items-center gap-1">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                         Delete
@@ -1099,6 +1134,10 @@ const editingNotification = ref(null)
 const showDeleteNotificationConfirm = ref(false)
 const notificationToDelete = ref(null)
 const deletingNotification = ref(false)
+const notificationImage = ref(null)
+const notificationImagePreview = ref(null)
+const showImagePreviewModal = ref(false)
+const imagePreviewUrl = ref('')
 
 // Password change management
 const showPasswordChangeModal = ref(false)
@@ -1888,13 +1927,68 @@ const fetchNotifications = async () => {
   }
 }
 
+const handleNotificationImage = async (event) => {
+  const file = event.target.files[0]
+  if (!file) return
+  
+  if (!file.type.startsWith('image/')) {
+    showNotification('Please select an image file', 'error')
+    return
+  }
+  
+  if (file.size > 5 * 1024 * 1024) {
+    showNotification('Image size must be less than 5MB', 'error')
+    return
+  }
+  
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    notificationImage.value = e.target.result
+    notificationImagePreview.value = e.target.result
+  }
+  reader.readAsDataURL(file)
+}
+
+const clearNotificationImage = () => {
+  notificationImage.value = null
+  notificationImagePreview.value = null
+}
+
+const openImagePreview = (url) => {
+  imagePreviewUrl.value = url
+  showImagePreviewModal.value = true
+}
+
+const formatNotificationDate = (dateStr) => {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  const options = { 
+    year: 'numeric', 
+    month: 'short', 
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  }
+  return date.toLocaleDateString('en-US', options)
+}
+
 const postNotification = async () => {
   if (!newNotification.value.title.trim() || !newNotification.value.content.trim()) return
   
   postingNotification.value = true
   try {
     const token = localStorage.getItem('authToken') || localStorage.getItem('adminToken')
-    const studentId = currentUser.value.studentId || currentUser.value.student_id
+    
+    const payload = {
+      title: newNotification.value.title,
+      message: newNotification.value.content,
+      priority: 'normal'
+    }
+    
+    if (notificationImage.value) {
+      payload.image = notificationImage.value
+    }
     
     const response = await fetch('https://ssaam-api.vercel.app/apis/notifications', {
       method: 'POST',
@@ -1902,19 +1996,13 @@ const postNotification = async () => {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify({
-        title: newNotification.value.title,
-        content: newNotification.value.content,
-        posted_by: currentUser.value.role === 'admin' || currentUser.value.isMaster ? 'admin' : 'medpub',
-        poster_id: studentId,
-        poster_name: currentUser.value.isMaster ? 'Admin' : `${currentUser.value.firstName || currentUser.value.first_name} ${currentUser.value.lastName || currentUser.value.last_name}`,
-        poster_photo: currentUser.value.photo || currentUser.value.image || ''
-      })
+      body: JSON.stringify(payload)
     })
     
     if (response.ok) {
       showNotification('Announcement posted successfully!', 'success')
       newNotification.value = { title: '', content: '', type: 'announcement' }
+      clearNotificationImage()
       fetchNotifications()
     } else {
       const error = await response.json()

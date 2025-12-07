@@ -440,6 +440,7 @@ const PasswordReset = mongoose.model("PasswordReset", passwordResetSchema);
 // Notifications Schema
 const notificationSchema = new mongoose.Schema({
     title: { type: String, required: true, maxlength: 200 },
+    image_url: { type: String, default: null },
     message: { type: String, required: true, maxlength: 2000 },
     posted_by: { type: String, required: true, enum: ['admin', 'medpub'] },
     posted_by_name: { type: String, required: true },
@@ -1971,10 +1972,44 @@ async function canPostNotification(req, res, next) {
     }
 }
 
+// Helper function to upload image to ImgBB
+async function uploadToImgBB(base64Image) {
+    // Get API keys from environment variable (comma-separated)
+    const apiKeysStr = process.env.IMGBB_API_KEYS || '';
+    const apiKeys = apiKeysStr.split(',').map(k => k.trim()).filter(k => k);
+    
+    if (apiKeys.length === 0) {
+        throw new Error('ImgBB API keys not configured');
+    }
+    
+    // Use random API key for load distribution
+    const apiKey = apiKeys[Math.floor(Math.random() * apiKeys.length)];
+    
+    // Remove data URL prefix if present
+    const imageData = base64Image.replace(/^data:image\/\w+;base64,/, '');
+    
+    const formData = new URLSearchParams();
+    formData.append('key', apiKey);
+    formData.append('image', imageData);
+    
+    const response = await fetch('https://api.imgbb.com/1/upload', {
+        method: 'POST',
+        body: formData
+    });
+    
+    const result = await response.json();
+    
+    if (!result.success) {
+        throw new Error(result.error?.message || 'Failed to upload image');
+    }
+    
+    return result.data.url;
+}
+
 // Create notification (admin or medpub only)
-app.post('/apis/notifications', canPostNotification, timestampAuth, async (req, res) => {
+app.post('/apis/notifications', canPostNotification, async (req, res) => {
     try {
-        const { title, message, priority } = req.body;
+        const { title, message, priority, image } = req.body;
 
         if (!title || !message) {
             return res.status(400).json({ message: "Title and message are required" });
@@ -1994,10 +2029,22 @@ app.post('/apis/notifications', canPostNotification, timestampAuth, async (req, 
             finalPriority = 'important'; // Downgrade to important for non-admin
         }
 
+        // Upload image to ImgBB if provided (only 1 image allowed)
+        let imageUrl = null;
+        if (image) {
+            try {
+                imageUrl = await uploadToImgBB(image);
+            } catch (imgErr) {
+                console.error('Image upload failed:', imgErr);
+                // Continue without image if upload fails
+            }
+        }
+
         // Derive all poster info from authenticated session (not from request body)
         const notification = await Notification.create({
             title: title.trim(),
             message: message.trim(),
+            image_url: imageUrl,
             posted_by: req.poster.type, // From JWT/session
             posted_by_name: req.poster.name, // From JWT/session
             posted_by_id: req.poster.id, // From JWT/session
@@ -2016,7 +2063,7 @@ app.post('/apis/notifications', canPostNotification, timestampAuth, async (req, 
 });
 
 // Update notification (only the poster or admin can update)
-app.put('/apis/notifications/:id', canPostNotification, timestampAuth, async (req, res) => {
+app.put('/apis/notifications/:id', canPostNotification, async (req, res) => {
     try {
         const { title, message, priority } = req.body;
         
@@ -2072,7 +2119,7 @@ app.put('/apis/notifications/:id', canPostNotification, timestampAuth, async (re
 });
 
 // Delete notification (only the poster or admin can delete)
-app.delete('/apis/notifications/:id', canPostNotification, timestampAuth, async (req, res) => {
+app.delete('/apis/notifications/:id', canPostNotification, async (req, res) => {
     try {
         const notification = await Notification.findById(req.params.id);
         

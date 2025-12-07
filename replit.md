@@ -109,7 +109,22 @@ Frontend SPA with efficient pagination:
 
 ## Latest Updates (2025-12-07)
 
-### Password Reset Feature (LATEST)
+### Dashboard & Notifications Updates (LATEST - 2025-12-07)
+- **Notification Image Upload**: 
+  - 1 image allowed per notification post
+  - Uses ImgBB API (configured via IMGBB_API_KEYS environment variable in Vercel)
+  - Image preview in form before posting
+  - Click to view full-size in modal
+- **Notification Date/Time Display**:
+  - Shows created date/time formatted as "Dec 7, 2024 • 5:30 PM"
+  - Shows "Updated" timestamp if notification was edited
+- **Sidebar Scrollbar Styling**:
+  - Custom scrollbar matching purple/pink gradient theme
+  - Translucent white scrollbar thumb with hover effect
+  - Works on both desktop and mobile sidebars
+- **Timestamp Auth Fix**: Removed redundant timestampAuth middleware from notification endpoints (JWT auth via canPostNotification is sufficient)
+
+### Password Reset Feature
 - **API Endpoints**: Three-step password reset flow via email verification
   - **POST** `/apis/password-reset/request` - Request reset code (sent to registered email)
   - **POST** `/apis/password-reset/verify` - Verify 6-digit code and get reset token
