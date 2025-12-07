@@ -552,6 +552,32 @@ app.get('/apis/health', (req, res) => {
     });
 });
 
+// Fix endpoint to add missing status field to all students
+app.get('/apis/fix/add-status', async (req, res) => {
+    try {
+        // Find all students without a status field and set it to 'pending'
+        const result = await Student.updateMany(
+            { status: { $exists: false } },
+            { $set: { status: 'pending' } }
+        );
+        
+        // Also fix any null/undefined status values
+        const result2 = await Student.updateMany(
+            { status: null },
+            { $set: { status: 'pending' } }
+        );
+        
+        res.json({
+            message: "Fix applied: Added status field to students",
+            studentsWithMissingStatus: result.modifiedCount,
+            studentsWithNullStatus: result2.modifiedCount,
+            totalFixed: result.modifiedCount + result2.modifiedCount
+        });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
 // Debug endpoint to test the exact pending query
 app.get('/apis/debug/pending', async (req, res) => {
     try {
