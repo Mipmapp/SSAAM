@@ -139,6 +139,14 @@
           <div>
             <p class="text-sm">Welcome back,</p>
             <p class="font-bold">{{ displayName }}!</p>
+            <div class="flex flex-wrap gap-1 mt-1" v-if="!currentUser.isMaster && currentUser.role !== 'admin'">
+              <span :class="['text-xs px-2 py-0.5 rounded-full', currentUser.role === 'medpub' ? 'bg-yellow-400 text-yellow-900' : 'bg-white bg-opacity-30']">
+                {{ currentUser.role === 'medpub' ? 'MedPub' : 'Student' }}
+              </span>
+              <span :class="['text-xs px-2 py-0.5 rounded-full', currentUser.rfid_status === 'verified' ? 'bg-green-400 text-green-900' : 'bg-red-400 text-red-900']">
+                {{ currentUser.rfid_status === 'verified' ? 'Verified' : 'Unverified' }}
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -195,6 +203,14 @@
             <div>
               <p class="text-sm">Welcome back,</p>
               <p class="font-bold">{{ displayName }}!</p>
+              <div class="flex flex-wrap gap-1 mt-1" v-if="!currentUser.isMaster && currentUser.role !== 'admin'">
+                <span :class="['text-xs px-2 py-0.5 rounded-full', currentUser.role === 'medpub' ? 'bg-yellow-400 text-yellow-900' : 'bg-white bg-opacity-30']">
+                  {{ currentUser.role === 'medpub' ? 'MedPub' : 'Student' }}
+                </span>
+                <span :class="['text-xs px-2 py-0.5 rounded-full', currentUser.rfid_status === 'verified' ? 'bg-green-400 text-green-900' : 'bg-red-400 text-red-900']">
+                  {{ currentUser.rfid_status === 'verified' ? 'Verified' : 'Unverified' }}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -1282,11 +1298,29 @@ const handleLogoutWithAnimation = () => {
   }, 300)
 }
 
-const confirmLogout = () => {
+const confirmLogout = async () => {
   showLogoutConfirmation.value = false
   showLogoutAnimation.value = true
+  
+  try {
+    const token = localStorage.getItem('authToken')
+    if (token) {
+      const endpoint = currentUser.value.isMaster ? '/apis/masters/logout' : '/apis/students/logout'
+      await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      })
+    }
+  } catch (error) {
+    console.error('Logout API error:', error)
+  }
+  
   setTimeout(() => {
     localStorage.removeItem('currentUser')
+    localStorage.removeItem('authToken')
     router.push('/')
   }, 1500)
 }

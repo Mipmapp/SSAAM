@@ -145,9 +145,16 @@
                     <option value="">Select Suffix</option>
                     <option value="Jr.">Jr.</option>
                     <option value="Sr.">Sr.</option>
+                    <option value="I">I</option>
                     <option value="II">II</option>
                     <option value="III">III</option>
                     <option value="IV">IV</option>
+                    <option value="V">V</option>
+                    <option value="VI">VI</option>
+                    <option value="VII">VII</option>
+                    <option value="VIII">VIII</option>
+                    <option value="IX">IX</option>
+                    <option value="X">X</option>
                   </select>
                   <img src="/arrow_down.svg" alt="Dropdown" class="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 pointer-events-none" />
                 </div>
@@ -182,22 +189,16 @@
                 <p class="text-xs text-gray-400 mt-1 pl-10">Format: 00-A-00000</p>
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">RFID Code <span class="text-gray-500 text-xs">(optional)</span></label>
-                <div class="relative">
-                  <img src="/detector.svg" alt="RFID Code" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5" />
-                  <input v-model="formData.rfid_code" type="text" placeholder="12345678" class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent outline-none" required />
-                </div>
-              </div>
-              <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Year Level</label>
                 <div class="relative">
                   <img src="/book.svg" alt="Year Level" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5" />
                   <select v-model="formData.year_level" class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent outline-none appearance-none bg-white" required>
                     <option value="" disabled>Select Year Level</option>
-                    <option value="1st year">1st year</option>
-                    <option value="2nd year">2nd year</option>
-                    <option value="3rd year">3rd year</option>
-                    <option value="4th year">4th year</option>
+                    <option value="1st Year">1st Year</option>
+                    <option value="2nd Year">2nd Year</option>
+                    <option value="3rd Year">3rd Year</option>
+                    <option value="4th Year">4th Year</option>
+                    <option value="5th Year">5th Year</option>
                   </select>
                 </div>
               </div>
@@ -220,8 +221,8 @@
                     <img src="/calendar.svg" alt="Semester" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4" />
                     <select v-model="formData.semester" class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent outline-none appearance-none bg-white text-sm" required>
                       <option value="" disabled>Semester</option>
-                      <option value="1st">1st</option>
-                      <option value="2nd">2nd</option>
+                      <option value="1st Sem">1st Sem</option>
+                      <option value="2nd Sem">2nd Sem</option>
                     </select>
                   </div>
                 </div>
@@ -443,22 +444,16 @@
               <p class="text-xs text-gray-400 mt-1">Format: 00-A-00000</p>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">RFID Code <span class="text-gray-500 text-xs">(optional)</span></label>
-              <div class="relative">
-                <img src="/detector.svg" alt="RFID Code" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5" />
-                <input v-model="formData.rfid_code" type="text" placeholder="12345678" class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent outline-none" required />
-              </div>
-            </div>
-            <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Year Level</label>
               <div class="relative">
                 <img src="/book.svg" alt="Year Level" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5" />
                 <select v-model="formData.year_level" class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent outline-none appearance-none bg-white" required>
                   <option value="" disabled>Select Year Level</option>
-                  <option value="1st year">1st year</option>
-                  <option value="2nd year">2nd year</option>
-                  <option value="3rd year">3rd year</option>
-                  <option value="4th year">4th year</option>
+                  <option value="1st Year">1st Year</option>
+                  <option value="2nd Year">2nd Year</option>
+                  <option value="3rd Year">3rd Year</option>
+                  <option value="4th Year">4th Year</option>
+                  <option value="5th Year">5th Year</option>
                 </select>
               </div>
             </div>
@@ -481,8 +476,8 @@
                   <img src="/calendar.svg" alt="Semester" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4" />
                   <select v-model="formData.semester" class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent outline-none appearance-none bg-white text-sm" required>
                     <option value="" disabled>Semester</option>
-                    <option value="1st">1st</option>
-                    <option value="2nd">2nd</option>
+                    <option value="1st Sem">1st Sem</option>
+                    <option value="2nd Sem">2nd Sem</option>
                   </select>
                 </div>
               </div>
@@ -674,7 +669,6 @@ const developers = [
 
 const formData = reactive({
   student_id: '',
-  rfid_code: '',
   first_name: '',
   middle_name: '',
   last_name: '',

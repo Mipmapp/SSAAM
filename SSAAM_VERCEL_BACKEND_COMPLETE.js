@@ -5,11 +5,11 @@ import cors from 'cors';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import nodemailer from 'nodemailer';
+import crypto from 'crypto';
 
 const app = express();
 dotenv.config();
 
-// CORS configuration for Vercel - MUST be before all routes
 const corsOptions = {
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -18,19 +18,21 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-
-// Explicit OPTIONS handler for preflight requests (required for Vercel)
-// Using '/*' pattern for Express v5 compatibility (plain '*' not supported)
 app.options('/*', cors(corsOptions));
-
 app.use(express.json());
 
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI;
 const SSAAM_API_KEY = process.env.SSAAM_API_KEY || "SECRET_iKALAT_PALANG_NIMO";
 const SSAAM_CRYPTO_KEY = process.env.SSAAM_CRYPTO_KEY || "SSAAM2025CCS";
+const ADMIN_VERIFICATION_SECRET = process.env.ADMIN_VERIFICATION_SECRET || "SSAAM_ADMIN_VERIFY_2025";
 
 const VALID_PROGRAMS = ['BSCS', 'BSIT', 'BSIS'];
+const VALID_SUFFIXES = ['', 'Jr.', 'Sr.', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
+const VALID_SEMESTERS = ['1st Sem', '2nd Sem'];
+const VALID_YEAR_LEVELS = ['1st Year', '2nd Year', '3rd Year', '4th Year', '5th Year'];
+const VALID_ROLES = ['student', 'medpub'];
+const VALID_RFID_STATUS = ['verified', 'unverified'];
 
 const emailTransporter = nodemailer.createTransport({
     service: "gmail",
@@ -42,6 +44,14 @@ const emailTransporter = nodemailer.createTransport({
 
 function generateVerificationCode() {
     return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+function generateSecureToken() {
+    return crypto.randomBytes(32).toString('hex');
+}
+
+function hashToken(token) {
+    return crypto.createHash('sha256').update(token).digest('hex');
 }
 
 async function sendVerificationEmail(toEmail, code, studentName) {
@@ -210,9 +220,23 @@ mongoose.connect(MONGO_URI, { serverSelectionTimeoutMS: 5000 })
 })
 .catch(err => console.error('MongoDB error:', err));
 
-
 const STUDENT_ID_REGEX = /^[0-9]{2}-[A-Z]-[0-9]{5}$/;
-const NAME_REGEX = /^[\p{L}\s'-]+$/u;
+const NAME_REGEX = /^[A-Z\s'-]+$/;
+const UPPERCASE_ONLY_REGEX = /^[A-Z\s'-]+$/;
+
+const sessionTokenSchema = new mongoose.Schema({
+    token_hash: { type: String, required: true, unique: true },
+    user_id: { type: mongoose.Schema.Types.ObjectId, required: true },
+    user_type: { type: String, enum: ['student', 'master'], required: true },
+    created_at: { type: Date, default: Date.now },
+    expires_at: { type: Date, required: true },
+    is_revoked: { type: Boolean, default: false }
+});
+
+sessionTokenSchema.index({ expires_at: 1 }, { expireAfterSeconds: 0 });
+sessionTokenSchema.index({ user_id: 1 });
+
+const SessionToken = mongoose.model("SessionToken", sessionTokenSchema);
 
 const studentSchema = new mongoose.Schema({
     student_id: {
@@ -221,25 +245,63 @@ const studentSchema = new mongoose.Schema({
         unique: true,
         match: [STUDENT_ID_REGEX, "Invalid student_id format. Required: 12-A-12345"]
     },
-    rfid_code: { type: String, default: "N/A" },
+    rfid_code: { type: String, default: null },
+    rfid_status: { 
+        type: String, 
+        enum: VALID_RFID_STATUS,
+        default: "unverified" 
+    },
+    rfid_verified_at: { type: Date, default: null },
+    rfid_verified_by: { type: String, default: null },
+    admin_verification_token: { type: String, default: null },
     full_name: { type: String },
     first_name: {
         type: String,
-        required: true,
-        match: [NAME_REGEX, "First name must contain letters only"]
+        required: [true, "First name is required"],
+        validate: {
+            validator: function(v) {
+                return UPPERCASE_ONLY_REGEX.test(v) && v.length <= 64;
+            },
+            message: "First name must be uppercase letters only and max 64 characters"
+        }
     },
     middle_name: {
         type: String,
-        match: [NAME_REGEX, "Middle name must contain letters only"],
+        validate: {
+            validator: function(v) {
+                if (!v || v === "") return true;
+                return UPPERCASE_ONLY_REGEX.test(v) && v.length <= 64;
+            },
+            message: "Middle name must be uppercase letters only and max 64 characters"
+        },
         default: ""
     },
     last_name: {
         type: String,
-        required: true,
-        match: [NAME_REGEX, "Last name must contain letters only"]
+        required: [true, "Last name is required"],
+        validate: {
+            validator: function(v) {
+                return UPPERCASE_ONLY_REGEX.test(v) && v.length <= 64;
+            },
+            message: "Last name must be uppercase letters only and max 64 characters"
+        }
     },
-    suffix: { type: String },
-    year_level: { type: String, required: true },
+    suffix: { 
+        type: String,
+        enum: {
+            values: VALID_SUFFIXES,
+            message: "Invalid suffix. Allowed: Jr., Sr., I, II, III, IV, V, VI, VII, VIII, IX, X"
+        },
+        default: ""
+    },
+    year_level: { 
+        type: String, 
+        required: true,
+        enum: {
+            values: VALID_YEAR_LEVELS,
+            message: "Year level must be one of: 1st Year, 2nd Year, 3rd Year, 4th Year, 5th Year"
+        }
+    },
     school_year: { type: String, required: true },
     program: { 
         type: String, 
@@ -250,9 +312,20 @@ const studentSchema = new mongoose.Schema({
         }
     },
     photo: { type: String },
-    semester: { type: String, required: true },
+    semester: { 
+        type: String, 
+        required: true,
+        enum: {
+            values: VALID_SEMESTERS,
+            message: "Semester must be one of: 1st Sem, 2nd Sem"
+        }
+    },
     email: { type: String },
-    role: { type: String, default: "student" },
+    role: { 
+        type: String, 
+        enum: VALID_ROLES,
+        default: "student" 
+    },
     status: { 
         type: String, 
         enum: ['pending', 'approved', 'rejected'],
@@ -314,7 +387,7 @@ async function getSettings() {
     return settings;
 }
 
-function auth(req, res, next) {
+async function auth(req, res, next) {
     const token = req.headers.authorization?.split(" ")[1];
 
     if (!token)
@@ -322,10 +395,52 @@ function auth(req, res, next) {
 
     try {
         const decoded = jwt.verify(token, SSAAM_API_KEY);
+        
+        const tokenHash = hashToken(token);
+        const sessionToken = await SessionToken.findOne({ 
+            token_hash: tokenHash,
+            is_revoked: false,
+            expires_at: { $gt: new Date() }
+        });
+
+        if (!sessionToken) {
+            return res.status(401).json({ message: "Session expired or invalid. Please login again." });
+        }
+
         req.master = decoded;
+        req.sessionToken = sessionToken;
         next();
-    } catch {
-        res.status(400).json({ message: "invalid token." });
+    } catch (err) {
+        res.status(400).json({ message: "Invalid token." });
+    }
+}
+
+async function studentAuthWithToken(req, res, next) {
+    const token = req.headers.authorization?.split(" ")[1];
+
+    if (!token) {
+        return res.status(401).json({ message: "Unauthorized: No token provided" });
+    }
+
+    try {
+        const decoded = jwt.verify(token, SSAAM_API_KEY);
+        
+        const tokenHash = hashToken(token);
+        const sessionToken = await SessionToken.findOne({ 
+            token_hash: tokenHash,
+            is_revoked: false,
+            expires_at: { $gt: new Date() }
+        });
+
+        if (!sessionToken) {
+            return res.status(401).json({ message: "Session expired or invalid. Please login again." });
+        }
+
+        req.user = decoded;
+        req.sessionToken = sessionToken;
+        next();
+    } catch (err) {
+        return res.status(401).json({ message: "Invalid token." });
     }
 }
 
@@ -337,6 +452,46 @@ function studentAuth(req, res, next) {
     }
 
     next();
+}
+
+function validateName(name, fieldName) {
+    if (!name || name.trim() === "") {
+        return { valid: false, message: `${fieldName} is required` };
+    }
+    
+    const trimmedName = name.trim().toUpperCase();
+    
+    if (trimmedName.length > 64) {
+        return { valid: false, message: `${fieldName} must be 64 characters or less` };
+    }
+    
+    if (!UPPERCASE_ONLY_REGEX.test(trimmedName)) {
+        return { valid: false, message: `${fieldName} must contain uppercase letters only` };
+    }
+    
+    return { valid: true, value: trimmedName };
+}
+
+function validateSuffix(suffix) {
+    if (!suffix || suffix === "") return { valid: true, value: "" };
+    if (!VALID_SUFFIXES.includes(suffix)) {
+        return { valid: false, message: `Invalid suffix. Allowed: ${VALID_SUFFIXES.filter(s => s).join(', ')}` };
+    }
+    return { valid: true, value: suffix };
+}
+
+function validateSemester(semester) {
+    if (!VALID_SEMESTERS.includes(semester)) {
+        return { valid: false, message: `Semester must be one of: ${VALID_SEMESTERS.join(', ')}` };
+    }
+    return { valid: true, value: semester };
+}
+
+function validateYearLevel(yearLevel) {
+    if (!VALID_YEAR_LEVELS.includes(yearLevel)) {
+        return { valid: false, message: `Year level must be one of: ${VALID_YEAR_LEVELS.join(', ')}` };
+    }
+    return { valid: true, value: yearLevel };
 }
 
 app.get('/', (req, res) => {
@@ -389,9 +544,9 @@ app.get('/apis/students', studentAuth, async (req, res) => {
 app.get('/apis/students/stats', studentAuth, async (req, res) => {
     try {
         const stats = {
-            BSCS: { '1st year': 0, '2nd year': 0, '3rd year': 0, '4th year': 0, total: 0 },
-            BSIS: { '1st year': 0, '2nd year': 0, '3rd year': 0, '4th year': 0, total: 0 },
-            BSIT: { '1st year': 0, '2nd year': 0, '3rd year': 0, '4th year': 0, total: 0 }
+            BSCS: { '1st Year': 0, '2nd Year': 0, '3rd Year': 0, '4th Year': 0, '5th Year': 0, total: 0 },
+            BSIS: { '1st Year': 0, '2nd Year': 0, '3rd Year': 0, '4th Year': 0, '5th Year': 0, total: 0 },
+            BSIT: { '1st Year': 0, '2nd Year': 0, '3rd Year': 0, '4th Year': 0, '5th Year': 0, total: 0 }
         };
 
         const allStudents = await Student.find({ status: 'approved' });
@@ -526,8 +681,36 @@ app.post('/apis/students/send-verification', studentAuth, antiBotProtection, asy
             return res.status(400).json({ message: "Student ID must start with 21 to 25" });
         }
 
-        if (!NAME_REGEX.test(data.first_name) || !NAME_REGEX.test(data.last_name)) {
-            return res.status(400).json({ message: "Names must contain letters only" });
+        const firstNameValidation = validateName(data.first_name, "First name");
+        if (!firstNameValidation.valid) {
+            return res.status(400).json({ message: firstNameValidation.message });
+        }
+
+        const lastNameValidation = validateName(data.last_name, "Last name");
+        if (!lastNameValidation.valid) {
+            return res.status(400).json({ message: lastNameValidation.message });
+        }
+
+        if (data.middle_name && data.middle_name.trim() !== "") {
+            const middleNameValidation = validateName(data.middle_name, "Middle name");
+            if (!middleNameValidation.valid) {
+                return res.status(400).json({ message: middleNameValidation.message });
+            }
+        }
+
+        const suffixValidation = validateSuffix(data.suffix);
+        if (!suffixValidation.valid) {
+            return res.status(400).json({ message: suffixValidation.message });
+        }
+
+        const semesterValidation = validateSemester(data.semester);
+        if (!semesterValidation.valid) {
+            return res.status(400).json({ message: semesterValidation.message });
+        }
+
+        const yearLevelValidation = validateYearLevel(data.year_level);
+        if (!yearLevelValidation.valid) {
+            return res.status(400).json({ message: yearLevelValidation.message });
         }
 
         if (!VALID_PROGRAMS.includes(data.program)) {
@@ -544,23 +727,31 @@ app.post('/apis/students/send-verification', studentAuth, antiBotProtection, asy
         const code = generateVerificationCode();
         const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
-        // Convert names to uppercase
-        const firstName = data.first_name.toUpperCase().trim();
-        const middleName = (data.middle_name || "").toUpperCase().trim();
-        const lastName = data.last_name.toUpperCase().trim();
+        const firstName = firstNameValidation.value;
+        const middleName = data.middle_name ? data.middle_name.toUpperCase().trim() : "";
+        const lastName = lastNameValidation.value;
         
         const full_name = `${firstName} ${middleName} ${lastName} ${data.suffix || ""}`
             .replace(/\s+/g, " ")
             .trim();
 
         const studentData = {
-            ...data,
+            student_id: data.student_id,
             first_name: firstName,
             middle_name: middleName,
             last_name: lastName,
+            suffix: suffixValidation.value,
             full_name,
+            email: data.email,
+            year_level: yearLevelValidation.value,
+            semester: semesterValidation.value,
+            school_year: data.school_year,
+            program: data.program,
+            photo: data.photo || "",
             role: "student",
-            status: "pending"
+            status: "pending",
+            rfid_code: null,
+            rfid_status: "unverified"
         };
 
         await VerificationCode.create({
@@ -603,6 +794,10 @@ app.post('/apis/students/verify-and-register', studentAuth, timestampAuth, async
 
         const studentData = verification.student_data;
 
+        studentData.role = "student";
+        studentData.rfid_code = null;
+        studentData.rfid_status = "unverified";
+
         const existingStudent = await Student.findOne({ student_id: studentData.student_id });
         if (existingStudent) {
             await VerificationCode.deleteOne({ _id: verification._id });
@@ -624,65 +819,6 @@ app.post('/apis/students/verify-and-register', studentAuth, timestampAuth, async
         if (err.code === 11000) {
             return res.status(400).json({ message: "Duplicate student_id" });
         }
-        res.status(400).json({ message: err.message });
-    }
-});
-
-app.post('/apis/students', studentAuth, antiBotProtection, timestampAuth, async (req, res) => {
-    try {
-        const settings = await getSettings();
-        if (!settings.userRegister.register) {
-            return res.status(403).json({ 
-                message: settings.userRegister.message || "Registration is currently disabled.",
-                registrationDisabled: true
-            });
-        }
-    } catch (settingsErr) {
-        console.error("Error checking settings:", settingsErr);
-    }
-
-    const data = req.body;
-
-    if (!STUDENT_ID_REGEX.test(data.student_id))
-        return res.status(400).json({ message: "Invalid student_id format. Use 21-A-12345" });
-
-    const yearPrefix = parseInt(data.student_id.substring(0, 2), 10);
-    if (yearPrefix < 21 || yearPrefix > 25)
-        return res.status(400).json({ message: "Student ID must start with 21 to 25 (e.g., 21-A-12345 to 25-A-12345)" });
-
-    if (!NAME_REGEX.test(data.first_name) || !NAME_REGEX.test(data.last_name))
-        return res.status(400).json({ message: "Names must contain letters only" });
-
-    if (!VALID_PROGRAMS.includes(data.program)) {
-        return res.status(400).json({ message: "Program must be one of: BSCS, BSIT, or BSIS" });
-    }
-
-    // Convert names to uppercase
-    const firstName = data.first_name.toUpperCase().trim();
-    const middleName = (data.middle_name || "").toUpperCase().trim();
-    const lastName = data.last_name.toUpperCase().trim();
-    
-    const full_name =
-        `${firstName} ${middleName} ${lastName} ${data.suffix || ""}`
-            .replace(/\s+/g, " ")
-            .trim();
-
-    try {
-        const student = new Student({ 
-            ...data, 
-            first_name: firstName,
-            middle_name: middleName,
-            last_name: lastName,
-            full_name,
-            role: "student",
-            status: "pending"
-        });
-        const saved = await student.save();
-        res.status(201).json(saved);
-    } catch (err) {
-        if (err.code === 11000)
-            return res.status(400).json({ message: "Duplicate student_id" });
-
         res.status(400).json({ message: err.message });
     }
 });
@@ -750,41 +886,189 @@ app.put('/apis/students/:student_id/reject', auth, async (req, res) => {
     }
 });
 
-// Admin-only endpoint: Edit student (requires admin authentication)
+app.put('/apis/students/:student_id/rfid', auth, timestampAuth, async (req, res) => {
+    try {
+        const { rfid_code, admin_verification_token } = req.body;
+
+        const expectedToken = crypto
+            .createHmac('sha256', ADMIN_VERIFICATION_SECRET)
+            .update(`${req.master.id}:${req.params.student_id}:${Date.now().toString().slice(0, -4)}`)
+            .digest('hex')
+            .slice(0, 16);
+
+        if (!admin_verification_token) {
+            return res.status(400).json({ 
+                message: "Admin verification token required",
+                required_token: expectedToken
+            });
+        }
+
+        if (!rfid_code || rfid_code.trim() === "") {
+            return res.status(400).json({ message: "RFID code is required" });
+        }
+
+        const existingRfid = await Student.findOne({ 
+            rfid_code: rfid_code,
+            student_id: { $ne: req.params.student_id }
+        });
+        if (existingRfid) {
+            return res.status(400).json({ message: "This RFID code is already assigned to another student" });
+        }
+
+        const adminVerifyToken = generateSecureToken();
+
+        const updated = await Student.findOneAndUpdate(
+            { student_id: req.params.student_id },
+            { 
+                rfid_code: rfid_code.trim(),
+                rfid_status: "verified",
+                rfid_verified_at: new Date(),
+                rfid_verified_by: req.master.username,
+                admin_verification_token: hashToken(adminVerifyToken)
+            },
+            { new: true }
+        );
+
+        if (!updated) {
+            return res.status(404).json({ message: "Student not found" });
+        }
+
+        res.json({
+            message: "RFID code assigned and verified successfully",
+            student: updated
+        });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+app.delete('/apis/students/:student_id/rfid', auth, timestampAuth, async (req, res) => {
+    try {
+        const updated = await Student.findOneAndUpdate(
+            { student_id: req.params.student_id },
+            { 
+                rfid_code: null,
+                rfid_status: "unverified",
+                rfid_verified_at: null,
+                rfid_verified_by: null,
+                admin_verification_token: null
+            },
+            { new: true }
+        );
+
+        if (!updated) {
+            return res.status(404).json({ message: "Student not found" });
+        }
+
+        res.json({
+            message: "RFID code removed successfully",
+            student: updated
+        });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+app.put('/apis/students/:student_id/role', auth, timestampAuth, async (req, res) => {
+    try {
+        const { role } = req.body;
+
+        if (!VALID_ROLES.includes(role)) {
+            return res.status(400).json({ message: `Role must be one of: ${VALID_ROLES.join(', ')}` });
+        }
+
+        const updated = await Student.findOneAndUpdate(
+            { student_id: req.params.student_id },
+            { role },
+            { new: true }
+        );
+
+        if (!updated) {
+            return res.status(404).json({ message: "Student not found" });
+        }
+
+        res.json({
+            message: `Role updated to ${role} successfully`,
+            student: updated
+        });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
 app.put('/apis/students/:student_id', auth, timestampAuth, async (req, res) => {
     try {
         const updates = { ...req.body };
         delete updates.student_id;
         delete updates.status;
         delete updates.role;
+        delete updates.rfid_code;
+        delete updates.rfid_status;
+        delete updates.rfid_verified_at;
+        delete updates.rfid_verified_by;
+        delete updates.admin_verification_token;
 
-        // Convert names to uppercase
         if (updates.first_name) {
-            updates.first_name = updates.first_name.toUpperCase().trim();
+            const validation = validateName(updates.first_name, "First name");
+            if (!validation.valid) {
+                return res.status(400).json({ message: validation.message });
+            }
+            updates.first_name = validation.value;
         }
-        if (updates.middle_name) {
-            updates.middle_name = updates.middle_name.toUpperCase().trim();
+
+        if (updates.middle_name && updates.middle_name.trim() !== "") {
+            const validation = validateName(updates.middle_name, "Middle name");
+            if (!validation.valid) {
+                return res.status(400).json({ message: validation.message });
+            }
+            updates.middle_name = validation.value;
         }
+
         if (updates.last_name) {
-            updates.last_name = updates.last_name.toUpperCase().trim();
+            const validation = validateName(updates.last_name, "Last name");
+            if (!validation.valid) {
+                return res.status(400).json({ message: validation.message });
+            }
+            updates.last_name = validation.value;
         }
 
-        if (updates.first_name && !NAME_REGEX.test(updates.first_name))
-            return res.status(400).json({ message: "Invalid first_name" });
+        if (updates.suffix) {
+            const validation = validateSuffix(updates.suffix);
+            if (!validation.valid) {
+                return res.status(400).json({ message: validation.message });
+            }
+            updates.suffix = validation.value;
+        }
 
-        if (updates.last_name && !NAME_REGEX.test(updates.last_name))
-            return res.status(400).json({ message: "Invalid last_name" });
+        if (updates.semester) {
+            const validation = validateSemester(updates.semester);
+            if (!validation.valid) {
+                return res.status(400).json({ message: validation.message });
+            }
+            updates.semester = validation.value;
+        }
+
+        if (updates.year_level) {
+            const validation = validateYearLevel(updates.year_level);
+            if (!validation.valid) {
+                return res.status(400).json({ message: validation.message });
+            }
+            updates.year_level = validation.value;
+        }
 
         if (updates.program && !VALID_PROGRAMS.includes(updates.program)) {
             return res.status(400).json({ message: "Program must be one of: BSCS, BSIT, or BSIS" });
         }
 
-        if (updates.first_name || updates.middle_name || updates.last_name || updates.suffix) {
-            const first = updates.first_name || "";
-            const mid = updates.middle_name || "";
-            const last = updates.last_name || "";
-            const suf = updates.suffix || "";
-            updates.full_name = `${first} ${mid} ${last} ${suf}`.replace(/\s+/g, " ").trim();
+        if (updates.first_name || updates.middle_name !== undefined || updates.last_name || updates.suffix !== undefined) {
+            const currentStudent = await Student.findOne({ student_id: req.params.student_id });
+            if (currentStudent) {
+                const first = updates.first_name || currentStudent.first_name || "";
+                const mid = updates.middle_name !== undefined ? updates.middle_name : (currentStudent.middle_name || "");
+                const last = updates.last_name || currentStudent.last_name || "";
+                const suf = updates.suffix !== undefined ? updates.suffix : (currentStudent.suffix || "");
+                updates.full_name = `${first} ${mid} ${last} ${suf}`.replace(/\s+/g, " ").trim();
+            }
         }
 
         const updated = await Student.findOneAndUpdate(
@@ -801,7 +1085,6 @@ app.put('/apis/students/:student_id', auth, timestampAuth, async (req, res) => {
     }
 });
 
-// Admin-only endpoint: Delete student (requires admin authentication)
 app.delete('/apis/students/:student_id', auth, timestampAuth, async (req, res) => {
     try {
         const deleted = await Student.findOneAndDelete({ student_id: req.params.student_id });
@@ -854,11 +1137,41 @@ app.post('/apis/students/login', studentAuth, timestampAuth, async (req, res) =>
             });
         }
 
-        res.json({
-            message: "Login successful",
-            student
+        const token = jwt.sign(
+            { id: student._id, student_id: student.student_id, role: student.role },
+            SSAAM_API_KEY,
+            { expiresIn: "7d" }
+        );
+
+        const tokenHash = hashToken(token);
+        const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+        await SessionToken.create({
+            token_hash: tokenHash,
+            user_id: student._id,
+            user_type: 'student',
+            expires_at: expiresAt
         });
 
+        res.json({
+            message: "Login successful",
+            student,
+            token
+        });
+
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+app.post('/apis/students/logout', studentAuthWithToken, async (req, res) => {
+    try {
+        await SessionToken.updateOne(
+            { _id: req.sessionToken._id },
+            { is_revoked: true }
+        );
+
+        res.json({ message: "Logged out successfully" });
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
@@ -905,10 +1218,20 @@ app.post("/apis/masters/login", async (req, res) => {
             return res.status(400).json({ message: "Invalid username or password" });
 
         const token = jwt.sign(
-            { id: master._id, username: master.username },
+            { id: master._id, username: master.username, isMaster: true },
             SSAAM_API_KEY,
             { expiresIn: "7d" }
         );
+
+        const tokenHash = hashToken(token);
+        const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+        await SessionToken.create({
+            token_hash: tokenHash,
+            user_id: master._id,
+            user_type: 'master',
+            expires_at: expiresAt
+        });
 
         res.json({
             message: "Login successful",
@@ -921,6 +1244,18 @@ app.post("/apis/masters/login", async (req, res) => {
     }
 });
 
+app.post('/apis/masters/logout', auth, async (req, res) => {
+    try {
+        await SessionToken.updateOne(
+            { _id: req.sessionToken._id },
+            { is_revoked: true }
+        );
+
+        res.json({ message: "Logged out successfully" });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
 
 app.get('/apis/masters', auth, async (req, res) => {
     try {
@@ -928,6 +1263,37 @@ app.get('/apis/masters', auth, async (req, res) => {
         res.json(masters);
     } catch (err) {
         res.status(500).json({ message: err.message });
+    }
+});
+
+app.post('/apis/validate-token', async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(" ")[1];
+        
+        if (!token) {
+            return res.status(401).json({ valid: false, message: "No token provided" });
+        }
+
+        const decoded = jwt.verify(token, SSAAM_API_KEY);
+        
+        const tokenHash = hashToken(token);
+        const sessionToken = await SessionToken.findOne({ 
+            token_hash: tokenHash,
+            is_revoked: false,
+            expires_at: { $gt: new Date() }
+        });
+
+        if (!sessionToken) {
+            return res.status(401).json({ valid: false, message: "Session expired or invalid" });
+        }
+
+        res.json({ 
+            valid: true, 
+            user: decoded,
+            expiresAt: sessionToken.expires_at
+        });
+    } catch (err) {
+        res.status(401).json({ valid: false, message: "Invalid token" });
     }
 });
 
