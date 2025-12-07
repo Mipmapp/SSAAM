@@ -110,11 +110,20 @@ Frontend SPA with efficient pagination:
 ## Latest Updates (2025-12-07)
 
 ### Dashboard & Notifications Updates (LATEST - 2025-12-07)
-- **Notification Image Upload**: 
-  - 1 image allowed per notification post
-  - Uses ImgBB API (configured via IMGBB_API_KEYS environment variable in Vercel)
-  - Image preview in form before posting
-  - Click to view full-size in modal
+- **Secure Image Upload Endpoint**: 
+  - New `/apis/upload-image` endpoint handles ImgBB uploads securely
+  - Uses `canPostNotification` middleware for consistent authentication
+  - API keys remain server-side (IMGBB_API_KEYS env var in Vercel)
+  - Frontend uploads image first, then posts notification with URL
+  - Supports both admin and MedPub users
+- **Link Highlighting in Announcements**:
+  - URLs in announcement messages are automatically converted to clickable links
+  - Links styled with purple-to-pink gradient matching SSAAM theme
+  - Uses `formatMessageWithLinks()` function with HTML entity escaping for security
+- **Dashboard Stats Fix**:
+  - Backend `/apis/students/stats` now normalizes program and year_level values
+  - Handles different casing and formats (e.g., "1ST YEAR", "1st Year", "FIRST YEAR")
+  - Stats now correctly show counts for all students
 - **Notification Date/Time Display**:
   - Shows created date/time formatted as "Dec 7, 2024 • 5:30 PM"
   - Shows "Updated" timestamp if notification was edited
@@ -122,7 +131,6 @@ Frontend SPA with efficient pagination:
   - Custom scrollbar matching purple/pink gradient theme
   - Translucent white scrollbar thumb with hover effect
   - Works on both desktop and mobile sidebars
-- **Timestamp Auth Fix**: Removed redundant timestampAuth middleware from notification endpoints (JWT auth via canPostNotification is sufficient)
 
 ### Password Reset Feature
 - **API Endpoints**: Three-step password reset flow via email verification
