@@ -109,7 +109,37 @@ Frontend SPA with efficient pagination:
 
 ## Latest Updates (2025-12-07)
 
-### RFID Email Notification Feature (LATEST)
+### Password Reset Feature (LATEST)
+- **API Endpoints**: Three-step password reset flow via email verification
+  - **POST** `/apis/password-reset/request` - Request reset code (sent to registered email)
+  - **POST** `/apis/password-reset/verify` - Verify 6-digit code and get reset token
+  - **POST** `/apis/password-reset/complete` - Complete password reset with token
+- **Security Features**:
+  - Rate limiting: 1-minute cooldown between requests, 15-minute lockout after 5 failed attempts
+  - Hashed codes: Reset codes and tokens stored hashed in database
+  - Enumeration prevention: Consistent response message whether account exists or not
+  - Atomic operations: Uses findOneAndUpdate to prevent race conditions
+  - Verification attempt tracking: Max 5 attempts per reset code before lockout
+  - Two-step token flow: Must verify code before getting reset token
+- **Email**: Uses Gmail SMTP with same credentials as RFID notification
+
+### Notifications API (LATEST)
+- **API Endpoints**: Notification system for students and admins
+  - **GET** `/apis/notifications` - Get all notifications (requires authentication)
+  - **POST** `/apis/notifications` - Create notification (admin or medpub only)
+  - **PUT** `/apis/notifications/:id` - Update notification (owner or admin only)
+  - **DELETE** `/apis/notifications/:id` - Delete notification (owner or admin only)
+- **Security Features**:
+  - JWT-based authentication via canPostNotification middleware
+  - Role-based permissions: Only admin can set urgent priority
+  - Ownership checks: Only poster or admin can edit/delete
+  - MedPub restriction: Cannot delete admin notifications
+  - Identity derived from token: Poster info comes from JWT, not request body
+- **Notification Schema**:
+  - Fields: title (max 200), message (max 2000), priority (normal/important/urgent)
+  - Auto-tracking: posted_by, posted_by_name, posted_by_id, created_at, updated_at
+
+### RFID Email Notification Feature
 - **Email Notification**: When an admin verifies a student's RFID code, the student receives an email notification
   - Email includes: RFID code, who verified it, and the verification date
   - Uses Gmail SMTP via nodemailer with `pabbly.bot.2@gmail.com`
