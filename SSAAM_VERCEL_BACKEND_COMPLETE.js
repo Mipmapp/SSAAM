@@ -556,7 +556,8 @@ app.get('/apis/health', (req, res) => {
 app.get('/apis/debug/non-uppercase-names', async (req, res) => {
     try {
         const allStudents = await Student.find({});
-        const uppercaseRegex = /^[A-Z\s'-]+$/;
+        // Allow A-Z, accented uppercase (Ñ, É, etc.), spaces, hyphens, apostrophes
+        const uppercaseRegex = /^[A-ZÑÉÍÓÚÀÈÌÒÙÄËÏÖÜ\s'-]+$/;
         
         const invalidStudents = allStudents.filter(s => {
             const firstName = s.first_name || '';
@@ -584,7 +585,8 @@ app.get('/apis/debug/non-uppercase-names', async (req, res) => {
 app.get('/apis/fix/remove-non-uppercase-names', async (req, res) => {
     try {
         const allStudents = await Student.find({});
-        const uppercaseRegex = /^[A-Z\s'-]+$/;
+        // Allow A-Z, accented uppercase (Ñ, É, etc.), spaces, hyphens, apostrophes
+        const uppercaseRegex = /^[A-ZÑÉÍÓÚÀÈÌÒÙÄËÏÖÜ\s'-]+$/;
         
         const invalidStudents = allStudents.filter(s => {
             const firstName = s.first_name || '';
