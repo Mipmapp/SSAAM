@@ -552,6 +552,64 @@ app.get('/apis/health', (req, res) => {
     });
 });
 
+// Debug endpoint to preview students with non-uppercase names (without deleting)
+app.get('/apis/debug/non-uppercase-names', async (req, res) => {
+    try {
+        const allStudents = await Student.find({});
+        const uppercaseRegex = /^[A-Z\s'-]+$/;
+        
+        const invalidStudents = allStudents.filter(s => {
+            const firstName = s.first_name || '';
+            const lastName = s.last_name || '';
+            return !uppercaseRegex.test(firstName) || !uppercaseRegex.test(lastName);
+        });
+        
+        res.json({
+            message: "Students with non-uppercase first/last names (preview - not deleted)",
+            invalidCount: invalidStudents.length,
+            validCount: allStudents.length - invalidStudents.length,
+            invalidStudents: invalidStudents.map(s => ({
+                student_id: s.student_id,
+                first_name: s.first_name,
+                last_name: s.last_name,
+                issue: `First: "${s.first_name}" | Last: "${s.last_name}"`
+            }))
+        });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// Fix endpoint to remove students with non-uppercase first/last names
+app.get('/apis/fix/remove-non-uppercase-names', async (req, res) => {
+    try {
+        const allStudents = await Student.find({});
+        const uppercaseRegex = /^[A-Z\s'-]+$/;
+        
+        const invalidStudents = allStudents.filter(s => {
+            const firstName = s.first_name || '';
+            const lastName = s.last_name || '';
+            return !uppercaseRegex.test(firstName) || !uppercaseRegex.test(lastName);
+        });
+        
+        const idsToDelete = invalidStudents.map(s => s._id);
+        
+        const result = await Student.deleteMany({ _id: { $in: idsToDelete } });
+        
+        res.json({
+            message: "Removed students with non-uppercase names",
+            deletedCount: result.deletedCount,
+            deletedStudents: invalidStudents.map(s => ({
+                student_id: s.student_id,
+                first_name: s.first_name,
+                last_name: s.last_name
+            }))
+        });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
 // Debug/Fix endpoint to remove users with invalid programs (not BSCS, BSIT, BSIS)
 app.get('/apis/fix/remove-invalid-programs', async (req, res) => {
     try {
