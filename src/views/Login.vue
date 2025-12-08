@@ -262,14 +262,18 @@
         <button @click="closeForgotPasswordModal" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
       </div>
 
-      <!-- Step 1: Enter Student ID -->
+      <!-- Step 1: Enter Student ID and Email -->
       <div v-if="resetStep === 1" class="space-y-4">
-        <p class="text-gray-600 text-sm">Enter your Student ID and we'll send a verification code to your registered email.</p>
+        <p class="text-gray-600 text-sm">Enter your Student ID and registered email to receive a verification code.</p>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">Student ID</label>
           <input v-model="resetStudentId" type="text" placeholder="25-A-12345" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none" />
         </div>
-        <button @click="requestResetCode" :disabled="resetLoading || !resetStudentId.trim()" class="w-full bg-gradient-to-r from-purple-600 to-pink-500 text-white py-3 px-6 rounded-lg font-medium hover:from-purple-700 hover:to-pink-600 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+          <input v-model="resetEmail" type="email" placeholder="your.email@example.com" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none" />
+        </div>
+        <button @click="requestResetCode" :disabled="resetLoading || !resetStudentId.trim() || !resetEmail.trim()" class="w-full bg-gradient-to-r from-purple-600 to-pink-500 text-white py-3 px-6 rounded-lg font-medium hover:from-purple-700 hover:to-pink-600 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center">
           <svg v-if="resetLoading" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
           {{ resetLoading ? 'Sending...' : 'Send Code' }}
         </button>
@@ -335,6 +339,7 @@ const loginDisabledMessage = ref('')
 const showForgotPasswordModal = ref(false)
 const resetStep = ref(1)
 const resetStudentId = ref('')
+const resetEmail = ref('')
 const resetCode = ref('')
 const resetToken = ref('')
 const newPassword = ref('')
@@ -347,6 +352,7 @@ const closeForgotPasswordModal = () => {
   showForgotPasswordModal.value = false
   resetStep.value = 1
   resetStudentId.value = ''
+  resetEmail.value = ''
   resetCode.value = ''
   resetToken.value = ''
   newPassword.value = ''
@@ -364,10 +370,12 @@ const requestResetCode = async () => {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
+        'Authorization': 'Bearer SSAAMStudents',
         'X-SSAAM-TS': token
       },
       body: JSON.stringify({ 
         student_id: resetStudentId.value.trim(),
+        email: resetEmail.value.trim(),
         _ssaam_access_token: token
       })
     })
@@ -397,6 +405,7 @@ const verifyResetCode = async () => {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
+        'Authorization': 'Bearer SSAAMStudents',
         'X-SSAAM-TS': token
       },
       body: JSON.stringify({ 
@@ -437,6 +446,7 @@ const completePasswordReset = async () => {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
+        'Authorization': 'Bearer SSAAMStudents',
         'X-SSAAM-TS': token
       },
       body: JSON.stringify({ 

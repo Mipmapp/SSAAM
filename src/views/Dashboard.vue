@@ -2340,16 +2340,14 @@ const toggleLike = async (notif) => {
   try {
     const token = localStorage.getItem('authToken') || localStorage.getItem('adminToken')
     const userId = currentUser.value._id || currentUser.value.studentId || currentUser.value.student_id
-    const accessToken = encodeTimestamp()
     
     const response = await fetch(`https://ssaam-api.vercel.app/apis/notifications/${notif._id}/like`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-        'X-SSAAM-TS': accessToken
+        'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify({ user_id: userId, _ssaam_access_token: accessToken })
+      body: JSON.stringify({ user_id: userId })
     })
     
     if (response.status === 429) {
