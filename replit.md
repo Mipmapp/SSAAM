@@ -42,6 +42,39 @@ The application is a Vue 3 SPA utilizing the Composition API and Vite 5 for a mo
 - **Security:** Robust validation and anti-bot measures are implemented, including timestamp-based authentication for API calls.
 - **API Integration:** Designed to work with `https://ssaam-api.vercel.app` for all data operations.
 
+## Security Improvements (December 2024)
+The following security hardening measures were implemented to prevent website defacement, injection attacks, and unauthorized access:
+
+1. **Protected Admin Creation Endpoint:** The `/apis/masters` POST endpoint now requires:
+   - Existing admin authentication (`auth` middleware)
+   - Timestamp validation (`timestampAuth` middleware)
+   - A secret `MASTER_CREATION_SECRET` environment variable
+   - Username validation (4-32 chars, alphanumeric + underscores only)
+   - Minimum 12-character password requirement
+
+2. **Restricted CORS Origins:** CORS is now limited to:
+   - `https://ssaam.vercel.app`
+   - `https://ssaam-api.vercel.app`
+   - Configurable `FRONTEND_URL` env var
+   - `localhost:5000` and `localhost:3000` (development only)
+
+3. **Regex Injection Prevention:** Added `escapeRegex()` function to sanitize user input before using in MongoDB `$regex` queries, preventing ReDoS attacks.
+
+4. **XSS Prevention:** Added `sanitizeHtml()` function that escapes HTML entities in notification titles and messages.
+
+5. **Required Environment Secrets:** The following secrets are now required (no hardcoded defaults):
+   - `SSAAM_API_KEY`
+   - `SSAAM_CRYPTO_KEY`
+   - `ADMIN_VERIFICATION_SECRET`
+   - `MASTER_CREATION_SECRET` (for creating new admin accounts)
+
+6. **Security Headers:** All responses include:
+   - `X-Content-Type-Options: nosniff`
+   - `X-Frame-Options: DENY`
+   - `X-XSS-Protection: 1; mode=block`
+   - `Strict-Transport-Security: max-age=31536000; includeSubDomains`
+   - `Content-Security-Policy: default-src 'self'`
+
 ## External Dependencies
 - **Backend API:** `https://ssaam-api.vercel.app` (Vercel deployment)
 - **Image Hosting:** ImgBB (for image uploads and storage)
