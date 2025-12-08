@@ -479,13 +479,19 @@
                     <div v-if="notif.image_url" class="mb-3">
                       <img :src="notif.image_url" alt="Announcement image" class="max-w-full max-h-80 rounded-lg border border-gray-200 object-contain cursor-pointer hover:opacity-90 transition" @click="openImagePreview(notif.image_url)" />
                     </div>
-                    <div v-if="(currentUser.role === 'admin' || currentUser.isMaster) || (currentUser.role === 'medpub' && (notif.posted_by_id === currentUser._id || notif.poster_id === currentUser.student_id))" class="flex gap-3 mt-4">
-                      <button @click="openEditNotification(notif)" class="text-blue-600 hover:text-blue-800 p-2 rounded-lg hover:bg-blue-50 transition" title="Edit">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                    <div class="flex items-center justify-between mt-4">
+                      <button @click="toggleLike(notif)" class="flex items-center gap-2 text-gray-500 hover:text-pink-500 transition group" :title="isLikedByCurrentUser(notif) ? 'Unlike' : 'Like'">
+                        <svg :class="['w-6 h-6 transition-all', isLikedByCurrentUser(notif) ? 'text-pink-500 fill-pink-500 scale-110' : 'group-hover:scale-110']" :fill="isLikedByCurrentUser(notif) ? 'currentColor' : 'none'" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+                        <span class="text-sm font-medium">{{ (notif.liked_by || []).length }}</span>
                       </button>
-                      <button @click="deleteNotification(notif._id)" class="text-red-600 hover:text-red-800 p-2 rounded-lg hover:bg-red-50 transition" title="Delete">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                      </button>
+                      <div v-if="(currentUser.role === 'admin' || currentUser.isMaster) || (currentUser.role === 'medpub' && (notif.posted_by_id === currentUser._id || notif.poster_id === currentUser.student_id))" class="flex gap-2">
+                        <button @click="openEditNotification(notif)" class="text-blue-600 hover:text-blue-800 p-2 rounded-lg hover:bg-blue-50 transition" title="Edit">
+                          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                        </button>
+                        <button @click="deleteNotification(notif._id)" class="text-red-600 hover:text-red-800 p-2 rounded-lg hover:bg-red-50 transition" title="Delete">
+                          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -2160,6 +2166,47 @@ const deleteNotification = async (notifId) => {
   } catch (error) {
     console.error('Failed to delete notification:', error)
     showNotification('Failed to delete announcement', 'error')
+  }
+}
+
+const isLikedByCurrentUser = (notif) => {
+  if (!notif.liked_by || !Array.isArray(notif.liked_by)) return false
+  const userId = currentUser.value._id || currentUser.value.studentId || currentUser.value.student_id
+  return notif.liked_by.includes(userId)
+}
+
+const toggleLike = async (notif) => {
+  try {
+    const token = localStorage.getItem('authToken') || localStorage.getItem('adminToken')
+    const userId = currentUser.value._id || currentUser.value.studentId || currentUser.value.student_id
+    
+    const response = await fetch(`https://ssaam-api.vercel.app/apis/notifications/${notif._id}/like`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ user_id: userId })
+    })
+    
+    if (response.ok) {
+      const data = await response.json()
+      const notifIndex = notifications.value.findIndex(n => n._id === notif._id)
+      if (notifIndex > -1) {
+        if (!notifications.value[notifIndex].liked_by) {
+          notifications.value[notifIndex].liked_by = []
+        }
+        if (data.liked) {
+          if (!notifications.value[notifIndex].liked_by.includes(userId)) {
+            notifications.value[notifIndex].liked_by.push(userId)
+          }
+        } else {
+          notifications.value[notifIndex].liked_by = notifications.value[notifIndex].liked_by.filter(id => id !== userId)
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Failed to toggle like:', error)
   }
 }
 

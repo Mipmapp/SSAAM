@@ -158,7 +158,10 @@
               </span>
             </button>
 
-            <div class="text-center text-sm text-gray-600">
+            <div class="flex items-center justify-between text-sm">
+              <button type="button" @click="showForgotPasswordModal = true" class="text-purple-600 hover:text-purple-700 font-medium">
+                Forgot Password?
+              </button>
               <button type="button" @click="showContactModal = true" class="text-purple-600 hover:text-purple-700 inline-flex items-center gap-1 font-medium">
                 <img src="/help.svg" alt="Help" class="w-4 h-4" />
                 Need help?
@@ -229,7 +232,10 @@
             </span>
           </button>
 
-          <div class="text-center text-sm text-gray-600">
+          <div class="flex items-center justify-between text-sm">
+            <button type="button" @click="showForgotPasswordModal = true" class="text-purple-600 hover:text-purple-700 font-medium">
+              Forgot Password?
+            </button>
             <button type="button" @click="showContactModal = true" class="text-purple-600 hover:text-purple-700 inline-flex items-center gap-1 font-medium">
               <img src="/help.svg" alt="Help" class="w-4 h-4" />
               Need help?
@@ -244,6 +250,64 @@
         <div class="mt-4 text-center text-xs text-gray-400">
           Copyright © 2025 Powered by CCS-Creatives Committee. Chairperson: Sheen Lee
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Forgot Password Modal -->
+  <div v-if="showForgotPasswordModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="closeForgotPasswordModal">
+    <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-2xl font-bold text-purple-900">Reset Password</h3>
+        <button @click="closeForgotPasswordModal" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+      </div>
+
+      <!-- Step 1: Enter Student ID -->
+      <div v-if="resetStep === 1" class="space-y-4">
+        <p class="text-gray-600 text-sm">Enter your Student ID and we'll send a verification code to your registered email.</p>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Student ID</label>
+          <input v-model="resetStudentId" type="text" placeholder="25-A-12345" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none" />
+        </div>
+        <button @click="requestResetCode" :disabled="resetLoading || !resetStudentId.trim()" class="w-full bg-gradient-to-r from-purple-600 to-pink-500 text-white py-3 px-6 rounded-lg font-medium hover:from-purple-700 hover:to-pink-600 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center">
+          <svg v-if="resetLoading" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+          {{ resetLoading ? 'Sending...' : 'Send Code' }}
+        </button>
+        <p v-if="resetMessage" :class="['text-sm text-center', resetSuccess ? 'text-green-600' : 'text-red-600']">{{ resetMessage }}</p>
+      </div>
+
+      <!-- Step 2: Enter Verification Code -->
+      <div v-if="resetStep === 2" class="space-y-4">
+        <p class="text-gray-600 text-sm">Enter the 6-digit verification code sent to your email.</p>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Verification Code</label>
+          <input v-model="resetCode" type="text" placeholder="123456" maxlength="6" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none text-center text-2xl tracking-widest" />
+        </div>
+        <button @click="verifyResetCode" :disabled="resetLoading || resetCode.length !== 6" class="w-full bg-gradient-to-r from-purple-600 to-pink-500 text-white py-3 px-6 rounded-lg font-medium hover:from-purple-700 hover:to-pink-600 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center">
+          <svg v-if="resetLoading" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+          {{ resetLoading ? 'Verifying...' : 'Verify Code' }}
+        </button>
+        <button @click="resetStep = 1" class="w-full text-purple-600 hover:text-purple-700 text-sm font-medium">Back to Step 1</button>
+        <p v-if="resetMessage" :class="['text-sm text-center', resetSuccess ? 'text-green-600' : 'text-red-600']">{{ resetMessage }}</p>
+      </div>
+
+      <!-- Step 3: Enter New Password -->
+      <div v-if="resetStep === 3" class="space-y-4">
+        <p class="text-gray-600 text-sm">Create a new password for your account.</p>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">New Password</label>
+          <input v-model="newPassword" type="password" placeholder="Enter new password" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
+          <input v-model="confirmNewPassword" type="password" placeholder="Confirm new password" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none" />
+        </div>
+        <button @click="completePasswordReset" :disabled="resetLoading || !newPassword || newPassword !== confirmNewPassword" class="w-full bg-gradient-to-r from-purple-600 to-pink-500 text-white py-3 px-6 rounded-lg font-medium hover:from-purple-700 hover:to-pink-600 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center">
+          <svg v-if="resetLoading" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+          {{ resetLoading ? 'Resetting...' : 'Reset Password' }}
+        </button>
+        <p v-if="newPassword && confirmNewPassword && newPassword !== confirmNewPassword" class="text-sm text-red-600 text-center">Passwords do not match</p>
+        <p v-if="resetMessage" :class="['text-sm text-center', resetSuccess ? 'text-green-600' : 'text-red-600']">{{ resetMessage }}</p>
       </div>
     </div>
   </div>
@@ -267,6 +331,119 @@ const showPassword = ref(false)
 const visibilityAnimating = ref(false)
 const loginDisabled = ref(false)
 const loginDisabledMessage = ref('')
+
+const showForgotPasswordModal = ref(false)
+const resetStep = ref(1)
+const resetStudentId = ref('')
+const resetCode = ref('')
+const resetToken = ref('')
+const newPassword = ref('')
+const confirmNewPassword = ref('')
+const resetLoading = ref(false)
+const resetMessage = ref('')
+const resetSuccess = ref(false)
+
+const closeForgotPasswordModal = () => {
+  showForgotPasswordModal.value = false
+  resetStep.value = 1
+  resetStudentId.value = ''
+  resetCode.value = ''
+  resetToken.value = ''
+  newPassword.value = ''
+  confirmNewPassword.value = ''
+  resetMessage.value = ''
+  resetSuccess.value = false
+}
+
+const requestResetCode = async () => {
+  resetLoading.value = true
+  resetMessage.value = ''
+  try {
+    const response = await fetch('https://ssaam-api.vercel.app/apis/password-reset/request', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ student_id: resetStudentId.value.trim() })
+    })
+    const data = await response.json()
+    if (response.ok) {
+      resetSuccess.value = true
+      resetMessage.value = data.message || 'Verification code sent to your email!'
+      resetStep.value = 2
+    } else {
+      resetSuccess.value = false
+      resetMessage.value = data.message || 'Failed to send verification code'
+    }
+  } catch (error) {
+    resetSuccess.value = false
+    resetMessage.value = 'Network error. Please try again.'
+  } finally {
+    resetLoading.value = false
+  }
+}
+
+const verifyResetCode = async () => {
+  resetLoading.value = true
+  resetMessage.value = ''
+  try {
+    const response = await fetch('https://ssaam-api.vercel.app/apis/password-reset/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ student_id: resetStudentId.value.trim(), code: resetCode.value.trim() })
+    })
+    const data = await response.json()
+    if (response.ok) {
+      resetSuccess.value = true
+      resetMessage.value = 'Code verified! Enter your new password.'
+      resetToken.value = data.reset_token
+      resetStep.value = 3
+    } else {
+      resetSuccess.value = false
+      resetMessage.value = data.message || 'Invalid verification code'
+    }
+  } catch (error) {
+    resetSuccess.value = false
+    resetMessage.value = 'Network error. Please try again.'
+  } finally {
+    resetLoading.value = false
+  }
+}
+
+const completePasswordReset = async () => {
+  if (newPassword.value !== confirmNewPassword.value) {
+    resetMessage.value = 'Passwords do not match'
+    resetSuccess.value = false
+    return
+  }
+  resetLoading.value = true
+  resetMessage.value = ''
+  try {
+    const response = await fetch('https://ssaam-api.vercel.app/apis/password-reset/complete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        student_id: resetStudentId.value.trim(), 
+        reset_token: resetToken.value,
+        new_password: newPassword.value
+      })
+    })
+    const data = await response.json()
+    if (response.ok) {
+      resetSuccess.value = true
+      resetMessage.value = 'Password reset successful! You can now login.'
+      setTimeout(() => {
+        closeForgotPasswordModal()
+      }, 2000)
+    } else {
+      resetSuccess.value = false
+      resetMessage.value = data.message || 'Failed to reset password'
+    }
+  } catch (error) {
+    resetSuccess.value = false
+    resetMessage.value = 'Network error. Please try again.'
+  } finally {
+    resetLoading.value = false
+  }
+}
 
 const togglePasswordVisibility = () => {
   visibilityAnimating.value = true

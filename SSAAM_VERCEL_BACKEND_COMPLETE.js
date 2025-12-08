@@ -448,7 +448,8 @@ const notificationSchema = new mongoose.Schema({
     priority: { type: String, enum: ['normal', 'important', 'urgent'], default: 'normal' },
     created_at: { type: Date, default: Date.now },
     updated_at: { type: Date, default: Date.now },
-    was_edited: { type: Boolean, default: false }
+    was_edited: { type: Boolean, default: false },
+    liked_by: [{ type: String }]
 });
 
 notificationSchema.index({ created_at: -1 });
@@ -2205,6 +2206,66 @@ app.delete('/apis/notifications/:id', canPostNotification, async (req, res) => {
 
     } catch (err) {
         console.error("Delete notification error:", err);
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// Toggle like on notification (requires valid JWT authentication)
+app.post('/apis/notifications/:id/like', async (req, res) => {
+    try {
+        const token = req.headers.authorization?.replace('Bearer ', '');
+        if (!token) {
+            return res.status(401).json({ message: "No token provided" });
+        }
+
+        // Verify JWT token and extract user identity - NO fallback to request body
+        let userId;
+        try {
+            const decoded = jwt.verify(token, SSAAM_API_KEY);
+            // Get user ID from decoded token - support both student and admin/master tokens
+            userId = decoded.student_id || decoded.id || decoded.username;
+            if (!userId) {
+                return res.status(401).json({ message: "Invalid token: no user identifier found" });
+            }
+        } catch (jwtError) {
+            return res.status(401).json({ message: "Invalid or expired token" });
+        }
+
+        const notification = await Notification.findById(req.params.id);
+        if (!notification) {
+            return res.status(404).json({ message: "Notification not found" });
+        }
+
+        // Initialize liked_by if it doesn't exist
+        if (!notification.liked_by) {
+            notification.liked_by = [];
+        }
+
+        // Toggle like using the verified user ID from token
+        const userIndex = notification.liked_by.indexOf(userId);
+        let liked = false;
+        
+        if (userIndex > -1) {
+            // User already liked, remove like
+            notification.liked_by.splice(userIndex, 1);
+            liked = false;
+        } else {
+            // Add like
+            notification.liked_by.push(userId);
+            liked = true;
+        }
+
+        await notification.save();
+
+        res.json({
+            message: liked ? "Liked successfully" : "Unliked successfully",
+            liked,
+            like_count: notification.liked_by.length,
+            user_id: userId
+        });
+
+    } catch (err) {
+        console.error("Toggle like error:", err);
         res.status(500).json({ message: err.message });
     }
 });
