@@ -554,8 +554,8 @@ const handleLogin = async () => {
       // For masters: keep password as-is (trim only)
       enteredPass = password.value.trim();
     } else {
-      // For students: trim leading/trailing spaces and collapse internal spaces, preserve multi-word names (e.g., "DELA CRUZ"), then uppercase
-      enteredPass = password.value.trim().split(' ').map(word => word.trim()).filter(word => word).join(' ').toUpperCase();
+      // For students: trim leading/trailing spaces and collapse internal spaces, preserve multi-word names (e.g., "DELA CRUZ")
+      enteredPass = password.value.trim().split(' ').map(word => word.trim()).filter(word => word).join(' ');
     }
 
     let user;
