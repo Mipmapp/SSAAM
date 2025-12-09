@@ -786,7 +786,6 @@
                   <option value="2nd Year">2nd Year</option>
                   <option value="3rd Year">3rd Year</option>
                   <option value="4th Year">4th Year</option>
-                  <option value="5th Year">5th Year</option>
                 </select>
                 <svg class="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
               </div>
@@ -1046,12 +1045,6 @@
                   <td class="border border-purple-300 px-6 py-4 text-center">{{ stats.BSIS['4th Year'] || 0 }}</td>
                   <td class="border border-purple-300 px-6 py-4 text-center">{{ stats.BSIT['4th Year'] || 0 }}</td>
                 </tr>
-                <tr class="hover:bg-gray-50">
-                  <td class="border border-purple-300 px-6 py-4 font-medium text-gray-700">5th years</td>
-                  <td class="border border-purple-300 px-6 py-4 text-center">{{ stats.BSCS['5th Year'] || 0 }}</td>
-                  <td class="border border-purple-300 px-6 py-4 text-center">{{ stats.BSIS['5th Year'] || 0 }}</td>
-                  <td class="border border-purple-300 px-6 py-4 text-center">{{ stats.BSIT['5th Year'] || 0 }}</td>
-                </tr>
                 <tr class="bg-purple-50 font-bold">
                   <td class="border border-purple-300 px-6 py-4 font-bold text-gray-900">All year levels</td>
                   <td class="border border-purple-300 px-6 py-4 text-center">{{ stats.BSCS.total || 0 }}</td>
@@ -1148,7 +1141,6 @@
             <option value="2nd Year">2nd Year</option>
             <option value="3rd Year">3rd Year</option>
             <option value="4th Year">4th Year</option>
-            <option value="5th Year">5th Year</option>
           </select>
         </div>
         <div>
@@ -1983,9 +1975,9 @@ const stats = computed(() => {
   
   // Fallback: compute from current page (if backend endpoint not available yet)
   const result = {
-    BSCS: { '1st Year': 0, '2nd Year': 0, '3rd Year': 0, '4th Year': 0, '5th Year': 0, total: 0 },
-    BSIS: { '1st Year': 0, '2nd Year': 0, '3rd Year': 0, '4th Year': 0, '5th Year': 0, total: 0 },
-    BSIT: { '1st Year': 0, '2nd Year': 0, '3rd Year': 0, '4th Year': 0, '5th Year': 0, total: 0 }
+    BSCS: { '1st Year': 0, '2nd Year': 0, '3rd Year': 0, '4th Year': 0, total: 0 },
+    BSIS: { '1st Year': 0, '2nd Year': 0, '3rd Year': 0, '4th Year': 0, total: 0 },
+    BSIT: { '1st Year': 0, '2nd Year': 0, '3rd Year': 0, '4th Year': 0, total: 0 }
   }
   return result
 })

@@ -72,7 +72,7 @@ const PRIMARY_ADMIN_USERNAME = process.env.PRIMARY_ADMIN_USERNAME || 'ssaam';
 const VALID_PROGRAMS = ['BSCS', 'BSIT', 'BSIS'];
 const VALID_SUFFIXES = ['', 'Jr.', 'Sr.', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
 const VALID_SEMESTERS = ['1st Sem', '2nd Sem'];
-const VALID_YEAR_LEVELS = ['1st Year', '2nd Year', '3rd Year', '4th Year', '5th Year'];
+const VALID_YEAR_LEVELS = ['1st Year', '2nd Year', '3rd Year', '4th Year'];
 const VALID_ROLES = ['student', 'medpub'];
 const VALID_RFID_STATUS = ['verified', 'unverified'];
 
@@ -1081,9 +1081,9 @@ app.get('/apis/students', studentAuth, async (req, res) => {
 app.get('/apis/students/stats', studentAuth, async (req, res) => {
     try {
         const stats = {
-            BSCS: { '1st Year': 0, '2nd Year': 0, '3rd Year': 0, '4th Year': 0, '5th Year': 0, total: 0 },
-            BSIS: { '1st Year': 0, '2nd Year': 0, '3rd Year': 0, '4th Year': 0, '5th Year': 0, total: 0 },
-            BSIT: { '1st Year': 0, '2nd Year': 0, '3rd Year': 0, '4th Year': 0, '5th Year': 0, total: 0 }
+            BSCS: { '1st Year': 0, '2nd Year': 0, '3rd Year': 0, '4th Year': 0, total: 0 },
+            BSIS: { '1st Year': 0, '2nd Year': 0, '3rd Year': 0, '4th Year': 0, total: 0 },
+            BSIT: { '1st Year': 0, '2nd Year': 0, '3rd Year': 0, '4th Year': 0, total: 0 }
         };
 
         const yearLevelMap = {
@@ -1106,12 +1106,7 @@ app.get('/apis/students/stats', studentAuth, async (req, res) => {
             '4TH': '4th Year',
             '4': '4th Year',
             'FOURTH YEAR': '4th Year',
-            'FOURTH': '4th Year',
-            '5TH YEAR': '5th Year',
-            '5TH': '5th Year',
-            '5': '5th Year',
-            'FIFTH YEAR': '5th Year',
-            'FIFTH': '5th Year'
+            'FOURTH': '4th Year'
         };
 
         const allStudents = await Student.find({ status: 'approved' });
