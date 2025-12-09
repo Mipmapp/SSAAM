@@ -57,6 +57,7 @@ The following security hardening measures were implemented to prevent website de
    - `https://ssaam-api.vercel.app`
    - Configurable `FRONTEND_URL` env var
    - `localhost:5000` and `localhost:3000` (development only)
+   - All `*.replit.dev` and `*.repl.co` domains (for Replit development)
 
 3. **Regex Injection Prevention:** Added `escapeRegex()` function to sanitize user input before using in MongoDB `$regex` queries, preventing ReDoS attacks.
 
@@ -68,7 +69,9 @@ The following security hardening measures were implemented to prevent website de
    - `ADMIN_VERIFICATION_SECRET`
    - `MASTER_CREATION_SECRET` (for creating new admin accounts)
 
-6. **Security Headers:** All responses include:
+6. **Like Data Cleanup:** When a student is deleted or re-approved after re-registration, their like data is automatically removed from all notifications to prevent stale data issues.
+
+7. **Security Headers:** All responses include:
    - `X-Content-Type-Options: nosniff`
    - `X-Frame-Options: DENY`
    - `X-XSS-Protection: 1; mode=block`

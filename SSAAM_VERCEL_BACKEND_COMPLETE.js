@@ -18,10 +18,15 @@ const ALLOWED_ORIGINS = [
   process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : null
 ].filter(Boolean);
 
+const isReplitOrigin = (origin) => {
+  if (!origin) return false;
+  return origin.endsWith('.replit.dev') || origin.endsWith('.repl.co');
+};
+
 const corsOptions = {
   origin: function(origin, callback) {
     if (!origin) return callback(null, true);
-    if (ALLOWED_ORIGINS.includes(origin)) {
+    if (ALLOWED_ORIGINS.includes(origin) || isReplitOrigin(origin)) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
@@ -1290,6 +1295,15 @@ app.put('/apis/students/:student_id/approve', auth, async (req, res) => {
             return res.status(404).json({ message: "Pending student not found" });
         }
 
+        // Clean up: Remove any old likes from this student_id (in case they were previously deleted and re-registered)
+        // This ensures a fresh start for re-accepted users
+        const userId = student._id.toString();
+        const studentId = student.student_id;
+        await Notification.updateMany(
+            { liked_by: { $in: [userId, studentId] } },
+            { $pull: { liked_by: { $in: [userId, studentId] } } }
+        );
+
         if (student.email) {
             try {
                 await sendApprovalEmail(student.email, student.first_name, true);
@@ -1563,6 +1577,20 @@ app.delete('/apis/students/:student_id', auth, timestampAuth, async (req, res) =
 
         if (!deleted)
             return res.status(404).json({ message: "Student not found." });
+
+        // Clean up: Remove this user's likes from all notifications
+        const userId = deleted._id.toString();
+        const studentId = deleted.student_id;
+        await Notification.updateMany(
+            { liked_by: { $in: [userId, studentId] } },
+            { $pull: { liked_by: { $in: [userId, studentId] } } }
+        );
+
+        // Also revoke any active session tokens for this user
+        await SessionToken.updateMany(
+            { user_id: deleted._id },
+            { is_revoked: true }
+        );
 
         res.json({ message: "Student deleted successfully." });
     } catch (err) {
