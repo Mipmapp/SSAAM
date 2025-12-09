@@ -2438,8 +2438,11 @@ const deleteNotification = async (notifId) => {
 const isLikedByCurrentUser = (notif) => {
   if (!notif.liked_by || !Array.isArray(notif.liked_by)) return false
   const storedLikeId = localStorage.getItem('userLikeId')
+  if (storedLikeId && notif.liked_by.includes(storedLikeId)) {
+    return true
+  }
   const visitorId = currentUser.value.studentId || currentUser.value.student_id || currentUser.value._id
-  return notif.liked_by.includes(visitorId) || (storedLikeId && notif.liked_by.includes(storedLikeId))
+  return visitorId && notif.liked_by.includes(visitorId)
 }
 
 const isLikeBanned = () => {
