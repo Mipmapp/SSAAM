@@ -551,7 +551,7 @@
             <!-- RFID Scanner Tab -->
             <div v-if="attendanceTab === 'scanner'" class="space-y-4">
               <div v-if="!selectedEvent" class="text-center py-8">
-                <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4"></path></svg>
+                <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h4v4H3V4zm0 8h4v4H3v-4zm0 8h4v4H3v-4zm8-16h4v4h-4V4zm0 8h4v4h-4v-4zm0 8h4v4h-4v-4zm8-16h4v4h-4V4zm0 8h4v4h-4v-4zm0 8h4v4h-4v-4z"></path></svg>
                 <p class="text-gray-500 mb-4">Select an event to start scanning RFID cards</p>
                 <select v-model="selectedEvent" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none">
                   <option :value="null">-- Select Event --</option>
@@ -572,7 +572,7 @@
                 </div>
 
                 <div class="bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                  <svg class="w-20 h-20 mx-auto mb-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4"></path></svg>
+                  <svg class="w-20 h-20 mx-auto mb-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h4v4H3V4zm0 8h4v4H3v-4zm0 8h4v4H3v-4zm8-16h4v4h-4V4zm0 8h4v4h-4v-4zm0 8h4v4h-4v-4zm8-16h4v4h-4V4zm0 8h4v4h-4v-4zm0 8h4v4h-4v-4z"></path></svg>
                   <p class="text-lg font-medium text-gray-700 mb-2">Ready for RFID Scan</p>
                   <p class="text-sm text-gray-500 mb-4">Click below and scan an RFID card. Scanner input will be auto-detected.</p>
                   <input 
@@ -1595,6 +1595,69 @@
     </div>
   </div>
 
+  <!-- Time Picker Modal -->
+  <div v-if="showTimePicker" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]" @click.self="showTimePicker = false">
+    <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full mx-4">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-xl font-bold text-purple-900">Select Time</h3>
+        <button @click="showTimePicker = false" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+      </div>
+      
+      <div class="flex items-center justify-center gap-2 mb-6">
+        <div class="flex flex-col items-center">
+          <label class="text-xs text-gray-500 mb-1">Hour</label>
+          <div class="flex flex-col items-center">
+            <button @click="timePickerHour = timePickerHour < 12 ? timePickerHour + 1 : 1" class="text-purple-600 hover:text-purple-800 p-1">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg>
+            </button>
+            <div class="w-16 h-16 bg-purple-100 rounded-lg flex items-center justify-center text-3xl font-bold text-purple-900">
+              {{ timePickerHour }}
+            </div>
+            <button @click="timePickerHour = timePickerHour > 1 ? timePickerHour - 1 : 12" class="text-purple-600 hover:text-purple-800 p-1">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+          </div>
+        </div>
+        
+        <span class="text-3xl font-bold text-gray-400 mt-5">:</span>
+        
+        <div class="flex flex-col items-center">
+          <label class="text-xs text-gray-500 mb-1">Minute</label>
+          <div class="flex flex-col items-center">
+            <button @click="timePickerMinute = timePickerMinute < 55 ? timePickerMinute + 5 : 0" class="text-purple-600 hover:text-purple-800 p-1">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg>
+            </button>
+            <div class="w-16 h-16 bg-purple-100 rounded-lg flex items-center justify-center text-3xl font-bold text-purple-900">
+              {{ timePickerMinute.toString().padStart(2, '0') }}
+            </div>
+            <button @click="timePickerMinute = timePickerMinute > 0 ? timePickerMinute - 5 : 55" class="text-purple-600 hover:text-purple-800 p-1">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+          </div>
+        </div>
+        
+        <div class="flex flex-col items-center ml-2">
+          <label class="text-xs text-gray-500 mb-1">Period</label>
+          <div class="flex flex-col gap-1 mt-1">
+            <button @click="timePickerPeriod = 'AM'" :class="['px-3 py-2 rounded-lg text-sm font-medium transition', timePickerPeriod === 'AM' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200']">AM</button>
+            <button @click="timePickerPeriod = 'PM'" :class="['px-3 py-2 rounded-lg text-sm font-medium transition', timePickerPeriod === 'PM' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200']">PM</button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="grid grid-cols-6 gap-1 mb-6">
+        <button v-for="min in [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55]" :key="min" @click="timePickerMinute = min" :class="['py-2 rounded text-sm font-medium transition', timePickerMinute === min ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200']">
+          :{{ min.toString().padStart(2, '0') }}
+        </button>
+      </div>
+      
+      <div class="flex gap-3">
+        <button @click="showTimePicker = false" class="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-lg font-medium hover:bg-gray-300 transition">Cancel</button>
+        <button @click="confirmTimePicker" class="flex-1 bg-gradient-to-r from-purple-600 to-pink-500 text-white py-2 px-4 rounded-lg font-medium hover:from-purple-700 hover:to-pink-600 transition">Confirm</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Create Attendance Event Modal -->
   <div v-if="showCreateEventModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="showCreateEventModal = false">
     <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
@@ -1622,11 +1685,17 @@
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Start Time *</label>
-            <input v-model="newEvent.startTime" type="time" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none" />
+            <button @click="openTimePicker('startTime')" type="button" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none text-left flex items-center justify-between hover:bg-gray-50 transition">
+              <span :class="newEvent.startTime ? 'text-gray-900' : 'text-gray-400'">{{ formatDisplayTime(newEvent.startTime) }}</span>
+              <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </button>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">End Time *</label>
-            <input v-model="newEvent.endTime" type="time" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none" />
+            <button @click="openTimePicker('endTime')" type="button" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none text-left flex items-center justify-between hover:bg-gray-50 transition">
+              <span :class="newEvent.endTime ? 'text-gray-900' : 'text-gray-400'">{{ formatDisplayTime(newEvent.endTime) }}</span>
+              <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </button>
           </div>
         </div>
         <div>
@@ -1672,11 +1741,17 @@
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Start Time *</label>
-            <input v-model="selectedEvent.start_time" type="time" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none" />
+            <button @click="openTimePicker('edit_start_time')" type="button" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none text-left flex items-center justify-between hover:bg-gray-50 transition">
+              <span :class="selectedEvent.start_time ? 'text-gray-900' : 'text-gray-400'">{{ formatDisplayTime(selectedEvent.start_time) }}</span>
+              <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </button>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">End Time *</label>
-            <input v-model="selectedEvent.end_time" type="time" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none" />
+            <button @click="openTimePicker('edit_end_time')" type="button" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none text-left flex items-center justify-between hover:bg-gray-50 transition">
+              <span :class="selectedEvent.end_time ? 'text-gray-900' : 'text-gray-400'">{{ formatDisplayTime(selectedEvent.end_time) }}</span>
+              <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </button>
           </div>
         </div>
         <div>
@@ -1973,6 +2048,62 @@ const rfidInputBuffer = ref('')
 const rfidProcessing = ref(false)
 const rfidResult = ref(null)
 const attendanceTab = ref('events')
+
+const showTimePicker = ref(false)
+const timePickerTarget = ref('') 
+const timePickerHour = ref(8)
+const timePickerMinute = ref(0)
+const timePickerPeriod = ref('AM')
+
+const openTimePicker = (target) => {
+  timePickerTarget.value = target
+  let currentTime = ''
+  if (target === 'startTime' || target === 'endTime') {
+    currentTime = newEvent.value[target]
+  } else if (target === 'edit_start_time' || target === 'edit_end_time') {
+    const field = target.replace('edit_', '')
+    currentTime = selectedEvent.value?.[field] || ''
+  }
+  
+  if (currentTime) {
+    const [h, m] = currentTime.split(':').map(Number)
+    timePickerHour.value = h > 12 ? h - 12 : (h === 0 ? 12 : h)
+    timePickerMinute.value = m
+    timePickerPeriod.value = h >= 12 ? 'PM' : 'AM'
+  } else {
+    timePickerHour.value = 8
+    timePickerMinute.value = 0
+    timePickerPeriod.value = 'AM'
+  }
+  showTimePicker.value = true
+}
+
+const confirmTimePicker = () => {
+  let hour24 = timePickerHour.value
+  if (timePickerPeriod.value === 'PM' && hour24 !== 12) hour24 += 12
+  if (timePickerPeriod.value === 'AM' && hour24 === 12) hour24 = 0
+  
+  const timeStr = `${hour24.toString().padStart(2, '0')}:${timePickerMinute.value.toString().padStart(2, '0')}`
+  
+  if (timePickerTarget.value === 'startTime') {
+    newEvent.value.startTime = timeStr
+  } else if (timePickerTarget.value === 'endTime') {
+    newEvent.value.endTime = timeStr
+  } else if (timePickerTarget.value === 'edit_start_time') {
+    selectedEvent.value.start_time = timeStr
+  } else if (timePickerTarget.value === 'edit_end_time') {
+    selectedEvent.value.end_time = timeStr
+  }
+  showTimePicker.value = false
+}
+
+const formatDisplayTime = (time) => {
+  if (!time) return 'Select time'
+  const [h, m] = time.split(':').map(Number)
+  const hour12 = h > 12 ? h - 12 : (h === 0 ? 12 : h)
+  const period = h >= 12 ? 'PM' : 'AM'
+  return `${hour12}:${m.toString().padStart(2, '0')} ${period}`
+}
 
 const handlePosterImageError = async (notifId, imageUrl) => {
   const retries = posterImageRetries.value[notifId] || 0

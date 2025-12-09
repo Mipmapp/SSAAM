@@ -1114,7 +1114,9 @@ app.get('/apis/students', studentAuth, async (req, res) => {
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
 
+        // Select only necessary fields to reduce payload size
         const students = await Student.find({ status: 'approved' })
+            .select('student_id first_name middle_name last_name suffix full_name program year_level semester school_year photo email role rfid_status rfid_code created_date')
             .skip(skip)
             .limit(limit)
             .sort({ created_date: -1 });
@@ -1227,7 +1229,9 @@ app.get('/apis/students/search', studentAuth, async (req, res) => {
             filter.year_level = yearLevel;
         }
 
+        // Select only necessary fields to reduce payload size
         const students = await Student.find(filter)
+            .select('student_id first_name middle_name last_name suffix full_name program year_level semester school_year photo email role rfid_status rfid_code created_date')
             .skip(skip)
             .limit(limit)
             .sort({ created_date: -1 });
@@ -1260,7 +1264,9 @@ app.get('/apis/students/pending', studentAuth, async (req, res) => {
         // Debug: Log the query
         console.log('Fetching pending students, page:', page, 'limit:', limit);
 
+        // Select only necessary fields to reduce payload size
         const students = await Student.find({ status: 'pending' })
+            .select('student_id first_name middle_name last_name suffix full_name program year_level semester school_year photo email role rfid_status created_date')
             .skip(skip)
             .limit(limit)
             .sort({ created_date: -1 });
@@ -2514,18 +2520,20 @@ app.post('/apis/upload-image', canPostNotification, async (req, res) => {
 // Get all notifications (requires authentication - student or admin token)
 app.get('/apis/notifications', studentAuth, async (req, res) => {
     try {
+        // Select only necessary fields to reduce payload size
         const notifications = await Notification.find()
+            .select('title message priority image_url posted_by posted_by_id posted_by_name like_count liked_by seen_by was_edited created_at updated_at')
             .sort({ created_at: -1 })
             .limit(50);
         
-        // Enrich medpub notifications with poster photo
+        // Enrich medpub notifications with poster photo (only fetch photo field)
         const enrichedNotifications = await Promise.all(notifications.map(async (notif) => {
             const notifObj = notif.toObject();
             
             // For medpub posts, fetch the poster's photo from Student collection
             if (notifObj.posted_by === 'medpub' && notifObj.posted_by_id) {
                 try {
-                    const poster = await Student.findById(notifObj.posted_by_id);
+                    const poster = await Student.findById(notifObj.posted_by_id).select('photo');
                     if (poster) {
                         notifObj.poster_photo = poster.photo || null;
                         notifObj.poster_image_url = poster.photo || null;
@@ -3113,7 +3121,9 @@ app.get('/apis/attendance/events/:id/logs', auth, async (req, res) => {
     }
 });
 
-// RFID Check-in/Check-out endpoint
+// RFID Check-in/Check-out endpoint with 5-minute duplicate prevention
+const DUPLICATE_PREVENTION_MS = 5 * 60 * 1000; // 5 minutes in milliseconds
+
 app.post('/apis/attendance/events/:id/check', auth, async (req, res) => {
     try {
         const { rfid_code, source = 'rfid' } = req.body;
@@ -3141,6 +3151,24 @@ app.post('/apis/attendance/events/:id/check', auth, async (req, res) => {
             return res.status(404).json({ message: "No verified student found with this RFID code" });
         }
         
+        // Check if student was registered before or on the event activation date
+        // Only apply this check if the event has an activated_at timestamp
+        if (event.activated_at) {
+            const eventActivatedDate = new Date(event.activated_at);
+            eventActivatedDate.setHours(23, 59, 59, 999); // End of the activation day
+            
+            const studentCreatedDate = new Date(student.created_date);
+            
+            if (studentCreatedDate > eventActivatedDate) {
+                return res.status(403).json({ 
+                    message: "Student was registered after this attendance event was activated. Only students registered before or on the event activation day can check in.",
+                    student_name: `${student.first_name} ${student.last_name}`,
+                    student_registered: student.created_date,
+                    event_activated: event.activated_at
+                });
+            }
+        }
+        
         let log = await AttendanceLog.findOne({
             event_id: req.params.id,
             student_id: student._id
@@ -3163,10 +3191,39 @@ app.post('/apis/attendance/events/:id/check', auth, async (req, res) => {
             });
             action = 'check_in';
         } else if (!log.check_out_at) {
+            // Prevent accidental check-out within 5 minutes of check-in
+            // This helps avoid accidental duplicate scans when a student just checked in
+            const timeSinceCheckIn = now - new Date(log.check_in_at);
+            if (timeSinceCheckIn < DUPLICATE_PREVENTION_MS) {
+                const remainingSeconds = Math.ceil((DUPLICATE_PREVENTION_MS - timeSinceCheckIn) / 1000);
+                const remainingMinutes = Math.floor(remainingSeconds / 60);
+                const remainingSecs = remainingSeconds % 60;
+                return res.status(200).json({ 
+                    message: `Already checked in! Wait ${remainingMinutes}m ${remainingSecs}s before checking out.`,
+                    action: 'already_checked_in',
+                    success: true,
+                    student_name: log.student_name,
+                    check_in_at: log.check_in_at,
+                    cooldown_remaining: remainingSeconds,
+                    note: 'This prevents accidental immediate check-outs. Student is already marked as checked in.'
+                });
+            }
             log.check_out_at = now;
             log.updated_at = now;
             action = 'check_out';
         } else {
+            // Prevent duplicate scan after already checked in and out
+            const timeSinceCheckOut = now - new Date(log.check_out_at);
+            if (timeSinceCheckOut < DUPLICATE_PREVENTION_MS) {
+                const remainingSeconds = Math.ceil((DUPLICATE_PREVENTION_MS - timeSinceCheckOut) / 1000);
+                return res.status(429).json({ 
+                    message: `Already checked in and out. Please wait before scanning again.`,
+                    student_name: log.student_name,
+                    check_in_at: log.check_in_at,
+                    check_out_at: log.check_out_at,
+                    cooldown_remaining: remainingSeconds
+                });
+            }
             return res.status(400).json({ 
                 message: "Student already checked in and out for this event",
                 student_name: log.student_name,
