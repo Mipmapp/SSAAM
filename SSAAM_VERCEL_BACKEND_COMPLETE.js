@@ -1671,10 +1671,14 @@ app.post('/apis/students/login', studentAuth, timestampAuth, async (req, res) =>
             expires_at: expiresAt
         });
 
+        // Flag to indicate if user should change their password (still using last name as password)
+        const requiresPasswordUpdate = !student.custom_password;
+
         res.json({
             message: "Login successful",
             student,
-            token
+            token,
+            requiresPasswordUpdate
         });
 
     } catch (err) {

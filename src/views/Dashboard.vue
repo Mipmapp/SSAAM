@@ -290,6 +290,27 @@
       <div class="p-4 md:p-8">
         <h1 class="hidden md:block text-2xl md:text-4xl font-bold text-purple-900 mb-8 pb-4 border-b-2 border-purple-900">{{ currentPage === 'users' ? 'Manage' : currentPage === 'settings' ? 'Settings' : currentPage === 'pending' ? 'Pending Approvals' : currentPage === 'notifications' ? 'Notifications' : 'Dashboard' }}</h1>
 
+        <!-- Password Update Warning Banner -->
+        <div v-if="showPasswordUpdateWarning && !currentUser.isMaster && currentUser.role !== 'admin'" class="mb-6 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-lg shadow-sm">
+          <div class="flex items-start gap-3">
+            <svg class="w-6 h-6 text-yellow-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+            </svg>
+            <div class="flex-1">
+              <h3 class="text-sm font-semibold text-yellow-800">Security Recommendation</h3>
+              <p class="text-sm text-yellow-700 mt-1">Your password is still set to your last name. For better security, please change your password.</p>
+              <div class="mt-3 flex flex-wrap gap-2">
+                <button @click="showPasswordChangeModal = true; showPasswordUpdateWarning = false" class="bg-yellow-500 hover:bg-yellow-600 text-white text-sm px-4 py-1.5 rounded-lg font-medium transition">
+                  Change Password
+                </button>
+                <button @click="showPasswordUpdateWarning = false" class="text-yellow-700 hover:text-yellow-800 text-sm px-3 py-1.5 font-medium transition">
+                  Remind Me Later
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Settings Page -->
         <div v-if="currentPage === 'settings' && (currentUser.role === 'admin' || currentUser.isMaster)" class="bg-white rounded-lg shadow-lg p-4 md:p-8">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
@@ -1274,6 +1295,7 @@ const showPasswordChangeModal = ref(false)
 const passwordForm = ref({ currentPassword: '', newPassword: '', confirmPassword: '' })
 const changingPassword = ref(false)
 const passwordErrors = ref({})
+const showPasswordUpdateWarning = ref(false)
 
 // Image upload state
 const uploadingImage = ref(false)
@@ -1308,6 +1330,11 @@ onMounted(async () => {
     return
   }
   currentUser.value = user
+  
+  // Check if user needs to update password (still using last name as password)
+  if (user.requiresPasswordUpdate && !user.isMaster && user.role !== 'admin') {
+    showPasswordUpdateWarning.value = true
+  }
   
   // Initialize loading states
   profileImageLoading.value = false
@@ -1979,11 +2006,70 @@ const saveUser = async () => {
     })
     
     if (response.ok) {
+      // Also update role if it was changed (role is updated via separate endpoint)
+      const newRole = editingUser.value.role
+      const originalUser = users.value.find(u => (u.studentId || u.student_id) === studentId)
+      const originalRole = originalUser?.role
+      
+      if (newRole && newRole !== originalRole) {
+        try {
+          const roleResponse = await fetch(`https://ssaam-api.vercel.app/apis/students/${studentId}/role`, {
+            method: 'PUT',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+              'X-SSAAM-TS': encodeTimestamp()
+            },
+            body: JSON.stringify({ 
+              role: newRole.toLowerCase(),
+              _ssaam_access_token: encodeTimestamp()
+            })
+          })
+          
+          if (!roleResponse.ok) {
+            const roleError = await roleResponse.json()
+            showNotification(roleError.message || 'Failed to update role', 'error')
+          }
+        } catch (roleErr) {
+          console.error('Error updating role:', roleErr)
+        }
+      }
+      
+      // Also update RFID if it was changed (this auto-verifies the user)
+      const newRfid = editingUser.value.rfidCode || editingUser.value.rfid_code
+      const originalRfid = originalUser?.rfidCode || originalUser?.rfid_code
+      
+      if (newRfid && newRfid !== 'N/A' && newRfid !== originalRfid) {
+        try {
+          const rfidResponse = await fetch(`https://ssaam-api.vercel.app/apis/students/${studentId}/rfid`, {
+            method: 'PUT',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+              'X-SSAAM-TS': encodeTimestamp()
+            },
+            body: JSON.stringify({ 
+              rfid_code: newRfid,
+              admin_verification_token: 'admin_update',
+              _ssaam_access_token: encodeTimestamp()
+            })
+          })
+          
+          if (rfidResponse.ok) {
+            // Update local user data to show verified status
+            editingUser.value.rfid_status = 'verified'
+          }
+        } catch (rfidErr) {
+          console.error('Error updating RFID:', rfidErr)
+        }
+      }
+      
       const index = users.value.findIndex(u => (u.studentId || u.student_id) === studentId)
       if (index !== -1) {
-        users.value[index] = { ...editingUser.value, ...updateData, studentId }
+        users.value[index] = { ...editingUser.value, ...updateData, studentId, role: newRole, rfid_status: editingUser.value.rfid_status }
       }
       showNotification('User updated successfully', 'success')
+      refreshStudents()
     } else {
       const errorData = await response.json()
       showNotification(errorData.message || 'Failed to update user', 'error')
@@ -2638,7 +2724,13 @@ const changePassword = async () => {
     if (response.ok) {
       showNotification('Password changed successfully!', 'success')
       showPasswordChangeModal.value = false
+      showPasswordUpdateWarning.value = false
       passwordForm.value = { currentPassword: '', newPassword: '', confirmPassword: '' }
+      // Update localStorage to reflect password has been changed
+      const storedUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
+      storedUser.requiresPasswordUpdate = false
+      localStorage.setItem('currentUser', JSON.stringify(storedUser))
+      currentUser.value.requiresPasswordUpdate = false
     } else {
       const error = await response.json()
       showNotification(error.message || 'Failed to change password', 'error')

@@ -606,6 +606,7 @@ const handleLogin = async () => {
       if (data.student && data.message === "Login successful") {
         user = data.student;
         user.token = data.token; // Token is returned at top level, not inside student object
+        user.requiresPasswordUpdate = data.requiresPasswordUpdate || false;
       } else if (data.message) {
         errorMessage.value = data.message;
         showErrorNotification.value = true;
@@ -635,7 +636,8 @@ const handleLogin = async () => {
         role: startsWithLetter ? 'master' : (user.role || 'student'),
         image: user.photo || user.image || '',
         isMaster: startsWithLetter,
-        token: user.token || ''
+        token: user.token || '',
+        requiresPasswordUpdate: user.requiresPasswordUpdate || false
       };
       localStorage.removeItem('likeActionTimestamps')
       localStorage.removeItem('likeBanUntil')
