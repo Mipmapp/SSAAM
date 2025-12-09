@@ -2502,6 +2502,7 @@ app.post('/apis/notifications/:id/like', async (req, res) => {
             message: liked ? "Liked successfully" : "Unliked successfully",
             liked,
             like_count: notification.liked_by.length,
+            liked_by: notification.liked_by,
             user_id: userId
         });
 

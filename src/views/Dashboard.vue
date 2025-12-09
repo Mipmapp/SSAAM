@@ -2437,12 +2437,22 @@ const deleteNotification = async (notifId) => {
 
 const isLikedByCurrentUser = (notif) => {
   if (!notif.liked_by || !Array.isArray(notif.liked_by)) return false
+  
+  // Get current user's ID - check all possible ID fields
+  const userId = currentUser.value.studentId || currentUser.value.student_id || currentUser.value._id || currentUser.value.id || currentUser.value.username
+  
+  // Check if user's ID is in the liked_by array
+  if (userId && notif.liked_by.includes(userId)) {
+    return true
+  }
+  
+  // Also check stored like ID as fallback (for session continuity)
   const storedLikeId = localStorage.getItem('userLikeId')
   if (storedLikeId && notif.liked_by.includes(storedLikeId)) {
     return true
   }
-  const visitorId = currentUser.value.studentId || currentUser.value.student_id || currentUser.value._id
-  return visitorId && notif.liked_by.includes(visitorId)
+  
+  return false
 }
 
 const isLikeBanned = () => {
@@ -2535,21 +2545,33 @@ const toggleLike = async (notif) => {
     if (response.ok) {
       const data = await response.json()
       const serverUserId = data.user_id
+      
+      // Store the server's user ID for consistent like tracking
       if (serverUserId) {
         localStorage.setItem('userLikeId', serverUserId)
       }
+      
       const notifIndex = notifications.value.findIndex(n => n._id === notif._id)
       if (notifIndex > -1) {
-        if (!notifications.value[notifIndex].liked_by) {
-          notifications.value[notifIndex].liked_by = []
-        }
-        const likeId = serverUserId || visitorId
-        if (data.liked) {
-          if (!notifications.value[notifIndex].liked_by.includes(likeId)) {
-            notifications.value[notifIndex].liked_by.push(likeId)
+        // Update liked_by array from server response (includes total like count)
+        if (data.like_count !== undefined) {
+          // Sync with server's liked_by array if available
+          if (data.liked_by && Array.isArray(data.liked_by)) {
+            notifications.value[notifIndex].liked_by = data.liked_by
+          } else {
+            // Manually update based on server response
+            if (!notifications.value[notifIndex].liked_by) {
+              notifications.value[notifIndex].liked_by = []
+            }
+            const likeId = serverUserId || visitorId
+            if (data.liked) {
+              if (!notifications.value[notifIndex].liked_by.includes(likeId)) {
+                notifications.value[notifIndex].liked_by.push(likeId)
+              }
+            } else {
+              notifications.value[notifIndex].liked_by = notifications.value[notifIndex].liked_by.filter(id => id !== likeId && id !== visitorId)
+            }
           }
-        } else {
-          notifications.value[notifIndex].liked_by = notifications.value[notifIndex].liked_by.filter(id => id !== likeId && id !== visitorId)
         }
       }
       likeCooldowns.value[notifId] = Date.now() + LIKE_COOLDOWN_MS
