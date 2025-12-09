@@ -33,7 +33,7 @@ const corsOptions = {
     }
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-SSAAM-TS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-SSAAM-TS', 'X-Admin-Action-Token'],
   credentials: true
 };
 
@@ -66,6 +66,8 @@ if (!process.env.SSAAM_API_KEY || !process.env.SSAAM_CRYPTO_KEY || !process.env.
 const SSAAM_API_KEY = process.env.SSAAM_API_KEY;
 const SSAAM_CRYPTO_KEY = process.env.SSAAM_CRYPTO_KEY;
 const ADMIN_VERIFICATION_SECRET = process.env.ADMIN_VERIFICATION_SECRET;
+const ADMIN_ACTION_KEY = process.env.ADMIN_ACTION_KEY;
+const PRIMARY_ADMIN_USERNAME = process.env.PRIMARY_ADMIN_USERNAME || 'ssaam';
 
 const VALID_PROGRAMS = ['BSCS', 'BSIT', 'BSIS'];
 const VALID_SUFFIXES = ['', 'Jr.', 'Sr.', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
@@ -391,6 +393,22 @@ sessionTokenSchema.index({ user_id: 1 });
 
 const SessionToken = mongoose.model("SessionToken", sessionTokenSchema);
 
+const adminActionTokenSchema = new mongoose.Schema({
+    token_hash: { type: String, required: true, unique: true },
+    admin_id: { type: mongoose.Schema.Types.ObjectId, required: true },
+    admin_username: { type: String, required: true },
+    created_at: { type: Date, default: Date.now },
+    expires_at: { type: Date, required: true },
+    used_count: { type: Number, default: 0 },
+    max_uses: { type: Number, default: 50 },
+    is_revoked: { type: Boolean, default: false }
+});
+
+adminActionTokenSchema.index({ expires_at: 1 }, { expireAfterSeconds: 0 });
+adminActionTokenSchema.index({ admin_id: 1 });
+
+const AdminActionToken = mongoose.model("AdminActionToken", adminActionTokenSchema);
+
 const studentSchema = new mongoose.Schema({
     student_id: {
         type: String,
@@ -678,6 +696,65 @@ function studentAuth(req, res, next) {
     }
 
     next();
+}
+
+async function adminActionAuth(req, res, next) {
+    if (!req.master) {
+        return res.status(401).json({ message: "Authentication required" });
+    }
+
+    if (req.master.username !== PRIMARY_ADMIN_USERNAME) {
+        return res.status(403).json({ 
+            message: `Only the primary admin (${PRIMARY_ADMIN_USERNAME}) can perform this action`,
+            code: 'NOT_PRIMARY_ADMIN'
+        });
+    }
+
+    const actionToken = req.headers['x-admin-action-token'];
+    
+    if (!actionToken) {
+        return res.status(403).json({ 
+            message: "Admin action token required. Please verify your admin key first.",
+            code: 'ACTION_TOKEN_REQUIRED'
+        });
+    }
+
+    try {
+        const tokenHash = hashToken(actionToken);
+        const adminActionRecord = await AdminActionToken.findOneAndUpdate(
+            {
+                token_hash: tokenHash,
+                admin_id: req.master.id,
+                is_revoked: false,
+                expires_at: { $gt: new Date() },
+                $expr: { $lt: ['$used_count', '$max_uses'] }
+            },
+            { $inc: { used_count: 1 } },
+            { new: true }
+        );
+
+        if (!adminActionRecord) {
+            return res.status(403).json({ 
+                message: "Invalid or expired admin action token. Please verify your admin key again.",
+                code: 'INVALID_ACTION_TOKEN'
+            });
+        }
+
+        req.adminActionToken = adminActionRecord;
+        next();
+    } catch (err) {
+        console.error("Admin action auth error:", err);
+        return res.status(500).json({ message: "Authentication error" });
+    }
+}
+
+function timingSafeCompare(a, b) {
+    if (!a || !b || a.length !== b.length) {
+        const dummy = crypto.randomBytes(32).toString('hex');
+        crypto.timingSafeEqual(Buffer.from(dummy), Buffer.from(dummy));
+        return false;
+    }
+    return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
 }
 
 function validateName(name, fieldName) {
@@ -1290,7 +1367,7 @@ app.post('/apis/students/verify-and-register', studentAuth, timestampAuth, async
     }
 });
 
-app.put('/apis/students/:student_id/approve', auth, async (req, res) => {
+app.put('/apis/students/:student_id/approve', auth, adminActionAuth, async (req, res) => {
     try {
         const student = await Student.findOneAndUpdate(
             { student_id: req.params.student_id, status: 'pending' },
@@ -1328,7 +1405,7 @@ app.put('/apis/students/:student_id/approve', auth, async (req, res) => {
     }
 });
 
-app.put('/apis/students/:student_id/reject', auth, async (req, res) => {
+app.put('/apis/students/:student_id/reject', auth, adminActionAuth, async (req, res) => {
     try {
         const { reason } = req.body;
         
@@ -1362,7 +1439,7 @@ app.put('/apis/students/:student_id/reject', auth, async (req, res) => {
     }
 });
 
-app.put('/apis/students/:student_id/rfid', auth, timestampAuth, async (req, res) => {
+app.put('/apis/students/:student_id/rfid', auth, adminActionAuth, timestampAuth, async (req, res) => {
     try {
         const { rfid_code, admin_verification_token } = req.body;
 
@@ -1435,7 +1512,7 @@ app.put('/apis/students/:student_id/rfid', auth, timestampAuth, async (req, res)
     }
 });
 
-app.delete('/apis/students/:student_id/rfid', auth, timestampAuth, async (req, res) => {
+app.delete('/apis/students/:student_id/rfid', auth, adminActionAuth, timestampAuth, async (req, res) => {
     try {
         const updated = await Student.findOneAndUpdate(
             { student_id: req.params.student_id },
@@ -1462,7 +1539,7 @@ app.delete('/apis/students/:student_id/rfid', auth, timestampAuth, async (req, r
     }
 });
 
-app.put('/apis/students/:student_id/role', auth, timestampAuth, async (req, res) => {
+app.put('/apis/students/:student_id/role', auth, adminActionAuth, timestampAuth, async (req, res) => {
     try {
         const { role } = req.body;
 
@@ -1489,7 +1566,7 @@ app.put('/apis/students/:student_id/role', auth, timestampAuth, async (req, res)
     }
 });
 
-app.put('/apis/students/:student_id', auth, timestampAuth, async (req, res) => {
+app.put('/apis/students/:student_id', auth, adminActionAuth, timestampAuth, async (req, res) => {
     try {
         const updates = { ...req.body };
         delete updates.student_id;
@@ -1578,7 +1655,7 @@ app.put('/apis/students/:student_id', auth, timestampAuth, async (req, res) => {
     }
 });
 
-app.delete('/apis/students/:student_id', auth, timestampAuth, async (req, res) => {
+app.delete('/apis/students/:student_id', auth, adminActionAuth, timestampAuth, async (req, res) => {
     try {
         const deleted = await Student.findOneAndDelete({ student_id: req.params.student_id });
 
@@ -1873,6 +1950,106 @@ app.post('/apis/masters/logout', auth, async (req, res) => {
     }
 });
 
+app.post('/apis/admin-actions/token', auth, timestampAuth, async (req, res) => {
+    try {
+        const { admin_key } = req.body;
+
+        if (!ADMIN_ACTION_KEY) {
+            return res.status(500).json({ message: "Admin action key is not configured on this server" });
+        }
+
+        if (req.master.username !== PRIMARY_ADMIN_USERNAME) {
+            return res.status(403).json({ 
+                message: `Only the primary admin (${PRIMARY_ADMIN_USERNAME}) can request action tokens`,
+                code: 'NOT_PRIMARY_ADMIN'
+            });
+        }
+
+        if (!admin_key) {
+            return res.status(400).json({ message: "Admin key is required" });
+        }
+
+        if (!timingSafeCompare(admin_key, ADMIN_ACTION_KEY)) {
+            return res.status(403).json({ message: "Invalid admin key" });
+        }
+
+        await AdminActionToken.updateMany(
+            { admin_id: req.master.id, is_revoked: false },
+            { is_revoked: true }
+        );
+
+        const actionToken = generateSecureToken();
+        const tokenHash = hashToken(actionToken);
+        const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+
+        await AdminActionToken.create({
+            token_hash: tokenHash,
+            admin_id: req.master.id,
+            admin_username: req.master.username,
+            expires_at: expiresAt,
+            max_uses: 50
+        });
+
+        res.json({
+            message: "Admin action token generated successfully",
+            action_token: actionToken,
+            expires_at: expiresAt,
+            expires_in_seconds: 300
+        });
+
+    } catch (err) {
+        console.error("Admin action token error:", err);
+        res.status(500).json({ message: err.message });
+    }
+});
+
+app.post('/apis/admin-actions/revoke', auth, async (req, res) => {
+    try {
+        if (req.master.username !== PRIMARY_ADMIN_USERNAME) {
+            return res.status(403).json({ message: "Only the primary admin can revoke action tokens" });
+        }
+
+        const result = await AdminActionToken.updateMany(
+            { admin_id: req.master.id, is_revoked: false },
+            { is_revoked: true }
+        );
+
+        res.json({ 
+            message: "All action tokens revoked",
+            revoked_count: result.modifiedCount
+        });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+app.get('/apis/admin-actions/status', auth, async (req, res) => {
+    try {
+        if (req.master.username !== PRIMARY_ADMIN_USERNAME) {
+            return res.status(403).json({ 
+                message: "Only the primary admin can check action token status",
+                is_primary_admin: false
+            });
+        }
+
+        const activeToken = await AdminActionToken.findOne({
+            admin_id: req.master.id,
+            is_revoked: false,
+            expires_at: { $gt: new Date() },
+            $expr: { $lt: ['$used_count', '$max_uses'] }
+        });
+
+        res.json({
+            is_primary_admin: true,
+            has_active_token: !!activeToken,
+            token_expires_at: activeToken?.expires_at || null,
+            uses_remaining: activeToken ? (activeToken.max_uses - activeToken.used_count) : 0
+        });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
 app.get('/apis/masters', auth, async (req, res) => {
     try {
         const masters = await Master.find();
@@ -1913,7 +2090,7 @@ app.post('/apis/validate-token', async (req, res) => {
     }
 });
 
-app.delete('/apis/students/cleanup-invalid-programs', auth, async (req, res) => {
+app.delete('/apis/students/cleanup-invalid-programs', auth, adminActionAuth, async (req, res) => {
     try {
         const result = await Student.deleteMany({
             program: { $nin: VALID_PROGRAMS }
@@ -1937,7 +2114,7 @@ app.get('/apis/settings', studentAuth, async (req, res) => {
     }
 });
 
-app.put('/apis/settings', auth, async (req, res) => {
+app.put('/apis/settings', auth, adminActionAuth, async (req, res) => {
     try {
         const { userRegister, userLogin } = req.body;
         

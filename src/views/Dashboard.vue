@@ -95,6 +95,56 @@
     </div>
   </div>
 
+  <!-- Admin Key Modal -->
+  <div v-if="showAdminKeyModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="cancelAdminKeyModal">
+    <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-2xl font-bold text-purple-900">Admin Verification Required</h3>
+        <button @click="cancelAdminKeyModal" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+      </div>
+      
+      <div class="mb-4">
+        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-lg mb-4">
+          <p class="text-sm text-yellow-800">
+            This action requires admin verification. Please enter the admin key to continue.
+          </p>
+        </div>
+        
+        <label class="block text-sm font-medium text-gray-700 mb-2">Admin Key</label>
+        <input 
+          v-model="adminKeyInput" 
+          type="password" 
+          placeholder="Enter admin key"
+          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+          @keyup.enter="submitAdminKey"
+          :disabled="adminKeyLoading"
+        />
+        <p v-if="adminKeyError" class="text-red-500 text-sm mt-2">{{ adminKeyError }}</p>
+      </div>
+      
+      <div class="flex gap-3">
+        <button 
+          @click="cancelAdminKeyModal" 
+          class="flex-1 bg-gray-200 text-gray-800 py-3 px-4 rounded-lg font-medium hover:bg-gray-300 transition"
+          :disabled="adminKeyLoading"
+        >
+          Cancel
+        </button>
+        <button 
+          @click="submitAdminKey" 
+          class="flex-1 bg-gradient-to-r from-purple-600 to-pink-500 text-white py-3 px-4 rounded-lg font-medium hover:from-purple-700 hover:to-pink-600 transition flex items-center justify-center gap-2"
+          :disabled="adminKeyLoading || !adminKeyInput"
+        >
+          <svg v-if="adminKeyLoading" class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span>{{ adminKeyLoading ? 'Verifying...' : 'Verify & Continue' }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <div v-if="isPageLoading" class="fixed inset-0 bg-gradient-to-b from-purple-600 to-pink-400 flex items-center justify-center z-50">
     <div class="text-center text-white">
       <svg class="animate-spin h-16 w-16 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -1359,6 +1409,16 @@ const notifImageFailed = ref({})
 const MAX_NOTIF_IMAGE_RETRIES = 3
 const showEditNotificationModal = ref(false)
 
+// Admin action token management
+const adminActionToken = ref(null)
+const adminActionTokenExpiry = ref(null)
+const showAdminKeyModal = ref(false)
+const adminKeyInput = ref('')
+const adminKeyError = ref('')
+const adminKeyLoading = ref(false)
+const pendingAdminAction = ref(null)
+const isPrimaryAdmin = ref(false)
+
 // Poster image handling for MedPub posts
 const posterImageFailed = ref({})
 const posterImageRetries = ref({})
@@ -1390,6 +1450,137 @@ const handlePosterImageError = async (notifId, imageUrl) => {
     posterImageFailed.value[notifId] = true
   }
 }
+
+const isAdminActionTokenValid = () => {
+  if (!adminActionToken.value || !adminActionTokenExpiry.value) return false
+  return new Date() < new Date(adminActionTokenExpiry.value)
+}
+
+const checkAdminActionStatus = async () => {
+  const token = localStorage.getItem('authToken')
+  if (!token || (!currentUser.value.isMaster && currentUser.value.role !== 'admin')) return
+  
+  try {
+    const response = await fetch('https://ssaam-api.vercel.app/apis/admin-actions/status', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    
+    if (response.ok) {
+      const data = await response.json()
+      isPrimaryAdmin.value = data.is_primary_admin || false
+      if (data.has_active_token && data.token_expires_at) {
+        adminActionTokenExpiry.value = data.token_expires_at
+      }
+    }
+  } catch (error) {
+    console.error('Failed to check admin action status:', error)
+  }
+}
+
+const requestAdminActionToken = async (adminKey) => {
+  const token = localStorage.getItem('authToken')
+  if (!token) throw new Error('Authentication required')
+  
+  const response = await fetch('https://ssaam-api.vercel.app/apis/admin-actions/token', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+      'X-SSAAM-TS': encodeTimestamp()
+    },
+    body: JSON.stringify({ admin_key: adminKey })
+  })
+  
+  const data = await response.json()
+  
+  if (!response.ok) {
+    throw new Error(data.message || 'Failed to verify admin key')
+  }
+  
+  adminActionToken.value = data.action_token
+  adminActionTokenExpiry.value = data.expires_at
+  return data
+}
+
+const getAdminActionHeaders = () => {
+  const headers = {}
+  if (adminActionToken.value && isAdminActionTokenValid()) {
+    headers['X-Admin-Action-Token'] = adminActionToken.value
+  }
+  return headers
+}
+
+const handleAdminActionError = async (response) => {
+  if (response.status === 403) {
+    const data = await response.json()
+    if (data.code === 'NOT_PRIMARY_ADMIN') {
+      showNotification('Only the primary admin (ssaam) can perform this action', 'error')
+      return true
+    }
+    if (data.code === 'ACTION_TOKEN_REQUIRED' || data.code === 'INVALID_ACTION_TOKEN' || data.code === 'ACTION_TOKEN_EXPIRED') {
+      adminActionToken.value = null
+      adminActionTokenExpiry.value = null
+      return false
+    }
+  }
+  return false
+}
+
+const withAdminAction = (actionFn) => {
+  return async (...args) => {
+    if (!isPrimaryAdmin.value) {
+      showNotification('Only the primary admin can perform this action', 'error')
+      return
+    }
+    
+    if (!isAdminActionTokenValid()) {
+      pendingAdminAction.value = () => actionFn(...args)
+      adminKeyInput.value = ''
+      adminKeyError.value = ''
+      showAdminKeyModal.value = true
+      return
+    }
+    
+    return await actionFn(...args)
+  }
+}
+
+const cancelAdminKeyModal = () => {
+  showAdminKeyModal.value = false
+  adminKeyInput.value = ''
+  adminKeyError.value = ''
+  pendingAdminAction.value = null
+}
+
+const submitAdminKey = async () => {
+  if (!adminKeyInput.value) {
+    adminKeyError.value = 'Please enter the admin key'
+    return
+  }
+  
+  adminKeyLoading.value = true
+  adminKeyError.value = ''
+  
+  try {
+    await requestAdminActionToken(adminKeyInput.value)
+    showAdminKeyModal.value = false
+    adminKeyInput.value = ''
+    
+    if (pendingAdminAction.value) {
+      const action = pendingAdminAction.value
+      pendingAdminAction.value = null
+      await action()
+    }
+  } catch (error) {
+    adminKeyError.value = error.message || 'Invalid admin key'
+  } finally {
+    adminKeyLoading.value = false
+  }
+}
+
 const editNotificationData = ref(null)
 const savingEditedNotification = ref(false)
 
@@ -1527,6 +1718,9 @@ onMounted(async () => {
   
   // If admin or master, fetch students from API with pagination only
   if (user.role === 'admin' || user.isMaster) {
+    // Check admin action status for primary admin
+    checkAdminActionStatus()
+    
     try {
       // Fetch only current page (10-20 students)
       const response = await fetch(`https://ssaam-api.vercel.app/apis/students?page=${currentPageNum.value}&limit=${itemsPerPage.value}`, {
@@ -1625,8 +1819,8 @@ const fetchPendingStudents = async () => {
   }
 }
 
-// Approve a student
-const approveStudent = async (student) => {
+// Approve a student (internal implementation)
+const approveStudentImpl = async (student) => {
   approvingStudent.value = student.student_id
   try {
     const token = localStorage.getItem('authToken')
@@ -1634,7 +1828,9 @@ const approveStudent = async (student) => {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${token}`,
+        'X-SSAAM-TS': encodeTimestamp(),
+        ...getAdminActionHeaders()
       }
     })
     
@@ -1644,6 +1840,14 @@ const approveStudent = async (student) => {
       showNotification('Student approved successfully! They will receive an email notification.', 'success')
       fetchStats()
     } else {
+      if (response.status === 403) {
+        const handled = await handleAdminActionError(response)
+        if (!handled) {
+          pendingAdminAction.value = () => approveStudentImpl(student)
+          showAdminKeyModal.value = true
+        }
+        return
+      }
       const data = await response.json()
       showNotification(data.message || 'Failed to approve student', 'error')
     }
@@ -1655,6 +1859,9 @@ const approveStudent = async (student) => {
   }
 }
 
+// Approve a student (with admin action check)
+const approveStudent = (student) => withAdminAction(approveStudentImpl)(student)
+
 // Open reject modal
 const openRejectModal = (student) => {
   studentToReject.value = student
@@ -1662,8 +1869,8 @@ const openRejectModal = (student) => {
   showRejectModal.value = true
 }
 
-// Confirm reject student
-const confirmRejectStudent = async () => {
+// Confirm reject student (internal implementation)
+const confirmRejectStudentImpl = async () => {
   if (!studentToReject.value) return
   
   rejectingStudent.value = true
@@ -1673,7 +1880,9 @@ const confirmRejectStudent = async () => {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${token}`,
+        'X-SSAAM-TS': encodeTimestamp(),
+        ...getAdminActionHeaders()
       },
       body: JSON.stringify({ reason: rejectReason.value })
     })
@@ -1686,6 +1895,14 @@ const confirmRejectStudent = async () => {
       rejectReason.value = ''
       showNotification('Student registration rejected. They will receive an email notification.', 'success')
     } else {
+      if (response.status === 403) {
+        const handled = await handleAdminActionError(response)
+        if (!handled) {
+          pendingAdminAction.value = () => confirmRejectStudentImpl()
+          showAdminKeyModal.value = true
+        }
+        return
+      }
       const data = await response.json()
       showNotification(data.message || 'Failed to reject student', 'error')
     }
@@ -1696,6 +1913,9 @@ const confirmRejectStudent = async () => {
     rejectingStudent.value = false
   }
 }
+
+// Confirm reject student (with admin action check)
+const confirmRejectStudent = () => withAdminAction(confirmRejectStudentImpl)()
 
 // Format date for display
 const formatDate = (dateString) => {
@@ -1816,8 +2036,8 @@ const fetchSettings = async () => {
   }
 }
 
-// Save settings to API
-const saveSettings = async () => {
+// Save settings to API (internal implementation)
+const saveSettingsImpl = async () => {
   if (!currentUser.value.isMaster && currentUser.value.role !== 'admin') return
   
   settingsSaving.value = true
@@ -1827,7 +2047,9 @@ const saveSettings = async () => {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${token}`,
+        'X-SSAAM-TS': encodeTimestamp(),
+        ...getAdminActionHeaders()
       },
       body: JSON.stringify({
         userRegister: appSettings.value.userRegister,
@@ -1838,6 +2060,14 @@ const saveSettings = async () => {
     if (response.ok) {
       showNotification('Settings saved successfully!', 'success')
     } else {
+      if (response.status === 403) {
+        const handled = await handleAdminActionError(response)
+        if (!handled) {
+          pendingAdminAction.value = () => saveSettingsImpl()
+          showAdminKeyModal.value = true
+        }
+        return
+      }
       const error = await response.json()
       showNotification(error.message || 'Failed to save settings', 'error')
     }
@@ -1848,6 +2078,9 @@ const saveSettings = async () => {
     settingsSaving.value = false
   }
 }
+
+// Save settings (with admin action check)
+const saveSettings = () => withAdminAction(saveSettingsImpl)()
 
 const handleLogout = () => {
   showLogoutConfirmation.value = true
@@ -2147,7 +2380,7 @@ const handleStudentPhotoUpload = async (event) => {
   studentPhotoUploading.value = false;
 };
 
-const saveUser = async () => {
+const saveUserImpl = async () => {
   if (!editingUser.value) return
   
   // Check if user is admin
@@ -2185,7 +2418,8 @@ const saveUser = async () => {
       headers: { 
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
-        'X-SSAAM-TS': encodeTimestamp()
+        'X-SSAAM-TS': encodeTimestamp(),
+        ...getAdminActionHeaders()
       },
       body: JSON.stringify(updateData)
     })
@@ -2203,7 +2437,8 @@ const saveUser = async () => {
             headers: { 
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${token}`,
-              'X-SSAAM-TS': encodeTimestamp()
+              'X-SSAAM-TS': encodeTimestamp(),
+              ...getAdminActionHeaders()
             },
             body: JSON.stringify({ 
               role: newRole.toLowerCase(),
@@ -2231,7 +2466,8 @@ const saveUser = async () => {
             headers: { 
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${token}`,
-              'X-SSAAM-TS': encodeTimestamp()
+              'X-SSAAM-TS': encodeTimestamp(),
+              ...getAdminActionHeaders()
             },
             body: JSON.stringify({ 
               rfid_code: newRfid,
@@ -2256,6 +2492,14 @@ const saveUser = async () => {
       showNotification('User updated successfully', 'success')
       refreshStudents()
     } else {
+      if (response.status === 403) {
+        const handled = await handleAdminActionError(response)
+        if (!handled) {
+          pendingAdminAction.value = () => saveUserImpl()
+          showAdminKeyModal.value = true
+        }
+        return
+      }
       const errorData = await response.json()
       showNotification(errorData.message || 'Failed to update user', 'error')
     }
@@ -2267,12 +2511,14 @@ const saveUser = async () => {
   closeEditModal()
 }
 
+const saveUser = () => withAdminAction(saveUserImpl)()
+
 const deleteUser = (studentId) => {
   userToDelete.value = studentId
   showDeleteConfirm.value = true
 }
 
-const confirmDelete = async () => {
+const confirmDeleteImpl = async () => {
   // Check if user is admin
   if (!currentUser.value.isMaster && currentUser.value.role !== 'admin') {
     showNotification('Only administrators can delete users', 'error')
@@ -2297,7 +2543,8 @@ const confirmDelete = async () => {
         headers: { 
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
-          'X-SSAAM-TS': encodeTimestamp()
+          'X-SSAAM-TS': encodeTimestamp(),
+          ...getAdminActionHeaders()
         }
       })
       
@@ -2306,6 +2553,14 @@ const confirmDelete = async () => {
         showNotification('User deleted successfully', 'success')
         fetchStats()
       } else {
+        if (response.status === 403) {
+          const handled = await handleAdminActionError(response)
+          if (!handled) {
+            pendingAdminAction.value = () => confirmDeleteImpl()
+            showAdminKeyModal.value = true
+          }
+          return
+        }
         const errorData = await response.json()
         showNotification(errorData.message || 'Failed to delete user', 'error')
       }
@@ -2317,6 +2572,8 @@ const confirmDelete = async () => {
   showDeleteConfirm.value = false
   userToDelete.value = null
 }
+
+const confirmDelete = () => withAdminAction(confirmDeleteImpl)()
 
 const fetchNotifications = async () => {
   notificationsLoading.value = true
