@@ -2351,7 +2351,7 @@ const toggleLike = async (notif) => {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify({ user_id: userId })
+      body: JSON.stringify({ user_id: visitorId })
     })
     
     if (response.status === 429) {
