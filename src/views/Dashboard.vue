@@ -1188,6 +1188,23 @@ const notificationsLoading = ref(false)
 const likeCooldowns = ref({})
 const likeInProgress = ref({})
 const LIKE_COOLDOWN_MS = 2000
+
+// ImgBB API keys for image uploads
+const imgbbApiKeys = [
+  "b6a37178abd163036357a7ba35fd0364",
+  "3b523af3b0ffb526efddfb51b8928581"
+]
+
+const getRandomApiKey = () => {
+  return imgbbApiKeys[Math.floor(Math.random() * imgbbApiKeys.length)]
+}
+
+// Like rate limiting with warning and ban
+const LIKE_WARNING_THRESHOLD = 20
+const LIKE_BAN_DURATION_MS = 60 * 60 * 1000
+const likeActionTimestamps = ref(JSON.parse(localStorage.getItem('likeActionTimestamps') || '[]'))
+const likeWarningShown = ref(localStorage.getItem('likeWarningShown') === 'true')
+const likeBanUntil = ref(parseInt(localStorage.getItem('likeBanUntil') || '0'))
 const showNotificationModal = ref(false)
 const newNotification = ref({ title: '', content: '', type: 'announcement' })
 const postingNotification = ref(false)
@@ -2243,6 +2260,29 @@ const formatMessageWithLinks = (text) => {
   })
 }
 
+const uploadToImgbb = async (base64Image) => {
+  try {
+    const base64Data = base64Image.includes(',') ? base64Image.split(',')[1] : base64Image
+    const formData = new FormData()
+    formData.append('key', getRandomApiKey())
+    formData.append('image', base64Data)
+    
+    const response = await fetch('https://api.imgbb.com/1/upload', {
+      method: 'POST',
+      body: formData
+    })
+    
+    const data = await response.json()
+    if (data.success) {
+      return { success: true, url: data.data.url }
+    }
+    return { success: false, error: data.error?.message || 'Upload failed' }
+  } catch (error) {
+    console.error('ImgBB upload error:', error)
+    return { success: false, error: error.message }
+  }
+}
+
 const postNotification = async () => {
   if (!newNotification.value.title.trim() || !newNotification.value.content.trim()) return
   
@@ -2258,9 +2298,18 @@ const postNotification = async () => {
       priority: 'normal'
     }
     
-    // If base64 image is selected (uploaded file), send it for ImgBB upload
+    // If base64 image is selected, upload to ImgBB first then use URL
     if (notificationImageBase64.value) {
-      payload.image = notificationImageBase64.value
+      showNotification('Uploading image...', 'info')
+      const imgbbResult = await uploadToImgbb(notificationImageBase64.value)
+      if (imgbbResult.success) {
+        payload.image_url = imgbbResult.url
+      } else {
+        showNotification('Image upload failed: ' + imgbbResult.error, 'error')
+        postingNotification.value = false
+        uploadingImage.value = false
+        return
+      }
     }
     // Otherwise use URL if provided
     else if (notificationImageUrl.value && isValidImageUrl(notificationImageUrl.value)) {
@@ -2325,21 +2374,71 @@ const isLikedByCurrentUser = (notif) => {
   return notif.liked_by.includes(visitorId)
 }
 
+const isLikeBanned = () => {
+  const now = Date.now()
+  if (likeBanUntil.value > now) {
+    const remainingMins = Math.ceil((likeBanUntil.value - now) / 60000)
+    return { banned: true, remainingMins }
+  }
+  return { banned: false }
+}
+
+const checkLikeRateLimit = () => {
+  const now = Date.now()
+  const oneMinuteAgo = now - 60000
+  
+  const recentActions = likeActionTimestamps.value.filter(ts => ts > oneMinuteAgo)
+  likeActionTimestamps.value = recentActions
+  localStorage.setItem('likeActionTimestamps', JSON.stringify(recentActions))
+  
+  return recentActions.length
+}
+
+const recordLikeAction = () => {
+  const now = Date.now()
+  likeActionTimestamps.value.push(now)
+  localStorage.setItem('likeActionTimestamps', JSON.stringify(likeActionTimestamps.value))
+}
+
 const isLikeDisabled = (notifId) => {
+  if (isLikeBanned().banned) return true
   return likeInProgress.value[notifId] || (likeCooldowns.value[notifId] && Date.now() < likeCooldowns.value[notifId])
 }
 
 const toggleLike = async (notif) => {
   const notifId = notif._id
   
+  const banCheck = isLikeBanned()
+  if (banCheck.banned) {
+    showNotification(`You are banned from liking for ${banCheck.remainingMins} more minutes. Please wait.`, 'error')
+    return
+  }
+  
+  const recentActionCount = checkLikeRateLimit()
+  
+  if (recentActionCount >= LIKE_WARNING_THRESHOLD) {
+    if (likeWarningShown.value) {
+      likeBanUntil.value = Date.now() + LIKE_BAN_DURATION_MS
+      localStorage.setItem('likeBanUntil', likeBanUntil.value.toString())
+      likeWarningShown.value = false
+      localStorage.setItem('likeWarningShown', 'false')
+      likeActionTimestamps.value = []
+      localStorage.setItem('likeActionTimestamps', '[]')
+      showNotification('You have been banned from liking for 1 hour due to excessive activity.', 'error')
+      return
+    } else {
+      likeWarningShown.value = true
+      localStorage.setItem('likeWarningShown', 'true')
+      showNotification('Warning: You are reacting too fast! Slow down or you will be banned for 1 hour.', 'warning')
+    }
+  }
+  
   if (isLikeDisabled(notifId)) {
     return
   }
   
   likeInProgress.value[notifId] = true
-  
-  // Add 2-second delay to prevent spam before making API call
-  await new Promise(resolve => setTimeout(resolve, 2000))
+  recordLikeAction()
   
   try {
     const token = localStorage.getItem('authToken') || localStorage.getItem('adminToken')
