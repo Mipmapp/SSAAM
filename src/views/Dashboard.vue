@@ -229,6 +229,10 @@
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="filter: brightness(0) invert(1);"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
           <span>Settings</span>
         </button>
+        <button @click="currentPage = 'attendance'; fetchAttendanceData()" :class="['flex items-center space-x-3 px-4 py-3 rounded-lg w-full text-left mt-2', currentPage === 'attendance' ? 'bg-white bg-opacity-20' : 'hover:bg-white hover:bg-opacity-10']">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="filter: brightness(0) invert(1);"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+          <span>Attendance</span>
+        </button>
         <button @click="currentPage = 'notifications'; fetchNotifications(); markNotificationsAsSeen()" :class="['flex items-center space-x-3 px-4 py-3 rounded-lg w-full text-left mt-2', currentPage === 'notifications' ? 'bg-white bg-opacity-20' : 'hover:bg-white hover:bg-opacity-10']">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="filter: brightness(0) invert(1);"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
           <span class="flex items-center gap-2">Notifications <span v-if="unreadNotificationCount > 0" class="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">{{ unreadNotificationCount }}</span></span>
@@ -297,6 +301,10 @@
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="filter: brightness(0) invert(1);"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
             <span>Settings</span>
           </button>
+          <button @click="currentPage = 'attendance'; showMobileMenu = false; fetchAttendanceData()" :class="['flex items-center space-x-3 px-4 py-3 rounded-lg w-full text-left mt-2', currentPage === 'attendance' ? 'bg-white bg-opacity-20' : 'hover:bg-white hover:bg-opacity-10']">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="filter: brightness(0) invert(1);"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+            <span>Attendance</span>
+          </button>
           <button @click="currentPage = 'notifications'; showMobileMenu = false; fetchNotifications(); markNotificationsAsSeen()" :class="['flex items-center space-x-3 px-4 py-3 rounded-lg w-full text-left mt-2', currentPage === 'notifications' ? 'bg-white bg-opacity-20' : 'hover:bg-white hover:bg-opacity-10']">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="filter: brightness(0) invert(1);"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
             <span class="flex items-center gap-2">Notifications <span v-if="unreadNotificationCount > 0" class="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">{{ unreadNotificationCount }}</span></span>
@@ -338,7 +346,7 @@
       </div>
 
       <div class="p-4 md:p-8">
-        <h1 class="hidden md:block text-2xl md:text-4xl font-bold text-purple-900 mb-8 pb-4 border-b-2 border-purple-900">{{ currentPage === 'users' ? 'Manage' : currentPage === 'settings' ? 'Settings' : currentPage === 'pending' ? 'Pending Approvals' : currentPage === 'notifications' ? 'Notifications' : 'Dashboard' }}</h1>
+        <h1 class="hidden md:block text-2xl md:text-4xl font-bold text-purple-900 mb-8 pb-4 border-b-2 border-purple-900">{{ currentPage === 'users' ? 'Manage' : currentPage === 'settings' ? 'Settings' : currentPage === 'pending' ? 'Pending Approvals' : currentPage === 'notifications' ? 'Notifications' : currentPage === 'attendance' ? 'Attendance' : 'Dashboard' }}</h1>
 
         <!-- Password Update Warning Banner -->
         <div v-if="showPasswordUpdateWarning && !currentUser.isMaster && currentUser.role !== 'admin'" class="mb-6 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-lg shadow-sm">
@@ -457,6 +465,220 @@
                 <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                 {{ settingsSaving ? 'Saving...' : 'Save Settings' }}
               </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Attendance Page -->
+        <div v-if="currentPage === 'attendance'" class="space-y-6">
+          <!-- Admin Attendance Management -->
+          <div v-if="currentUser.role === 'admin' || currentUser.isMaster" class="bg-white rounded-lg shadow-lg p-4 md:p-6">
+            <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
+              <div class="flex items-center gap-4">
+                <h2 class="text-xl font-bold text-purple-900">Attendance Events</h2>
+                <div class="flex gap-2">
+                  <button @click="attendanceTab = 'events'" :class="['px-4 py-2 rounded-lg text-sm font-medium transition', attendanceTab === 'events' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200']">Events</button>
+                  <button @click="attendanceTab = 'scanner'" :class="['px-4 py-2 rounded-lg text-sm font-medium transition', attendanceTab === 'scanner' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200']">RFID Scanner</button>
+                </div>
+              </div>
+              <div class="flex gap-2">
+                <button @click="fetchAttendanceData" :disabled="attendanceLoading" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition flex items-center gap-2">
+                  <svg :class="['w-4 h-4', attendanceLoading ? 'animate-spin' : '']" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                  Refresh
+                </button>
+                <button @click="showCreateEventModal = true" class="bg-gradient-to-r from-purple-600 to-pink-500 text-white px-4 py-2 rounded-lg hover:from-purple-700 hover:to-pink-600 transition flex items-center gap-2">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                  Create Event
+                </button>
+              </div>
+            </div>
+
+            <!-- Events List Tab -->
+            <div v-if="attendanceTab === 'events'">
+              <div v-if="attendanceLoading" class="flex items-center justify-center py-12">
+                <svg class="animate-spin h-10 w-10 text-purple-600" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              </div>
+              <div v-else-if="attendanceEvents.length === 0" class="text-center py-12 text-gray-500">
+                <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                <p>No attendance events yet. Create one to get started!</p>
+              </div>
+              <div v-else class="space-y-4">
+                <div v-for="event in attendanceEvents" :key="event._id" class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
+                  <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div class="flex-1">
+                      <div class="flex items-center gap-3 mb-2">
+                        <h3 class="font-semibold text-lg text-purple-900">{{ event.title }}</h3>
+                        <span :class="['px-2 py-1 rounded-full text-xs font-medium', getStatusBadgeClass(event.status)]">{{ event.status }}</span>
+                      </div>
+                      <p v-if="event.description" class="text-gray-600 text-sm mb-2">{{ event.description }}</p>
+                      <div class="flex flex-wrap gap-4 text-sm text-gray-500">
+                        <span class="flex items-center gap-1">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                          {{ formatEventDate(event.date) }}
+                        </span>
+                        <span v-if="event.startTime" class="flex items-center gap-1">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                          {{ formatEventTime(event.startTime) }} - {{ formatEventTime(event.endTime) }}
+                        </span>
+                        <span v-if="event.location" class="flex items-center gap-1">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                          {{ event.location }}
+                        </span>
+                      </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <button @click="openEventLogs(event)" class="bg-blue-100 text-blue-700 px-3 py-2 rounded-lg hover:bg-blue-200 transition text-sm flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        Logs
+                      </button>
+                      <button @click="openEditEvent(event)" class="bg-yellow-100 text-yellow-700 px-3 py-2 rounded-lg hover:bg-yellow-200 transition text-sm flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                        Edit
+                      </button>
+                      <button @click="deleteAttendanceEvent(event._id)" class="bg-red-100 text-red-700 px-3 py-2 rounded-lg hover:bg-red-200 transition text-sm flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- RFID Scanner Tab -->
+            <div v-if="attendanceTab === 'scanner'" class="space-y-4">
+              <div v-if="!selectedEvent" class="text-center py-8">
+                <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4"></path></svg>
+                <p class="text-gray-500 mb-4">Select an event to start scanning RFID cards</p>
+                <select v-model="selectedEvent" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none">
+                  <option :value="null">-- Select Event --</option>
+                  <option v-for="event in attendanceEvents.filter(e => e.status === 'active')" :key="event._id" :value="event">{{ event.title }} ({{ formatEventDate(event.date) }})</option>
+                </select>
+              </div>
+              <div v-else class="space-y-4">
+                <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <h3 class="font-semibold text-purple-900">{{ selectedEvent.title }}</h3>
+                      <p class="text-sm text-purple-600">{{ formatEventDate(selectedEvent.date) }} | {{ formatEventTime(selectedEvent.startTime) }} - {{ formatEventTime(selectedEvent.endTime) }}</p>
+                    </div>
+                    <button @click="selectedEvent = null" class="text-purple-600 hover:text-purple-800">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                  <svg class="w-20 h-20 mx-auto mb-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4"></path></svg>
+                  <p class="text-lg font-medium text-gray-700 mb-2">Ready for RFID Scan</p>
+                  <p class="text-sm text-gray-500 mb-4">Click below and scan an RFID card. Scanner input will be auto-detected.</p>
+                  <input 
+                    ref="rfidInputRef"
+                    v-model="rfidInput"
+                    @keydown="handleRfidKeydown"
+                    type="text"
+                    placeholder="Scan RFID card or type manually..."
+                    class="w-full max-w-md mx-auto px-4 py-3 text-center text-lg border-2 border-purple-300 rounded-lg focus:border-purple-600 focus:ring-2 focus:ring-purple-200 outline-none"
+                    :disabled="rfidProcessing"
+                  />
+                  <div v-if="rfidProcessing" class="mt-4 flex items-center justify-center gap-2 text-purple-600">
+                    <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    Processing...
+                  </div>
+                  <div v-if="rfidResult" :class="['mt-4 p-3 rounded-lg', rfidResult.success ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800']">
+                    <p class="font-medium">{{ rfidResult.success ? (rfidResult.action === 'check_in' ? 'Check-in Successful!' : 'Check-out Successful!') : 'Scan Failed' }}</p>
+                    <p class="text-sm">{{ rfidResult.success ? rfidResult.student?.full_name : rfidResult.message }}</p>
+                  </div>
+                </div>
+
+                <!-- Recent Logs -->
+                <div class="mt-6">
+                  <h4 class="font-medium text-gray-700 mb-3">Recent Attendance Logs</h4>
+                  <div v-if="attendanceLogs.length === 0" class="text-center py-4 text-gray-500">
+                    No attendance records yet for this event.
+                  </div>
+                  <div v-else class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                      <thead class="bg-gray-50">
+                        <tr>
+                          <th class="px-4 py-2 text-left">Student</th>
+                          <th class="px-4 py-2 text-left">Program</th>
+                          <th class="px-4 py-2 text-left">Check-in</th>
+                          <th class="px-4 py-2 text-left">Check-out</th>
+                          <th class="px-4 py-2 text-left">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="log in attendanceLogs.slice(0, 10)" :key="log._id" class="border-b">
+                          <td class="px-4 py-2">{{ log.student?.full_name || log.student_name }}</td>
+                          <td class="px-4 py-2">{{ log.student?.program || '-' }}</td>
+                          <td class="px-4 py-2">{{ log.check_in_time ? new Date(log.check_in_time).toLocaleTimeString() : '-' }}</td>
+                          <td class="px-4 py-2">{{ log.check_out_time ? new Date(log.check_out_time).toLocaleTimeString() : '-' }}</td>
+                          <td class="px-4 py-2">
+                            <span :class="['px-2 py-1 rounded-full text-xs font-medium', log.check_out_time ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800']">
+                              {{ log.check_out_time ? 'Present' : 'Incomplete' }}
+                            </span>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Student Attendance View -->
+          <div v-else class="bg-white rounded-lg shadow-lg p-4 md:p-6">
+            <div class="flex items-center justify-between mb-6">
+              <h2 class="text-xl font-bold text-purple-900">My Attendance</h2>
+              <button @click="fetchAttendanceData" :disabled="attendanceLoading" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition flex items-center gap-2">
+                <svg :class="['w-4 h-4', attendanceLoading ? 'animate-spin' : '']" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                Refresh
+              </button>
+            </div>
+
+            <div v-if="attendanceLoading" class="flex items-center justify-center py-12">
+              <svg class="animate-spin h-10 w-10 text-purple-600" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            </div>
+            <div v-else-if="attendanceEvents.length === 0" class="text-center py-12 text-gray-500">
+              <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+              <p>No active attendance events at the moment.</p>
+            </div>
+            <div v-else class="space-y-4">
+              <div v-for="event in attendanceEvents" :key="event._id" class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div class="flex-1">
+                    <div class="flex items-center gap-3 mb-2">
+                      <h3 class="font-semibold text-lg text-purple-900">{{ event.title }}</h3>
+                      <span :class="['px-2 py-1 rounded-full text-xs font-medium', getStatusBadgeClass(getAttendanceStatus(event._id))]">
+                        {{ getAttendanceStatus(event._id) === 'present' ? 'Present' : getAttendanceStatus(event._id) === 'incomplete' ? 'Incomplete' : 'Absent' }}
+                      </span>
+                    </div>
+                    <p v-if="event.description" class="text-gray-600 text-sm mb-2">{{ event.description }}</p>
+                    <div class="flex flex-wrap gap-4 text-sm text-gray-500">
+                      <span class="flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        {{ formatEventDate(event.date) }}
+                      </span>
+                      <span v-if="event.startTime" class="flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        {{ formatEventTime(event.startTime) }} - {{ formatEventTime(event.endTime) }}
+                      </span>
+                      <span v-if="event.location" class="flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        {{ event.location }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1289,6 +1511,214 @@
     </div>
   </div>
 
+  <!-- Create Attendance Event Modal -->
+  <div v-if="showCreateEventModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="showCreateEventModal = false">
+    <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-2xl font-bold text-purple-900">Create Attendance Event</h3>
+        <button @click="showCreateEventModal = false" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+      </div>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Event Title *</label>
+          <input v-model="newEvent.title" type="text" placeholder="e.g., CCS General Assembly" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+          <textarea v-model="newEvent.description" placeholder="Event description..." rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none resize-none"></textarea>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Location</label>
+          <input v-model="newEvent.location" type="text" placeholder="e.g., CCS AVR" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Date *</label>
+          <input v-model="newEvent.date" type="date" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none" />
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Start Time *</label>
+            <input v-model="newEvent.startTime" type="time" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">End Time *</label>
+            <input v-model="newEvent.endTime" type="time" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none" />
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+          <select v-model="newEvent.status" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none">
+            <option value="upcoming">Upcoming</option>
+            <option value="active">Active (Accepting Check-ins)</option>
+            <option value="completed">Completed</option>
+          </select>
+        </div>
+        <div class="flex gap-3 mt-6">
+          <button @click="showCreateEventModal = false" class="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-lg font-medium hover:bg-gray-300 transition">Cancel</button>
+          <button @click="createAttendanceEvent" :disabled="!newEvent.title || !newEvent.date || !newEvent.startTime || !newEvent.endTime" class="flex-1 bg-gradient-to-r from-purple-600 to-pink-500 text-white py-2 px-4 rounded-lg font-medium hover:from-purple-700 hover:to-pink-600 transition disabled:opacity-50 disabled:cursor-not-allowed">Create Event</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Attendance Event Modal -->
+  <div v-if="showEditEventModal && selectedEvent" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="showEditEventModal = false">
+    <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-2xl font-bold text-purple-900">Edit Attendance Event</h3>
+        <button @click="showEditEventModal = false" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+      </div>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Event Title *</label>
+          <input v-model="selectedEvent.title" type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+          <textarea v-model="selectedEvent.description" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none resize-none"></textarea>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Location</label>
+          <input v-model="selectedEvent.location" type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Date *</label>
+          <input v-model="selectedEvent.date" type="date" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none" />
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Start Time *</label>
+            <input v-model="selectedEvent.start_time" type="time" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">End Time *</label>
+            <input v-model="selectedEvent.end_time" type="time" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none" />
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+          <select v-model="selectedEvent.status" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none">
+            <option value="upcoming">Upcoming</option>
+            <option value="active">Active (Accepting Check-ins)</option>
+            <option value="completed">Completed</option>
+          </select>
+        </div>
+        <div class="flex gap-3 mt-6">
+          <button @click="showEditEventModal = false" class="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-lg font-medium hover:bg-gray-300 transition">Cancel</button>
+          <button @click="updateAttendanceEvent" :disabled="!selectedEvent.title || !selectedEvent.date || !selectedEvent.start_time || !selectedEvent.end_time" class="flex-1 bg-gradient-to-r from-purple-600 to-pink-500 text-white py-2 px-4 rounded-lg font-medium hover:from-purple-700 hover:to-pink-600 transition disabled:opacity-50 disabled:cursor-not-allowed">Save Changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Event Attendance Logs Modal -->
+  <div v-if="showEventLogsModal && selectedEvent" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="showEventLogsModal = false">
+    <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center mb-6">
+        <div>
+          <h3 class="text-2xl font-bold text-purple-900">{{ selectedEvent.title }}</h3>
+          <p class="text-gray-500 text-sm">Attendance Logs - {{ formatEventDate(selectedEvent.date) }}</p>
+        </div>
+        <button @click="showEventLogsModal = false" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+      </div>
+      
+      <!-- Filters -->
+      <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
+        <input v-model="eventLogsFilter.search" type="text" placeholder="Search by name or ID..." class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none" @input="fetchEventLogs(selectedEvent.id)" />
+        <select v-model="eventLogsFilter.yearLevel" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none" @change="fetchEventLogs(selectedEvent.id)">
+          <option value="">All Year Levels</option>
+          <option value="1st Year">1st Year</option>
+          <option value="2nd Year">2nd Year</option>
+          <option value="3rd Year">3rd Year</option>
+          <option value="4th Year">4th Year</option>
+        </select>
+        <select v-model="eventLogsFilter.program" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none" @change="fetchEventLogs(selectedEvent.id)">
+          <option value="">All Programs</option>
+          <option value="BSCS">BSCS</option>
+          <option value="BSIS">BSIS</option>
+          <option value="BSIT">BSIT</option>
+        </select>
+        <select v-model="eventLogsFilter.status" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none" @change="fetchEventLogs(selectedEvent.id)">
+          <option value="">All Statuses</option>
+          <option value="present">Present</option>
+          <option value="late">Late</option>
+          <option value="absent">Absent</option>
+        </select>
+      </div>
+
+      <!-- Stats Summary -->
+      <div class="grid grid-cols-4 gap-4 mb-6">
+        <div class="bg-green-50 p-4 rounded-lg text-center">
+          <p class="text-2xl font-bold text-green-600">{{ attendanceLogs.filter(l => l.status === 'present').length }}</p>
+          <p class="text-sm text-green-700">Present</p>
+        </div>
+        <div class="bg-yellow-50 p-4 rounded-lg text-center">
+          <p class="text-2xl font-bold text-yellow-600">{{ attendanceLogs.filter(l => l.status === 'late').length }}</p>
+          <p class="text-sm text-yellow-700">Late</p>
+        </div>
+        <div class="bg-red-50 p-4 rounded-lg text-center">
+          <p class="text-2xl font-bold text-red-600">{{ attendanceLogs.filter(l => l.status === 'absent').length }}</p>
+          <p class="text-sm text-red-700">Absent</p>
+        </div>
+        <div class="bg-purple-50 p-4 rounded-lg text-center">
+          <p class="text-2xl font-bold text-purple-600">{{ attendanceLogs.length }}</p>
+          <p class="text-sm text-purple-700">Total</p>
+        </div>
+      </div>
+
+      <!-- Logs Table -->
+      <div class="overflow-x-auto">
+        <table class="w-full border-collapse">
+          <thead>
+            <tr class="bg-purple-100 text-purple-900">
+              <th class="border border-purple-300 px-4 py-3 text-left">Student</th>
+              <th class="border border-purple-300 px-4 py-3 text-left">Program</th>
+              <th class="border border-purple-300 px-4 py-3 text-left">Year</th>
+              <th class="border border-purple-300 px-4 py-3 text-center">Check In</th>
+              <th class="border border-purple-300 px-4 py-3 text-center">Check Out</th>
+              <th class="border border-purple-300 px-4 py-3 text-center">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-if="attendanceLoading" class="text-center">
+              <td colspan="6" class="py-8 text-gray-500">
+                <svg class="animate-spin h-8 w-8 mx-auto mb-2 text-purple-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Loading logs...
+              </td>
+            </tr>
+            <tr v-else-if="attendanceLogs.length === 0" class="text-center">
+              <td colspan="6" class="py-8 text-gray-500">No attendance records found</td>
+            </tr>
+            <tr v-else v-for="log in attendanceLogs" :key="log.id" class="hover:bg-gray-50">
+              <td class="border border-purple-300 px-4 py-3">
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-full bg-gradient-to-r from-pink-400 to-purple-600 flex items-center justify-center text-white text-xs overflow-hidden">
+                    <img v-if="log.student_image" :src="log.student_image" class="w-full h-full object-cover" />
+                    <span v-else>{{ log.student_name?.charAt(0) || '?' }}</span>
+                  </div>
+                  <div>
+                    <p class="font-medium text-gray-900">{{ log.student_name }}</p>
+                    <p class="text-xs text-gray-500">{{ log.student_id }}</p>
+                  </div>
+                </div>
+              </td>
+              <td class="border border-purple-300 px-4 py-3">{{ log.program }}</td>
+              <td class="border border-purple-300 px-4 py-3">{{ log.year_level }}</td>
+              <td class="border border-purple-300 px-4 py-3 text-center">{{ log.check_in_time ? formatEventTime(log.check_in_time) : '-' }}</td>
+              <td class="border border-purple-300 px-4 py-3 text-center">{{ log.check_out_time ? formatEventTime(log.check_out_time) : '-' }}</td>
+              <td class="border border-purple-300 px-4 py-3 text-center">
+                <span :class="getStatusBadgeClass(log.status)">{{ log.status }}</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
   <!-- Notification Toast -->
   <div v-if="notification.show" :class="['fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white font-medium transition-all duration-300 z-40', notification.type === 'success' ? 'bg-green-500' : notification.type === 'error' ? 'bg-red-500' : 'bg-blue-500']">
     <div class="flex items-center gap-2">
@@ -1428,6 +1858,37 @@ const getPosterPhotoFallbackStyle = (notif) => {
   }
   return { backgroundColor: getRandomFallbackColor(notif._id) }
 }
+
+// Attendance management
+const attendanceEvents = ref([])
+const attendanceLogs = ref([])
+const myAttendanceRecords = ref([])
+const attendanceLoading = ref(false)
+const showCreateEventModal = ref(false)
+const showEditEventModal = ref(false)
+const showEventLogsModal = ref(false)
+const selectedEvent = ref(null)
+const newEvent = ref({
+  title: '',
+  description: '',
+  location: '',
+  date: '',
+  startTime: '',
+  endTime: '',
+  status: 'draft'
+})
+const eventLogsFilter = ref({
+  yearLevel: '',
+  program: '',
+  search: ''
+})
+const rfidInput = ref('')
+const rfidInputRef = ref(null)
+const rfidLastKeyTime = ref(0)
+const rfidInputBuffer = ref('')
+const rfidProcessing = ref(false)
+const rfidResult = ref(null)
+const attendanceTab = ref('events')
 
 const handlePosterImageError = async (notifId, imageUrl) => {
   const retries = posterImageRetries.value[notifId] || 0
@@ -2636,6 +3097,298 @@ const fetchNotifications = async () => {
     notifications.value = []
   } finally {
     notificationsLoading.value = false
+  }
+}
+
+const fetchAttendanceData = async () => {
+  attendanceLoading.value = true
+  const token = localStorage.getItem('token')
+  const isAdmin = currentUser.value.role === 'admin' || currentUser.value.isMaster
+  
+  try {
+    if (isAdmin) {
+      const response = await fetch('/apis/attendance/events', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'X-SSAAM-TS': encodeTimestamp()
+        }
+      })
+      if (response.ok) {
+        const result = await response.json()
+        attendanceEvents.value = result.data || []
+      }
+    } else {
+      const [eventsRes, myRecordsRes] = await Promise.all([
+        fetch('/apis/attendance/events/active', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'X-SSAAM-TS': encodeTimestamp()
+          }
+        }),
+        fetch('/apis/attendance/my-records', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'X-SSAAM-TS': encodeTimestamp()
+          }
+        })
+      ])
+      
+      if (eventsRes.ok) {
+        const eventsResult = await eventsRes.json()
+        attendanceEvents.value = eventsResult.data || []
+      }
+      if (myRecordsRes.ok) {
+        const recordsResult = await myRecordsRes.json()
+        myAttendanceRecords.value = recordsResult.data || []
+      }
+    }
+  } catch (error) {
+    console.error('Failed to fetch attendance data:', error)
+  } finally {
+    attendanceLoading.value = false
+  }
+}
+
+const createAttendanceEvent = async () => {
+  const token = localStorage.getItem('token')
+  try {
+    const response = await fetch('/apis/attendance/events', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        'X-SSAAM-TS': encodeTimestamp(),
+        ...getAdminActionHeaders()
+      },
+      body: JSON.stringify(newEvent.value)
+    })
+    
+    if (response.ok) {
+      showNotification('Event created successfully', 'success')
+      showCreateEventModal.value = false
+      newEvent.value = { title: '', description: '', location: '', date: '', startTime: '', endTime: '', status: 'draft' }
+      fetchAttendanceData()
+    } else {
+      if (response.status === 403) {
+        const handled = await handleAdminActionError(response)
+        if (!handled) {
+          pendingAdminAction.value = () => createAttendanceEvent()
+          showAdminKeyModal.value = true
+        }
+        return
+      }
+      const errorData = await response.json()
+      showNotification(errorData.message || 'Failed to create event', 'error')
+    }
+  } catch (error) {
+    console.error('Error creating event:', error)
+    showNotification('Error creating event', 'error')
+  }
+}
+
+const updateAttendanceEvent = async () => {
+  if (!selectedEvent.value) return
+  const token = localStorage.getItem('token')
+  try {
+    const response = await fetch(`/apis/attendance/events/${selectedEvent.value._id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        'X-SSAAM-TS': encodeTimestamp(),
+        ...getAdminActionHeaders()
+      },
+      body: JSON.stringify(selectedEvent.value)
+    })
+    
+    if (response.ok) {
+      showNotification('Event updated successfully', 'success')
+      showEditEventModal.value = false
+      fetchAttendanceData()
+    } else {
+      if (response.status === 403) {
+        const handled = await handleAdminActionError(response)
+        if (!handled) {
+          pendingAdminAction.value = () => updateAttendanceEvent()
+          showAdminKeyModal.value = true
+        }
+        return
+      }
+      const errorData = await response.json()
+      showNotification(errorData.message || 'Failed to update event', 'error')
+    }
+  } catch (error) {
+    console.error('Error updating event:', error)
+    showNotification('Error updating event', 'error')
+  }
+}
+
+const deleteAttendanceEvent = async (eventId) => {
+  const token = localStorage.getItem('token')
+  try {
+    const response = await fetch(`/apis/attendance/events/${eventId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'X-SSAAM-TS': encodeTimestamp(),
+        ...getAdminActionHeaders()
+      }
+    })
+    
+    if (response.ok) {
+      showNotification('Event deleted successfully', 'success')
+      fetchAttendanceData()
+    } else {
+      if (response.status === 403) {
+        const handled = await handleAdminActionError(response)
+        if (!handled) {
+          pendingAdminAction.value = () => deleteAttendanceEvent(eventId)
+          showAdminKeyModal.value = true
+        }
+        return
+      }
+      const errorData = await response.json()
+      showNotification(errorData.message || 'Failed to delete event', 'error')
+    }
+  } catch (error) {
+    console.error('Error deleting event:', error)
+    showNotification('Error deleting event', 'error')
+  }
+}
+
+const fetchEventLogs = async (eventId) => {
+  const token = localStorage.getItem('token')
+  attendanceLoading.value = true
+  try {
+    const params = new URLSearchParams()
+    if (eventLogsFilter.value.yearLevel) params.append('yearLevel', eventLogsFilter.value.yearLevel)
+    if (eventLogsFilter.value.program) params.append('program', eventLogsFilter.value.program)
+    if (eventLogsFilter.value.search) params.append('search', eventLogsFilter.value.search)
+    
+    const response = await fetch(`/apis/attendance/events/${eventId}/logs?${params.toString()}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'X-SSAAM-TS': encodeTimestamp()
+      }
+    })
+    
+    if (response.ok) {
+      const result = await response.json()
+      attendanceLogs.value = result.data || []
+    }
+  } catch (error) {
+    console.error('Error fetching event logs:', error)
+  } finally {
+    attendanceLoading.value = false
+  }
+}
+
+const handleRfidKeydown = (event) => {
+  const now = Date.now()
+  const timeDiff = now - rfidLastKeyTime.value
+  const SCANNER_THRESHOLD = 30
+  
+  if (timeDiff < SCANNER_THRESHOLD || rfidLastKeyTime.value === 0) {
+    if (event.key !== 'Enter') {
+      rfidInputBuffer.value += event.key
+    }
+  } else {
+    rfidInputBuffer.value = event.key === 'Enter' ? '' : event.key
+  }
+  rfidLastKeyTime.value = now
+  
+  if (event.key === 'Enter' && rfidInputBuffer.value.length > 5) {
+    event.preventDefault()
+    processRfidScan(rfidInputBuffer.value)
+    rfidInputBuffer.value = ''
+    rfidInput.value = ''
+  }
+}
+
+const processRfidScan = async (rfidCode) => {
+  if (!selectedEvent.value || rfidProcessing.value) return
+  
+  rfidProcessing.value = true
+  rfidResult.value = null
+  const token = localStorage.getItem('token')
+  
+  try {
+    const response = await fetch(`/apis/attendance/events/${selectedEvent.value._id}/check`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        'X-SSAAM-TS': encodeTimestamp()
+      },
+      body: JSON.stringify({ rfid_code: rfidCode })
+    })
+    
+    const result = await response.json()
+    if (response.ok) {
+      rfidResult.value = { success: true, ...result }
+      showNotification(`${result.action === 'check_in' ? 'Check-in' : 'Check-out'}: ${result.student?.full_name || 'Student'}`, 'success')
+      fetchEventLogs(selectedEvent.value._id)
+    } else {
+      rfidResult.value = { success: false, message: result.message }
+      showNotification(result.message || 'RFID scan failed', 'error')
+    }
+  } catch (error) {
+    console.error('RFID scan error:', error)
+    rfidResult.value = { success: false, message: 'Error processing RFID' }
+    showNotification('Error processing RFID scan', 'error')
+  } finally {
+    rfidProcessing.value = false
+    setTimeout(() => { rfidResult.value = null }, 3000)
+  }
+}
+
+const openEventLogs = (event) => {
+  selectedEvent.value = event
+  showEventLogsModal.value = true
+  fetchEventLogs(event._id)
+}
+
+const openEditEvent = (event) => {
+  selectedEvent.value = { ...event }
+  showEditEventModal.value = true
+}
+
+const formatEventDate = (dateStr) => {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  return date.toLocaleDateString('en-PH', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })
+}
+
+const formatEventTime = (timeStr) => {
+  if (!timeStr) return ''
+  const [hours, minutes] = timeStr.split(':')
+  const hour = parseInt(hours)
+  const ampm = hour >= 12 ? 'PM' : 'AM'
+  const displayHour = hour % 12 || 12
+  return `${displayHour}:${minutes} ${ampm}`
+}
+
+const getAttendanceStatus = (eventId) => {
+  const record = myAttendanceRecords.value.find(r => r.event_id === eventId || r.event?._id === eventId)
+  if (!record) return 'absent'
+  if (record.check_out_time) return 'present'
+  if (record.check_in_time) return 'incomplete'
+  return 'absent'
+}
+
+const getStatusBadgeClass = (status) => {
+  switch (status) {
+    case 'present': return 'bg-green-100 text-green-800'
+    case 'incomplete': return 'bg-yellow-100 text-yellow-800'
+    case 'absent': return 'bg-red-100 text-red-800'
+    case 'active': return 'bg-green-100 text-green-800'
+    case 'draft': return 'bg-gray-100 text-gray-800'
+    case 'closed': return 'bg-red-100 text-red-800'
+    default: return 'bg-gray-100 text-gray-800'
   }
 }
 
