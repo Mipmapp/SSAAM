@@ -1716,8 +1716,59 @@ onMounted(async () => {
   profileImageLoading.value = false
   sidebarImageLoading.value = false
   
-  // If admin or master, fetch students from API with pagination only
+  // SECURITY: If user claims to be admin, verify via API using the JWT token
+  // This prevents localStorage tampering - the server validates the actual JWT
   if (user.role === 'admin' || user.isMaster) {
+    const token = localStorage.getItem('authToken')
+    if (!token) {
+      console.error('No auth token found for admin user')
+      currentUser.value.isMaster = false
+      currentUser.value.role = 'student'
+      localStorage.setItem('currentUser', JSON.stringify(currentUser.value))
+      router.push('/')
+      return
+    }
+    
+    try {
+      const verifyResponse = await fetch('https://ssaam-api.vercel.app/apis/admin/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      })
+      
+      if (!verifyResponse.ok) {
+        console.error('Admin verification failed - token is not a valid admin token')
+        currentUser.value.isMaster = false
+        currentUser.value.role = 'student'
+        localStorage.setItem('currentUser', JSON.stringify(currentUser.value))
+        localStorage.removeItem('authToken')
+        router.push('/')
+        return
+      }
+      
+      const verifyData = await verifyResponse.json()
+      if (!verifyData.isAdmin) {
+        console.error('Token verified but user is not admin')
+        currentUser.value.isMaster = false
+        currentUser.value.role = 'student'
+        localStorage.setItem('currentUser', JSON.stringify(currentUser.value))
+        router.push('/')
+        return
+      }
+      
+      currentUser.value.isMaster = true
+      currentUser.value.isPrimaryAdmin = verifyData.isPrimaryAdmin
+    } catch (error) {
+      console.error('Failed to verify admin status:', error)
+      currentUser.value.isMaster = false
+      currentUser.value.role = 'student'
+      localStorage.setItem('currentUser', JSON.stringify(currentUser.value))
+      router.push('/')
+      return
+    }
+    
     // Check admin action status for primary admin
     checkAdminActionStatus()
     

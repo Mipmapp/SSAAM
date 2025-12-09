@@ -698,9 +698,43 @@ function studentAuth(req, res, next) {
     next();
 }
 
+// Middleware to verify the token actually has isMaster: true in the JWT payload
+// This prevents localStorage tampering - the JWT signature cannot be forged
+async function requireMaster(req, res, next) {
+    if (!req.master) {
+        return res.status(401).json({ message: "Authentication required" });
+    }
+
+    // Verify isMaster flag from the JWT token itself (cannot be forged)
+    if (!req.master.isMaster) {
+        return res.status(403).json({ 
+            message: "Access denied. Admin privileges required.",
+            code: 'NOT_ADMIN'
+        });
+    }
+
+    // Also verify the session is for a master user
+    if (req.sessionToken && req.sessionToken.user_type !== 'master') {
+        return res.status(403).json({ 
+            message: "Access denied. Invalid admin session.",
+            code: 'INVALID_ADMIN_SESSION'
+        });
+    }
+
+    next();
+}
+
 async function adminActionAuth(req, res, next) {
     if (!req.master) {
         return res.status(401).json({ message: "Authentication required" });
+    }
+
+    // First verify this is actually an admin token
+    if (!req.master.isMaster) {
+        return res.status(403).json({ 
+            message: "Access denied. Admin privileges required.",
+            code: 'NOT_ADMIN'
+        });
     }
 
     if (req.master.username !== PRIMARY_ADMIN_USERNAME) {
@@ -2050,7 +2084,7 @@ app.get('/apis/admin-actions/status', auth, async (req, res) => {
     }
 });
 
-app.get('/apis/masters', auth, async (req, res) => {
+app.get('/apis/masters', auth, requireMaster, async (req, res) => {
     try {
         const masters = await Master.find();
         res.json(masters);
@@ -2087,6 +2121,41 @@ app.post('/apis/validate-token', async (req, res) => {
         });
     } catch (err) {
         res.status(401).json({ valid: false, message: "Invalid token" });
+    }
+});
+
+// Verify admin status - checks if the current token is a valid admin token
+// This endpoint is used by the frontend to verify admin status on page load
+// The isMaster flag in the JWT cannot be forged, so this is secure
+app.post('/apis/admin/verify', auth, async (req, res) => {
+    try {
+        // Check if the JWT token has isMaster flag
+        if (!req.master.isMaster) {
+            return res.status(403).json({ 
+                isAdmin: false, 
+                message: "Not an admin token",
+                code: 'NOT_ADMIN'
+            });
+        }
+
+        // Also verify the session is for a master user
+        if (req.sessionToken && req.sessionToken.user_type !== 'master') {
+            return res.status(403).json({ 
+                isAdmin: false, 
+                message: "Invalid admin session",
+                code: 'INVALID_ADMIN_SESSION'
+            });
+        }
+
+        // Return admin info from JWT (cannot be forged)
+        res.json({ 
+            isAdmin: true,
+            username: req.master.username,
+            isPrimaryAdmin: req.master.username === PRIMARY_ADMIN_USERNAME,
+            sessionExpiresAt: req.sessionToken?.expires_at
+        });
+    } catch (err) {
+        res.status(500).json({ isAdmin: false, message: err.message });
     }
 });
 
