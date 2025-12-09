@@ -3196,7 +3196,7 @@ const fetchAttendanceData = async () => {
   
   try {
     if (isAdmin) {
-      const response = await fetch('/apis/attendance/events', {
+      const response = await fetch('https://ssaam-api.vercel.app/apis/attendance/events', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -3209,14 +3209,14 @@ const fetchAttendanceData = async () => {
       }
     } else {
       const [eventsRes, myRecordsRes] = await Promise.all([
-        fetch('/apis/attendance/events/active', {
+        fetch('https://ssaam-api.vercel.app/apis/attendance/events/active', {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
             'X-SSAAM-TS': encodeTimestamp()
           }
         }),
-        fetch('/apis/attendance/my-records', {
+        fetch('https://ssaam-api.vercel.app/apis/attendance/my-records', {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -3244,7 +3244,7 @@ const fetchAttendanceData = async () => {
 const createAttendanceEvent = async () => {
   const token = localStorage.getItem('token')
   try {
-    const response = await fetch('/apis/attendance/events', {
+    const response = await fetch('https://ssaam-api.vercel.app/apis/attendance/events', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -3282,7 +3282,7 @@ const updateAttendanceEvent = async () => {
   if (!selectedEvent.value) return
   const token = localStorage.getItem('token')
   try {
-    const response = await fetch(`/apis/attendance/events/${selectedEvent.value._id}`, {
+    const response = await fetch(`https://ssaam-api.vercel.app/apis/attendance/events/${selectedEvent.value._id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -3318,7 +3318,7 @@ const updateAttendanceEvent = async () => {
 const deleteAttendanceEvent = async (eventId) => {
   const token = localStorage.getItem('token')
   try {
-    const response = await fetch(`/apis/attendance/events/${eventId}`, {
+    const response = await fetch(`https://ssaam-api.vercel.app/apis/attendance/events/${eventId}`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -3357,7 +3357,7 @@ const fetchEventLogs = async (eventId) => {
     if (eventLogsFilter.value.program) params.append('program', eventLogsFilter.value.program)
     if (eventLogsFilter.value.search) params.append('search', eventLogsFilter.value.search)
     
-    const response = await fetch(`/apis/attendance/events/${eventId}/logs?${params.toString()}`, {
+    const response = await fetch(`https://ssaam-api.vercel.app/apis/attendance/events/${eventId}/logs?${params.toString()}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -3406,7 +3406,7 @@ const processRfidScan = async (rfidCode) => {
   const token = localStorage.getItem('token')
   
   try {
-    const response = await fetch(`/apis/attendance/events/${selectedEvent.value._id}/check`, {
+    const response = await fetch(`https://ssaam-api.vercel.app/apis/attendance/events/${selectedEvent.value._id}/check`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
