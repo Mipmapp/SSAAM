@@ -1126,36 +1126,77 @@
     </div>
   </div>
 
-  <!-- Password Change Modal -->
-  <div v-if="showPasswordChangeModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="showPasswordChangeModal = false">
-    <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4">
+  <!-- Password Change Modal with Email Verification -->
+  <div v-if="showPasswordChangeModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="closePasswordChangeModal">
+    <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
       <div class="flex justify-between items-center mb-6">
         <h3 class="text-2xl font-bold text-purple-900">Change Password</h3>
-        <button @click="showPasswordChangeModal = false" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+        <button @click="closePasswordChangeModal" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
       </div>
-      <div class="space-y-4">
+
+      <!-- Step 1: Request Email Verification -->
+      <div v-if="pwChangeStep === 1" class="space-y-4">
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+          <div class="flex items-start gap-3">
+            <svg class="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <p class="text-sm text-blue-800">For your security, we'll send a verification code to your registered email address.</p>
+          </div>
+        </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Current Password</label>
-          <input v-model="passwordForm.currentPassword" type="password" placeholder="Enter current password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none" />
-          <p v-if="passwordErrors.currentPassword" class="text-red-500 text-xs mt-1">{{ passwordErrors.currentPassword }}</p>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Your Email Address</label>
+          <input v-model="pwChangeEmail" type="email" :placeholder="currentUser.email || 'your.email@example.com'" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none" />
+        </div>
+        <button @click="requestPasswordChangeCode" :disabled="changingPassword || !pwChangeEmail.trim()" class="w-full bg-gradient-to-r from-purple-600 to-pink-500 text-white py-3 px-6 rounded-lg font-medium hover:from-purple-700 hover:to-pink-600 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center">
+          <svg v-if="changingPassword" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+          {{ changingPassword ? 'Sending...' : 'Send Verification Code' }}
+        </button>
+        <p v-if="pwChangeMessage" :class="['text-sm text-center', pwChangeSuccess ? 'text-green-600' : 'text-red-600']">{{ pwChangeMessage }}</p>
+      </div>
+
+      <!-- Step 2: Enter Verification Code -->
+      <div v-if="pwChangeStep === 2" class="space-y-4">
+        <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+          <div class="flex items-start gap-3">
+            <svg class="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+            <p class="text-sm text-green-800">A 6-digit code has been sent to your email. Please check your inbox.</p>
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Verification Code</label>
+          <input v-model="pwChangeCode" type="text" placeholder="123456" maxlength="6" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none text-center text-2xl tracking-widest" />
+        </div>
+        <button @click="verifyPasswordChangeCode" :disabled="changingPassword || pwChangeCode.length !== 6" class="w-full bg-gradient-to-r from-purple-600 to-pink-500 text-white py-3 px-6 rounded-lg font-medium hover:from-purple-700 hover:to-pink-600 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center">
+          <svg v-if="changingPassword" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+          {{ changingPassword ? 'Verifying...' : 'Verify Code' }}
+        </button>
+        <button @click="pwChangeStep = 1" class="w-full text-purple-600 hover:text-purple-700 text-sm font-medium">Back to Step 1</button>
+        <p v-if="pwChangeMessage" :class="['text-sm text-center', pwChangeSuccess ? 'text-green-600' : 'text-red-600']">{{ pwChangeMessage }}</p>
+      </div>
+
+      <!-- Step 3: Enter New Password -->
+      <div v-if="pwChangeStep === 3" class="space-y-4">
+        <div class="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4">
+          <div class="flex items-start gap-3">
+            <svg class="w-5 h-5 text-purple-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <p class="text-sm text-purple-800">Email verified! Now create your new secure password.</p>
+          </div>
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">New Password</label>
-          <input v-model="passwordForm.newPassword" type="password" placeholder="Enter new password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none" />
+          <input v-model="passwordForm.newPassword" type="password" placeholder="Enter new password (min 6 characters)" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none" />
           <p v-if="passwordErrors.newPassword" class="text-red-500 text-xs mt-1">{{ passwordErrors.newPassword }}</p>
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">Confirm New Password</label>
-          <input v-model="passwordForm.confirmPassword" type="password" placeholder="Confirm new password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none" />
+          <input v-model="passwordForm.confirmPassword" type="password" placeholder="Confirm new password" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none" />
           <p v-if="passwordErrors.confirmPassword" class="text-red-500 text-xs mt-1">{{ passwordErrors.confirmPassword }}</p>
         </div>
-        <div class="flex gap-3 mt-6">
-          <button @click="showPasswordChangeModal = false" class="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-lg font-medium hover:bg-gray-300 transition">Cancel</button>
-          <button @click="changePassword" :disabled="changingPassword" class="flex-1 bg-gradient-to-r from-purple-600 to-pink-500 text-white py-2 px-4 rounded-lg font-medium hover:from-purple-700 hover:to-pink-600 transition flex items-center justify-center gap-2">
-            <svg v-if="changingPassword" class="animate-spin w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
-            {{ changingPassword ? 'Changing...' : 'Change Password' }}
-          </button>
-        </div>
+        <button @click="completePasswordChange" :disabled="changingPassword || !passwordForm.newPassword || passwordForm.newPassword !== passwordForm.confirmPassword" class="w-full bg-gradient-to-r from-purple-600 to-pink-500 text-white py-3 px-6 rounded-lg font-medium hover:from-purple-700 hover:to-pink-600 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center">
+          <svg v-if="changingPassword" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+          {{ changingPassword ? 'Changing Password...' : 'Change Password' }}
+        </button>
+        <p v-if="passwordForm.newPassword && passwordForm.confirmPassword && passwordForm.newPassword !== passwordForm.confirmPassword" class="text-sm text-red-600 text-center">Passwords do not match</p>
+        <p v-if="pwChangeMessage" :class="['text-sm text-center', pwChangeSuccess ? 'text-green-600' : 'text-red-600']">{{ pwChangeMessage }}</p>
       </div>
     </div>
   </div>
@@ -1290,12 +1331,18 @@ const markNotificationsAsSeen = () => {
   localStorage.setItem('seenNotificationIds', JSON.stringify([...newSeenIds]))
 }
 
-// Password change management
+// Password change management with email verification
 const showPasswordChangeModal = ref(false)
 const passwordForm = ref({ currentPassword: '', newPassword: '', confirmPassword: '' })
 const changingPassword = ref(false)
 const passwordErrors = ref({})
 const showPasswordUpdateWarning = ref(false)
+const pwChangeStep = ref(1)
+const pwChangeEmail = ref('')
+const pwChangeCode = ref('')
+const pwChangeToken = ref('')
+const pwChangeMessage = ref('')
+const pwChangeSuccess = ref(false)
 
 // Image upload state
 const uploadingImage = ref(false)
@@ -2686,58 +2733,147 @@ const toggleLike = async (notif) => {
   }
 }
 
-const changePassword = async () => {
+const closePasswordChangeModal = () => {
+  showPasswordChangeModal.value = false
+  pwChangeStep.value = 1
+  pwChangeEmail.value = ''
+  pwChangeCode.value = ''
+  pwChangeToken.value = ''
+  pwChangeMessage.value = ''
+  pwChangeSuccess.value = false
+  passwordForm.value = { currentPassword: '', newPassword: '', confirmPassword: '' }
   passwordErrors.value = {}
-  
-  if (!passwordForm.value.currentPassword) {
-    passwordErrors.value.currentPassword = 'Current password is required'
-  }
-  if (!passwordForm.value.newPassword) {
-    passwordErrors.value.newPassword = 'New password is required'
-  } else if (passwordForm.value.newPassword.length < 6) {
-    passwordErrors.value.newPassword = 'Password must be at least 6 characters'
-  }
-  if (passwordForm.value.newPassword !== passwordForm.value.confirmPassword) {
-    passwordErrors.value.confirmPassword = 'Passwords do not match'
-  }
-  
-  if (Object.keys(passwordErrors.value).length > 0) return
-  
+}
+
+const requestPasswordChangeCode = async () => {
   changingPassword.value = true
+  pwChangeMessage.value = ''
   try {
-    const token = localStorage.getItem('authToken')
+    const token = encodeTimestamp()
     const studentId = currentUser.value.studentId || currentUser.value.student_id
     
-    const response = await fetch('https://ssaam-api.vercel.app/apis/students/change-password', {
+    const response = await fetch('https://ssaam-api.vercel.app/apis/password-reset/request', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        'Authorization': 'Bearer SSAAMStudents',
+        'X-SSAAM-TS': token
       },
       body: JSON.stringify({
         student_id: studentId,
-        current_password: passwordForm.value.currentPassword,
-        new_password: passwordForm.value.newPassword
+        email: pwChangeEmail.value.trim(),
+        _ssaam_access_token: token
       })
     })
     
+    const data = await response.json()
+    if (response.ok) {
+      pwChangeSuccess.value = true
+      pwChangeMessage.value = 'Verification code sent to your email!'
+      pwChangeStep.value = 2
+    } else {
+      pwChangeSuccess.value = false
+      pwChangeMessage.value = data.message || 'Failed to send verification code'
+    }
+  } catch (error) {
+    pwChangeSuccess.value = false
+    pwChangeMessage.value = 'Network error. Please try again.'
+  } finally {
+    changingPassword.value = false
+  }
+}
+
+const verifyPasswordChangeCode = async () => {
+  changingPassword.value = true
+  pwChangeMessage.value = ''
+  try {
+    const token = encodeTimestamp()
+    const studentId = currentUser.value.studentId || currentUser.value.student_id
+    
+    const response = await fetch('https://ssaam-api.vercel.app/apis/password-reset/verify', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer SSAAMStudents',
+        'X-SSAAM-TS': token
+      },
+      body: JSON.stringify({
+        student_id: studentId,
+        code: pwChangeCode.value.trim(),
+        _ssaam_access_token: token
+      })
+    })
+    
+    const data = await response.json()
+    if (response.ok) {
+      pwChangeSuccess.value = true
+      pwChangeMessage.value = 'Code verified!'
+      pwChangeToken.value = data.reset_token
+      pwChangeStep.value = 3
+    } else {
+      pwChangeSuccess.value = false
+      pwChangeMessage.value = data.message || 'Invalid verification code'
+    }
+  } catch (error) {
+    pwChangeSuccess.value = false
+    pwChangeMessage.value = 'Verification failed. Please try again.'
+  } finally {
+    changingPassword.value = false
+  }
+}
+
+const completePasswordChange = async () => {
+  passwordErrors.value = {}
+  
+  if (!passwordForm.value.newPassword) {
+    passwordErrors.value.newPassword = 'New password is required'
+    return
+  } else if (passwordForm.value.newPassword.length < 6) {
+    passwordErrors.value.newPassword = 'Password must be at least 6 characters'
+    return
+  }
+  if (passwordForm.value.newPassword !== passwordForm.value.confirmPassword) {
+    passwordErrors.value.confirmPassword = 'Passwords do not match'
+    return
+  }
+  
+  changingPassword.value = true
+  pwChangeMessage.value = ''
+  try {
+    const token = encodeTimestamp()
+    const studentId = currentUser.value.studentId || currentUser.value.student_id
+    
+    const response = await fetch('https://ssaam-api.vercel.app/apis/password-reset/complete', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer SSAAMStudents',
+        'X-SSAAM-TS': token
+      },
+      body: JSON.stringify({
+        student_id: studentId,
+        reset_token: pwChangeToken.value,
+        new_password: passwordForm.value.newPassword,
+        _ssaam_access_token: token
+      })
+    })
+    
+    const data = await response.json()
     if (response.ok) {
       showNotification('Password changed successfully!', 'success')
-      showPasswordChangeModal.value = false
+      closePasswordChangeModal()
       showPasswordUpdateWarning.value = false
-      passwordForm.value = { currentPassword: '', newPassword: '', confirmPassword: '' }
-      // Update localStorage to reflect password has been changed
       const storedUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
       storedUser.requiresPasswordUpdate = false
       localStorage.setItem('currentUser', JSON.stringify(storedUser))
       currentUser.value.requiresPasswordUpdate = false
     } else {
-      const error = await response.json()
-      showNotification(error.message || 'Failed to change password', 'error')
+      pwChangeSuccess.value = false
+      pwChangeMessage.value = data.message || 'Failed to change password'
     }
   } catch (error) {
-    console.error('Failed to change password:', error)
-    showNotification('Failed to change password', 'error')
+    pwChangeSuccess.value = false
+    pwChangeMessage.value = 'Password change failed. Please try again.'
   } finally {
     changingPassword.value = false
   }
