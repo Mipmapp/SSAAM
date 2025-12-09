@@ -604,6 +604,7 @@ const handleLogin = async () => {
       
       if (data.student && data.message === "Login successful") {
         user = data.student;
+        user.token = data.token; // Token is returned at top level, not inside student object
       } else if (data.message) {
         errorMessage.value = data.message;
         showErrorNotification.value = true;
@@ -635,10 +636,14 @@ const handleLogin = async () => {
         isMaster: startsWithLetter,
         token: user.token || ''
       };
-      localStorage.removeItem('userLikeId')
       localStorage.removeItem('likeActionTimestamps')
       localStorage.removeItem('likeBanUntil')
       localStorage.removeItem('likeWarningShown')
+      // Store the userLikeId that the backend will use (student_id for students, id/username for admins)
+      const userLikeId = user.student_id || user._id || user.id || user.username
+      if (userLikeId) {
+        localStorage.setItem('userLikeId', userLikeId)
+      }
       localStorage.setItem("currentUser", JSON.stringify(normalizedUser));
       localStorage.setItem("authToken", normalizedUser.token);
       console.log("Navigating to dashboard...");

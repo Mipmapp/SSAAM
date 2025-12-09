@@ -2442,11 +2442,17 @@ const deleteNotification = async (notifId) => {
 const isLikedByCurrentUser = (notif) => {
   if (!notif.liked_by || !Array.isArray(notif.liked_by)) return false
   
-  // Get current user's ID - check all possible ID fields
+  // Get current user's ID - check all possible ID fields including the stored userLikeId from server
+  const userLikeId = localStorage.getItem('userLikeId')
   const userId = currentUser.value.studentId || currentUser.value.student_id || currentUser.value._id || currentUser.value.id || currentUser.value.username
   
-  // Check if user's ID is in the liked_by array
+  // Check if user's ID is in the liked_by array (check both userId and userLikeId)
   if (userId && notif.liked_by.includes(userId)) {
+    return true
+  }
+  
+  // Also check the server-provided userLikeId (in case it's different)
+  if (userLikeId && notif.liked_by.includes(userLikeId)) {
     return true
   }
   
@@ -2537,6 +2543,18 @@ const toggleLike = async (notif) => {
       const retryAfter = (data.retryAfter || 5) * 1000
       showNotification('Too many requests. Please wait a moment.', 'error')
       likeCooldowns.value[notifId] = Date.now() + retryAfter
+      return
+    }
+    
+    if (response.status === 401) {
+      // Session expired or invalid - prompt user to re-login
+      showNotification('Your session has expired. Please log in again to like posts.', 'error')
+      return
+    }
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      showNotification(errorData.message || 'Failed to update like', 'error')
       return
     }
     
