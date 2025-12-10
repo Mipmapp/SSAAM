@@ -1462,8 +1462,11 @@
           <p v-if="editingUser.role === 'medpub'" class="text-xs text-yellow-600 mt-1">Medpub users can post announcements and notifications.</p>
         </div>
         <div class="flex gap-3 mt-6">
-          <button @click="closeEditModal" class="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-lg font-medium hover:bg-gray-300 transition">Cancel</button>
-          <button @click="saveUser" class="flex-1 bg-gradient-to-r from-purple-600 to-pink-500 text-white py-2 px-4 rounded-lg font-medium hover:from-purple-700 hover:to-pink-600 transition">Save</button>
+          <button @click="closeEditModal" :disabled="savingUser" class="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-lg font-medium hover:bg-gray-300 transition disabled:opacity-50 disabled:cursor-not-allowed">Cancel</button>
+          <button @click="saveUser" :disabled="savingUser" class="flex-1 bg-gradient-to-r from-purple-600 to-pink-500 text-white py-2 px-4 rounded-lg font-medium hover:from-purple-700 hover:to-pink-600 transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+            <svg v-if="savingUser" class="animate-spin w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+            {{ savingUser ? 'Saving...' : 'Save' }}
+          </button>
         </div>
       </div>
     </div>
@@ -1921,6 +1924,8 @@ const isLoggingOut = ref(false)
 const showLogoutAnimation = ref(false)
 const editImageUploading = ref(false)
 const editImageLoading = ref(false)
+const savingUser = ref(false)
+const pendingEditUser = ref(null)
 const isRefreshing = ref(false)
 const isSearching = ref(false)
 const statsData = ref(null)
@@ -2221,6 +2226,7 @@ const cancelAdminKeyModal = () => {
   adminKeyInput.value = ''
   adminKeyError.value = ''
   pendingAdminAction.value = null
+  pendingEditUser.value = null
 }
 
 const submitAdminKey = async () => {
@@ -2849,9 +2855,8 @@ const confirmLogout = async () => {
   }, 1500)
 }
 
-const editUser = (user) => {
+const openEditModalWithUser = (user) => {
   const userCopy = JSON.parse(JSON.stringify(user))
-  // Map snake_case fields to camelCase for the form
   userCopy.studentId = userCopy.studentId || userCopy.student_id
   userCopy.firstName = userCopy.firstName || userCopy.first_name || ''
   userCopy.middleName = userCopy.middleName || userCopy.middle_name || ''
@@ -2862,6 +2867,25 @@ const editUser = (user) => {
   editingUser.value = userCopy
   editImageLoading.value = false
   showEditModal.value = true
+}
+
+const editUser = (user) => {
+  if (!currentUser.value.isMaster && currentUser.value.role !== 'admin') {
+    showNotification('Only administrators can edit users', 'error')
+    return
+  }
+  
+  if (isPrimaryAdmin.value && !isAdminActionTokenValid()) {
+    pendingEditUser.value = user
+    pendingAdminAction.value = () => {
+      openEditModalWithUser(pendingEditUser.value)
+      pendingEditUser.value = null
+    }
+    showAdminKeyModal.value = true
+    return
+  }
+  
+  openEditModalWithUser(user)
 }
 
 const closeEditModal = () => {
@@ -3107,7 +3131,6 @@ const handleStudentPhotoUpload = async (event) => {
 const saveUserImpl = async () => {
   if (!editingUser.value) return
   
-  // Check if user is admin
   if (!currentUser.value.isMaster && currentUser.value.role !== 'admin') {
     showNotification('Only administrators can edit users', 'error')
     closeEditModal()
@@ -3122,6 +3145,8 @@ const saveUserImpl = async () => {
     closeEditModal()
     return
   }
+  
+  savingUser.value = true
   
   try {
     const updateData = {
@@ -3230,6 +3255,8 @@ const saveUserImpl = async () => {
   } catch (error) {
     console.error('Error updating user:', error)
     showNotification('Error updating user', 'error')
+  } finally {
+    savingUser.value = false
   }
   
   closeEditModal()
@@ -3322,7 +3349,7 @@ const fetchNotifications = async () => {
 
 const fetchAttendanceData = async () => {
   attendanceLoading.value = true
-  const token = localStorage.getItem('token')
+  const token = localStorage.getItem('authToken') || localStorage.getItem('adminToken')
   const isAdmin = currentUser.value.role === 'admin' || currentUser.value.isMaster
   
   try {
@@ -3373,7 +3400,7 @@ const fetchAttendanceData = async () => {
 }
 
 const createAttendanceEvent = async () => {
-  const token = localStorage.getItem('token')
+  const token = localStorage.getItem('authToken') || localStorage.getItem('adminToken')
   try {
     const eventPayload = {
       title: newEvent.value.title,
@@ -3420,7 +3447,7 @@ const createAttendanceEvent = async () => {
 
 const updateAttendanceEvent = async () => {
   if (!selectedEvent.value) return
-  const token = localStorage.getItem('token')
+  const token = localStorage.getItem('authToken') || localStorage.getItem('adminToken')
   try {
     const response = await fetch(`https://ssaam-api.vercel.app/apis/attendance/events/${selectedEvent.value._id}`, {
       method: 'PUT',
@@ -3456,7 +3483,7 @@ const updateAttendanceEvent = async () => {
 }
 
 const deleteAttendanceEvent = async (eventId) => {
-  const token = localStorage.getItem('token')
+  const token = localStorage.getItem('authToken') || localStorage.getItem('adminToken')
   try {
     const response = await fetch(`https://ssaam-api.vercel.app/apis/attendance/events/${eventId}`, {
       method: 'DELETE',
@@ -3489,7 +3516,7 @@ const deleteAttendanceEvent = async (eventId) => {
 }
 
 const fetchEventLogs = async (eventId) => {
-  const token = localStorage.getItem('token')
+  const token = localStorage.getItem('authToken') || localStorage.getItem('adminToken')
   attendanceLoading.value = true
   try {
     const params = new URLSearchParams()
@@ -3543,7 +3570,7 @@ const processRfidScan = async (rfidCode) => {
   
   rfidProcessing.value = true
   rfidResult.value = null
-  const token = localStorage.getItem('token')
+  const token = localStorage.getItem('authToken') || localStorage.getItem('adminToken')
   
   try {
     const response = await fetch(`https://ssaam-api.vercel.app/apis/attendance/events/${selectedEvent.value._id}/check`, {
