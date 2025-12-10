@@ -478,7 +478,7 @@
                 <h2 class="text-xl font-bold text-purple-900">Attendance Events</h2>
                 <div class="flex gap-2">
                   <button @click="attendanceTab = 'events'" :class="['px-4 py-2 rounded-lg text-sm font-medium transition', attendanceTab === 'events' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200']">Events</button>
-                  <button @click="attendanceTab = 'scanner'" :class="['px-4 py-2 rounded-lg text-sm font-medium transition', attendanceTab === 'scanner' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200']">RFID Scanner</button>
+                  <button @click="switchToScannerTab" :class="['px-4 py-2 rounded-lg text-sm font-medium transition', attendanceTab === 'scanner' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200']">RFID Scanner</button>
                 </div>
               </div>
               <div class="flex gap-2">
@@ -614,12 +614,12 @@
                       <tbody>
                         <tr v-for="log in attendanceLogs.slice(0, 10)" :key="log._id" class="border-b">
                           <td class="px-4 py-2">{{ log.student?.full_name || log.student_name }}</td>
-                          <td class="px-4 py-2">{{ log.student?.program || '-' }}</td>
-                          <td class="px-4 py-2">{{ log.check_in_time ? new Date(log.check_in_time).toLocaleTimeString() : '-' }}</td>
-                          <td class="px-4 py-2">{{ log.check_out_time ? new Date(log.check_out_time).toLocaleTimeString() : '-' }}</td>
+                          <td class="px-4 py-2">{{ log.program || log.student?.program || '-' }}</td>
+                          <td class="px-4 py-2">{{ (log.check_in_at || log.check_in_time) ? new Date(log.check_in_at || log.check_in_time).toLocaleTimeString() : '-' }}</td>
+                          <td class="px-4 py-2">{{ (log.check_out_at || log.check_out_time) ? new Date(log.check_out_at || log.check_out_time).toLocaleTimeString() : '-' }}</td>
                           <td class="px-4 py-2">
-                            <span :class="['px-2 py-1 rounded-full text-xs font-medium', log.check_out_time ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800']">
-                              {{ log.check_out_time ? 'Present' : 'Incomplete' }}
+                            <span :class="['px-2 py-1 rounded-full text-xs font-medium', (log.check_out_at || log.check_out_time) ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800']">
+                              {{ (log.check_out_at || log.check_out_time) ? 'Present' : 'Incomplete' }}
                             </span>
                           </td>
                         </tr>
@@ -706,12 +706,12 @@
                     <tbody class="divide-y divide-gray-100">
                       <tr v-for="record in myAttendanceRecords" :key="record._id || record.event_id" class="hover:bg-gray-50">
                         <td class="px-4 py-3 font-medium text-purple-900">{{ record.event?.title || record.event_title || 'Event' }}</td>
-                        <td class="px-4 py-3 text-gray-600">{{ record.event?.date ? formatEventDate(record.event.date) : (record.check_in_time ? new Date(record.check_in_time).toLocaleDateString() : '-') }}</td>
-                        <td class="px-4 py-3 text-gray-600">{{ record.check_in_time ? new Date(record.check_in_time).toLocaleTimeString() : '-' }}</td>
-                        <td class="px-4 py-3 text-gray-600">{{ record.check_out_time ? new Date(record.check_out_time).toLocaleTimeString() : '-' }}</td>
+                        <td class="px-4 py-3 text-gray-600">{{ record.event?.date ? formatEventDate(record.event.date) : ((record.check_in_at || record.check_in_time) ? new Date(record.check_in_at || record.check_in_time).toLocaleDateString() : '-') }}</td>
+                        <td class="px-4 py-3 text-gray-600">{{ (record.check_in_at || record.check_in_time) ? new Date(record.check_in_at || record.check_in_time).toLocaleTimeString() : '-' }}</td>
+                        <td class="px-4 py-3 text-gray-600">{{ (record.check_out_at || record.check_out_time) ? new Date(record.check_out_at || record.check_out_time).toLocaleTimeString() : '-' }}</td>
                         <td class="px-4 py-3">
-                          <span :class="['px-2 py-1 rounded-full text-xs font-medium', record.check_out_time ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800']">
-                            {{ record.check_out_time ? 'Present' : 'Incomplete' }}
+                          <span :class="['px-2 py-1 rounded-full text-xs font-medium', (record.check_out_at || record.check_out_time) ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800']">
+                            {{ (record.check_out_at || record.check_out_time) ? 'Present' : 'Incomplete' }}
                           </span>
                         </td>
                       </tr>
@@ -1765,6 +1765,35 @@
             <option value="completed">Completed</option>
           </select>
         </div>
+        <div class="border-t pt-4 mt-4">
+          <label class="block text-sm font-medium text-gray-700 mb-3">Attendance Lock Controls</label>
+          <div class="space-y-3">
+            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div>
+                <p class="font-medium text-gray-800">Lock Check-In</p>
+                <p class="text-xs text-gray-500">Prevent new students from checking in</p>
+              </div>
+              <button 
+                @click="selectedEvent.check_in_locked = !selectedEvent.check_in_locked" 
+                :class="['relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-300', selectedEvent.check_in_locked ? 'bg-red-500' : 'bg-gray-300']"
+              >
+                <span :class="['inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-300', selectedEvent.check_in_locked ? 'translate-x-6' : 'translate-x-1']"></span>
+              </button>
+            </div>
+            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div>
+                <p class="font-medium text-gray-800">Lock Check-Out</p>
+                <p class="text-xs text-gray-500">Prevent students from checking out</p>
+              </div>
+              <button 
+                @click="selectedEvent.check_out_locked = !selectedEvent.check_out_locked" 
+                :class="['relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-300', selectedEvent.check_out_locked ? 'bg-red-500' : 'bg-gray-300']"
+              >
+                <span :class="['inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-300', selectedEvent.check_out_locked ? 'translate-x-6' : 'translate-x-1']"></span>
+              </button>
+            </div>
+          </div>
+        </div>
         <div class="flex gap-3 mt-6">
           <button @click="showEditEventModal = false" class="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-lg font-medium hover:bg-gray-300 transition">Cancel</button>
           <button @click="updateAttendanceEvent" :disabled="!selectedEvent.title || !selectedEvent.date || !selectedEvent.start_time || !selectedEvent.end_time" class="flex-1 bg-gradient-to-r from-purple-600 to-pink-500 text-white py-2 px-4 rounded-lg font-medium hover:from-purple-700 hover:to-pink-600 transition disabled:opacity-50 disabled:cursor-not-allowed">Save Changes</button>
@@ -1867,10 +1896,10 @@
                   </div>
                 </div>
               </td>
-              <td class="border border-purple-300 px-4 py-3">{{ log.program }}</td>
-              <td class="border border-purple-300 px-4 py-3">{{ log.year_level }}</td>
-              <td class="border border-purple-300 px-4 py-3 text-center">{{ log.check_in_time ? formatEventTime(log.check_in_time) : '-' }}</td>
-              <td class="border border-purple-300 px-4 py-3 text-center">{{ log.check_out_time ? formatEventTime(log.check_out_time) : '-' }}</td>
+              <td class="border border-purple-300 px-4 py-3">{{ log.program || '-' }}</td>
+              <td class="border border-purple-300 px-4 py-3">{{ log.year_level || '-' }}</td>
+              <td class="border border-purple-300 px-4 py-3 text-center">{{ (log.check_in_at || log.check_in_time) ? new Date(log.check_in_at || log.check_in_time).toLocaleTimeString() : '-' }}</td>
+              <td class="border border-purple-300 px-4 py-3 text-center">{{ (log.check_out_at || log.check_out_time) ? new Date(log.check_out_at || log.check_out_time).toLocaleTimeString() : '-' }}</td>
               <td class="border border-purple-300 px-4 py-3 text-center">
                 <span :class="getStatusBadgeClass(log.status)">{{ log.status }}</span>
               </td>
@@ -2053,6 +2082,7 @@ const rfidInputBuffer = ref('')
 const rfidProcessing = ref(false)
 const rfidResult = ref(null)
 const attendanceTab = ref('events')
+const rfidScannerVerified = ref(false)
 
 const showTimePicker = ref(false)
 const timePickerTarget = ref('') 
@@ -3565,6 +3595,18 @@ const handleRfidKeydown = (event) => {
   }
 }
 
+const switchToScannerTab = () => {
+  if (rfidScannerVerified.value) {
+    attendanceTab.value = 'scanner'
+  } else {
+    pendingAdminAction.value = () => {
+      rfidScannerVerified.value = true
+      attendanceTab.value = 'scanner'
+    }
+    showAdminKeyModal.value = true
+  }
+}
+
 const processRfidScan = async (rfidCode) => {
   if (!selectedEvent.value || rfidProcessing.value) return
   
@@ -3599,6 +3641,12 @@ const processRfidScan = async (rfidCode) => {
   } finally {
     rfidProcessing.value = false
     setTimeout(() => { rfidResult.value = null }, 3000)
+    // Keep RFID input focused for continuous scanning
+    setTimeout(() => {
+      if (rfidInputRef.value) {
+        rfidInputRef.value.focus()
+      }
+    }, 100)
   }
 }
 
@@ -3631,8 +3679,8 @@ const formatEventTime = (timeStr) => {
 const getAttendanceStatus = (eventId) => {
   const record = myAttendanceRecords.value.find(r => r.event_id === eventId || r.event?._id === eventId)
   if (!record) return 'absent'
-  if (record.check_out_time) return 'present'
-  if (record.check_in_time) return 'incomplete'
+  if (record.check_out_at || record.check_out_time) return 'present'
+  if (record.check_in_at || record.check_in_time) return 'incomplete'
   return 'absent'
 }
 

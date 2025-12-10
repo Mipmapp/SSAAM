@@ -664,6 +664,8 @@ const attendanceEventSchema = new mongoose.Schema({
         enum: ['draft', 'active', 'closed'],
         default: 'draft'
     },
+    check_in_locked: { type: Boolean, default: false },
+    check_out_locked: { type: Boolean, default: false },
     created_by: { type: mongoose.Schema.Types.ObjectId, ref: 'Master', required: true },
     created_by_name: { type: String, required: true },
     created_at: { type: Date, default: Date.now },
@@ -3311,7 +3313,7 @@ app.post('/apis/attendance/events', auth, adminActionAuth, async (req, res) => {
 // Update attendance event (admin only)
 app.put('/apis/attendance/events/:id', auth, adminActionAuth, async (req, res) => {
     try {
-        const { title, description, location, event_date, start_time, end_time, status } = req.body;
+        const { title, description, location, event_date, start_time, end_time, status, check_in_locked, check_out_locked } = req.body;
         
         const event = await AttendanceEvent.findById(req.params.id);
         if (!event) {
@@ -3324,6 +3326,8 @@ app.put('/apis/attendance/events/:id', auth, adminActionAuth, async (req, res) =
         if (event_date) event.event_date = new Date(event_date);
         if (start_time) event.start_time = start_time;
         if (end_time) event.end_time = end_time;
+        if (check_in_locked !== undefined) event.check_in_locked = check_in_locked;
+        if (check_out_locked !== undefined) event.check_out_locked = check_out_locked;
         
         if (status && status !== event.status) {
             event.status = status;
@@ -3470,6 +3474,14 @@ app.post('/apis/attendance/events/:id/check', auth, async (req, res) => {
         let action = '';
         
         if (!log) {
+            // Check if check-in is locked
+            if (event.check_in_locked) {
+                return res.status(403).json({ 
+                    message: "Check-in is currently locked for this event.",
+                    student_name: `${student.first_name} ${student.last_name}`,
+                    locked: 'check_in'
+                });
+            }
             log = new AttendanceLog({
                 event_id: req.params.id,
                 student_id: student._id,
@@ -3483,6 +3495,15 @@ app.post('/apis/attendance/events/:id/check', auth, async (req, res) => {
             });
             action = 'check_in';
         } else if (!log.check_out_at) {
+            // Check if check-out is locked
+            if (event.check_out_locked) {
+                return res.status(403).json({ 
+                    message: "Check-out is currently locked for this event. Student is already checked in.",
+                    student_name: log.student_name,
+                    check_in_at: log.check_in_at,
+                    locked: 'check_out'
+                });
+            }
             // Prevent accidental check-out within 5 minutes of check-in
             // This helps avoid accidental duplicate scans when a student just checked in
             const timeSinceCheckIn = now - new Date(log.check_in_at);
@@ -3539,16 +3560,10 @@ app.post('/apis/attendance/events/:id/check', auth, async (req, res) => {
 });
 
 // Get student's own attendance records
-app.get('/apis/attendance/my-records', studentAuth, async (req, res) => {
+app.get('/apis/attendance/my-records', studentAuthWithToken, async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(" ")[1];
-        const decoded = jwt.verify(token, SSAAM_API_KEY);
-        
-        if (!decoded.student_id) {
-            return res.status(403).json({ message: "Only students can view their attendance records" });
-        }
-        
-        const student = await Student.findOne({ student_id: decoded.student_id });
+        // Use the hydrated student object from studentAuthWithToken middleware
+        const student = req.student;
         if (!student) {
             return res.status(404).json({ message: "Student not found" });
         }
