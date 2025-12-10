@@ -517,11 +517,11 @@
                       <div class="flex flex-wrap gap-4 text-sm text-gray-500">
                         <span class="flex items-center gap-1">
                           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                          {{ formatEventDate(event.date) }}
+                          {{ formatEventDate(event.date || event.event_date) }}
                         </span>
-                        <span v-if="event.startTime" class="flex items-center gap-1">
+                        <span v-if="event.startTime || event.start_time" class="flex items-center gap-1">
                           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                          {{ formatEventTime(event.startTime) }} - {{ formatEventTime(event.endTime) }}
+                          {{ formatEventTime(event.startTime || event.start_time) }} - {{ formatEventTime(event.endTime || event.end_time) }}
                         </span>
                         <span v-if="event.location" class="flex items-center gap-1">
                           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
@@ -647,7 +647,7 @@
                 <p class="text-gray-500 mb-4">Select an event to start scanning RFID cards</p>
                 <select v-model="selectedEvent" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none">
                   <option :value="null">-- Select Event --</option>
-                  <option v-for="event in attendanceEvents.filter(e => e.status === 'active')" :key="event._id" :value="event">{{ event.title }} ({{ formatEventDate(event.date) }})</option>
+                  <option v-for="event in attendanceEvents.filter(e => e.status === 'active')" :key="event._id" :value="event">{{ event.title }} ({{ formatEventDate(event.date || event.event_date) }})</option>
                 </select>
               </div>
               <div v-else class="space-y-4">
@@ -655,7 +655,7 @@
                   <div class="flex items-center justify-between">
                     <div>
                       <h3 class="font-semibold text-purple-900">{{ selectedEvent.title }}</h3>
-                      <p class="text-sm text-purple-600">{{ formatEventDate(selectedEvent.date) }} | {{ formatEventTime(selectedEvent.startTime) }} - {{ formatEventTime(selectedEvent.endTime) }}</p>
+                      <p class="text-sm text-purple-600">{{ formatEventDate(selectedEvent.date || selectedEvent.event_date) }} | {{ formatEventTime(selectedEvent.startTime || selectedEvent.start_time) }} - {{ formatEventTime(selectedEvent.endTime || selectedEvent.end_time) }}</p>
                     </div>
                     <button @click="selectedEvent = null" class="text-purple-600 hover:text-purple-800">
                       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -688,7 +688,11 @@
 
                 <!-- Recent Logs -->
                 <div class="mt-6">
-                  <h4 class="font-medium text-gray-700 mb-3">Recent Attendance Logs</h4>
+                  <h4 class="font-medium text-gray-700 mb-3 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                    Recent Attendance Logs
+                    <span v-if="selectedEvent?.title" class="text-sm font-normal text-purple-600">- {{ selectedEvent.title }}</span>
+                  </h4>
                   <div v-if="attendanceLogs.length === 0" class="text-center py-4 text-gray-500">
                     No attendance records yet for this event.
                   </div>
@@ -704,8 +708,16 @@
                         </tr>
                       </thead>
                       <tbody>
-                        <tr v-for="log in attendanceLogs.slice(0, 10)" :key="log._id" class="border-b">
-                          <td class="px-4 py-2">{{ log.student?.full_name || log.student_name }}</td>
+                        <tr v-for="(log, index) in sortedAttendanceLogs.slice(0, 10)" :key="log._id" :class="['border-b transition-all duration-300', index === 0 && isRecentCheckIn(log) ? 'bg-green-50 ring-2 ring-green-300 ring-inset animate-pulse' : 'hover:bg-gray-50']">
+                          <td class="px-4 py-2">
+                            <div class="flex items-center gap-3">
+                              <div class="w-8 h-8 rounded-full bg-gradient-to-r from-pink-400 to-purple-600 flex items-center justify-center text-white text-xs overflow-hidden flex-shrink-0">
+                                <img v-if="log.student_image || log.student?.photo" :src="log.student_image || log.student?.photo" class="w-full h-full object-cover" />
+                                <span v-else>{{ (log.student?.full_name || log.student_name)?.charAt(0) || '?' }}</span>
+                              </div>
+                              <span class="font-medium">{{ log.student?.full_name || log.student_name }}</span>
+                            </div>
+                          </td>
                           <td class="px-4 py-2">{{ log.program || log.student?.program || '-' }}</td>
                           <td class="px-4 py-2">{{ (log.check_in_at || log.check_in_time) ? new Date(log.check_in_at || log.check_in_time).toLocaleTimeString() : '-' }}</td>
                           <td class="px-4 py-2">{{ (log.check_out_at || log.check_out_time) ? new Date(log.check_out_at || log.check_out_time).toLocaleTimeString() : '-' }}</td>
@@ -757,18 +769,18 @@
                         <div class="flex items-center gap-3 mb-2">
                           <h3 class="font-semibold text-lg text-purple-900">{{ event.title }}</h3>
                           <span :class="['px-2 py-1 rounded-full text-xs font-medium', getStatusBadgeClass(getAttendanceStatus(event._id || event.event_id))]">
-                            {{ getAttendanceStatus(event._id || event.event_id) === 'present' ? 'Present' : getAttendanceStatus(event._id || event.event_id) === 'incomplete' ? 'Incomplete' : 'Absent' }}
+                            {{ getAttendanceStatus(event._id || event.event_id) === 'present' ? 'Present' : getAttendanceStatus(event._id || event.event_id) === 'incomplete' ? 'Incomplete' : getAttendanceStatus(event._id || event.event_id) === 'active' ? 'Active' : 'Absent' }}
                           </span>
                         </div>
                         <p v-if="event.description" class="text-gray-600 text-sm mb-2">{{ event.description }}</p>
                         <div class="flex flex-wrap gap-4 text-sm text-gray-500">
                           <span class="flex items-center gap-1">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                            {{ formatEventDate(event.date) }}
+                            {{ formatEventDate(event.date || event.event_date) }}
                           </span>
-                          <span v-if="event.startTime" class="flex items-center gap-1">
+                          <span v-if="event.startTime || event.start_time" class="flex items-center gap-1">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                            {{ formatEventTime(event.startTime) }} - {{ formatEventTime(event.endTime) }}
+                            {{ formatEventTime(event.startTime || event.start_time) }} - {{ formatEventTime(event.endTime || event.end_time) }}
                           </span>
                           <span v-if="event.location" class="flex items-center gap-1">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
@@ -798,7 +810,7 @@
                     <tbody class="divide-y divide-gray-100">
                       <tr v-for="record in myAttendanceRecords" :key="record._id || record.event_id" class="hover:bg-gray-50">
                         <td class="px-4 py-3 font-medium text-purple-900">{{ record.event?.title || record.event_title || 'Event' }}</td>
-                        <td class="px-4 py-3 text-gray-600">{{ record.event?.date ? formatEventDate(record.event.date) : ((record.check_in_at || record.check_in_time) ? new Date(record.check_in_at || record.check_in_time).toLocaleDateString() : '-') }}</td>
+                        <td class="px-4 py-3 text-gray-600">{{ (record.event?.date || record.event?.event_date) ? formatEventDate(record.event.date || record.event.event_date) : ((record.check_in_at || record.check_in_time) ? new Date(record.check_in_at || record.check_in_time).toLocaleDateString() : '-') }}</td>
                         <td class="px-4 py-3 text-gray-600">{{ (record.check_in_at || record.check_in_time) ? new Date(record.check_in_at || record.check_in_time).toLocaleTimeString() : '-' }}</td>
                         <td class="px-4 py-3 text-gray-600">{{ (record.check_out_at || record.check_out_time) ? new Date(record.check_out_at || record.check_out_time).toLocaleTimeString() : '-' }}</td>
                         <td class="px-4 py-3">
@@ -1239,13 +1251,13 @@
                     </span>
                   </p>
                   <div class="flex flex-wrap gap-3 mt-2 text-xs text-white text-opacity-80">
-                    <span v-if="event.date" class="flex items-center gap-1">
+                    <span v-if="event.date || event.event_date" class="flex items-center gap-1">
                       <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                      {{ formatEventDate(event.date) }}
+                      {{ formatEventDate(event.date || event.event_date) }}
                     </span>
-                    <span v-if="event.startTime" class="flex items-center gap-1">
+                    <span v-if="event.startTime || event.start_time" class="flex items-center gap-1">
                       <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                      {{ formatEventTime(event.startTime) }} - {{ formatEventTime(event.endTime) }}
+                      {{ formatEventTime(event.startTime || event.start_time) }} - {{ formatEventTime(event.endTime || event.end_time) }}
                     </span>
                     <span v-if="event.location" class="flex items-center gap-1">
                       <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
@@ -1900,7 +1912,7 @@
       <div class="flex justify-between items-center mb-6">
         <div>
           <h3 class="text-2xl font-bold text-purple-900">{{ selectedEvent.title }}</h3>
-          <p class="text-gray-500 text-sm">Attendance Logs - {{ formatEventDate(selectedEvent.date) }}</p>
+          <p class="text-gray-500 text-sm">Attendance Logs - {{ formatEventDate(selectedEvent.date || selectedEvent.event_date) }}</p>
         </div>
         <button @click="showEventLogsModal = false" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
       </div>
@@ -3876,9 +3888,19 @@ const formatEventTime = (timeStr) => {
 
 const getAttendanceStatus = (eventId) => {
   const record = myAttendanceRecords.value.find(r => r.event_id === eventId || r.event?._id === eventId)
-  if (!record) return 'absent'
-  if (record.check_out_at || record.check_out_time) return 'present'
-  if (record.check_in_at || record.check_in_time) return 'incomplete'
+  
+  if (!record) {
+    // No attendance record - check if event is still active
+    const event = attendanceEvents.value.find(e => e._id === eventId || e.event_id === eventId)
+    if (event && event.status === 'active') return 'active'  // Event active, no check-in yet
+    return 'absent'  // Event ended without attendance
+  }
+  
+  // Has a record - check attendance status
+  if (record.check_out_at || record.check_out_time) return 'present'  // Complete attendance
+  if (record.check_in_at || record.check_in_time) return 'incomplete'  // Checked in but not out
+  
+  // Has record but no check-in/out (shouldn't happen normally)
   return 'absent'
 }
 
@@ -3887,7 +3909,7 @@ const getStatusBadgeClass = (status) => {
     case 'present': return 'bg-green-100 text-green-800'
     case 'incomplete': return 'bg-yellow-100 text-yellow-800'
     case 'absent': return 'bg-red-100 text-red-800'
-    case 'active': return 'bg-green-100 text-green-800'
+    case 'active': return 'bg-blue-100 text-blue-800'
     case 'draft': return 'bg-gray-100 text-gray-800'
     case 'closed': return 'bg-red-100 text-red-800'
     default: return 'bg-gray-100 text-gray-800'
@@ -3900,9 +3922,27 @@ const activeUnattendedEvents = computed(() => {
   return attendanceEvents.value.filter(event => {
     const eventId = event._id || event.event_id
     const status = getAttendanceStatus(eventId)
-    return event.status === 'active' && (status === 'absent' || status === 'incomplete')
+    return event.status === 'active' && (status === 'active' || status === 'incomplete')
   })
 })
+
+// Sort attendance logs by check-in time (most recent first)
+const sortedAttendanceLogs = computed(() => {
+  return [...attendanceLogs.value].sort((a, b) => {
+    const aTime = a.check_in_at || a.check_in_time || a.created_at || 0
+    const bTime = b.check_in_at || b.check_in_time || b.created_at || 0
+    return new Date(bTime) - new Date(aTime)
+  })
+})
+
+// Check if a log entry is a recent check-in (within last 30 seconds)
+const isRecentCheckIn = (log) => {
+  const checkInTime = log.check_in_at || log.check_in_time || log.created_at
+  if (!checkInTime) return false
+  const now = new Date()
+  const logTime = new Date(checkInTime)
+  return (now - logTime) < 30000 // 30 seconds
+}
 
 const clearNotificationImage = () => {
   notificationImage.value = null
