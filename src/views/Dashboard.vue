@@ -3908,14 +3908,80 @@ const formatEventTime = (timeStr) => {
   return `${displayHour}:${minutes} ${ampm}`
 }
 
+// Helper function to get current Philippine time (UTC+8)
+const getPhilippineTime = () => {
+  const now = new Date()
+  // Get UTC time and add 8 hours for Philippine timezone
+  const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000)
+  return new Date(utcTime + (8 * 60 * 60 * 1000))
+}
+
+// Helper function to create event end time in Philippine timezone
+const getEventEndTimeInPH = (event) => {
+  if (!event.end_time) return null
+  
+  // Parse the event date (YYYY-MM-DD format)
+  const dateStr = event.event_date || event.date
+  if (!dateStr) return null
+  
+  // Extract date parts
+  const dateParts = dateStr.split('T')[0].split('-')
+  const year = parseInt(dateParts[0])
+  const month = parseInt(dateParts[1]) - 1 // Month is 0-indexed
+  const day = parseInt(dateParts[2])
+  
+  // Parse end time (HH:MM format)
+  const [hours, minutes] = event.end_time.split(':').map(Number)
+  
+  // Create date in Philippine timezone
+  // We create a UTC date, then subtract 8 hours to account for PH being UTC+8
+  // This way when we compare with getPhilippineTime(), the math works out
+  const eventEndPH = new Date(Date.UTC(year, month, day, hours - 8, minutes, 0, 0))
+  return eventEndPH
+}
+
+// Helper function to get event start time in Philippine timezone
+const getEventStartTimeInPH = (event) => {
+  if (!event.start_time) return null
+  
+  const dateStr = event.event_date || event.date
+  if (!dateStr) return null
+  
+  const dateParts = dateStr.split('T')[0].split('-')
+  const year = parseInt(dateParts[0])
+  const month = parseInt(dateParts[1]) - 1
+  const day = parseInt(dateParts[2])
+  
+  const [hours, minutes] = event.start_time.split(':').map(Number)
+  const eventStartPH = new Date(Date.UTC(year, month, day, hours - 8, minutes, 0, 0))
+  return eventStartPH
+}
+
+// Check if event has actually ended (using Philippine time)
+const hasEventEndedPH = (event) => {
+  const eventEnd = getEventEndTimeInPH(event)
+  if (!eventEnd) return false
+  const nowPH = getPhilippineTime()
+  return nowPH >= eventEnd
+}
+
 const getAttendanceStatus = (eventId) => {
   const record = myAttendanceRecords.value.find(r => r.event_id === eventId || r.event?._id === eventId)
+  const event = attendanceEvents.value.find(e => e._id === eventId || e.event_id === eventId)
+  
+  // Check if event has actually ended using Philippine time
+  const eventEnded = event ? hasEventEndedPH(event) : false
   
   if (!record) {
-    // No attendance record - check if event is still active
-    const event = attendanceEvents.value.find(e => e._id === eventId || e.event_id === eventId)
-    if (event && event.status === 'active') return 'active'  // Event active, no check-in yet
-    return 'absent'  // Event ended without attendance
+    // No attendance record - check if event is still active using Philippine time
+    if (event && event.status === 'active' && !eventEnded) {
+      return 'active'  // Event is still active, pending check-in
+    }
+    // Only mark absent if event has actually ended
+    if (eventEnded || (event && event.status !== 'active')) {
+      return 'absent'
+    }
+    return 'active'  // Default to active if event status unclear
   }
   
   // Has a record - check attendance status
@@ -3923,7 +3989,7 @@ const getAttendanceStatus = (eventId) => {
   if (record.check_in_at || record.check_in_time) return 'incomplete'  // Checked in but not out
   
   // Has record but no check-in/out (shouldn't happen normally)
-  return 'absent'
+  return eventEnded ? 'absent' : 'active'
 }
 
 const getStatusBadgeClass = (status) => {
@@ -4648,16 +4714,15 @@ const completePasswordChange = async () => {
 
 // Calculate time remaining for each active event
 const updateEventTimeRemaining = () => {
-  const now = new Date()
+  const nowPH = getPhilippineTime()
   const isAdmin = currentUser.value.role === 'admin' || currentUser.value.isMaster
   
   attendanceEvents.value.forEach(event => {
     if (event.status === 'active' && event.end_time) {
-      const eventDate = new Date(event.event_date || event.date)
-      const [hours, minutes] = event.end_time.split(':').map(Number)
-      eventDate.setHours(hours, minutes, 0, 0)
+      const eventEnd = getEventEndTimeInPH(event)
+      if (!eventEnd) return
       
-      const diff = eventDate - now
+      const diff = eventEnd - nowPH
       
       if (diff <= 0) {
         // Event has ended
