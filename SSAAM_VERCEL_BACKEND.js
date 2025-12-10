@@ -592,6 +592,14 @@ const settingsSchema = new mongoose.Schema({
     userLogin: {
         login: { type: Boolean, default: true },
         message: { type: String, default: "" }
+    },
+    rfidScanner: {
+        checkInEnabled: { type: Boolean, default: true },
+        checkOutEnabled: { type: Boolean, default: true },
+        autoDisableCheckIn: { type: Boolean, default: false },
+        autoDisableCheckOut: { type: Boolean, default: false },
+        checkInDisableAt: { type: Date, default: null },
+        checkOutDisableAt: { type: Date, default: null }
     }
 });
 
@@ -746,9 +754,54 @@ async function getSettings() {
     if (!settings) {
         settings = await Settings.create({
             userRegister: { register: true, message: "" },
-            userLogin: { login: true, message: "" }
+            userLogin: { login: true, message: "" },
+            rfidScanner: { 
+                checkInEnabled: true, 
+                checkOutEnabled: true,
+                autoDisableCheckIn: false,
+                autoDisableCheckOut: false,
+                checkInDisableAt: null,
+                checkOutDisableAt: null
+            }
         });
+    } else if (!settings.rfidScanner) {
+        settings.rfidScanner = { 
+            checkInEnabled: true, 
+            checkOutEnabled: true,
+            autoDisableCheckIn: false,
+            autoDisableCheckOut: false,
+            checkInDisableAt: null,
+            checkOutDisableAt: null
+        };
+        await settings.save();
     }
+    
+    // Check auto-disable timers and update if needed
+    const now = new Date();
+    let needsSave = false;
+    
+    if (settings.rfidScanner.autoDisableCheckIn && settings.rfidScanner.checkInDisableAt) {
+        if (new Date(settings.rfidScanner.checkInDisableAt) <= now) {
+            settings.rfidScanner.checkInEnabled = false;
+            settings.rfidScanner.autoDisableCheckIn = false;
+            settings.rfidScanner.checkInDisableAt = null;
+            needsSave = true;
+        }
+    }
+    
+    if (settings.rfidScanner.autoDisableCheckOut && settings.rfidScanner.checkOutDisableAt) {
+        if (new Date(settings.rfidScanner.checkOutDisableAt) <= now) {
+            settings.rfidScanner.checkOutEnabled = false;
+            settings.rfidScanner.autoDisableCheckOut = false;
+            settings.rfidScanner.checkOutDisableAt = null;
+            needsSave = true;
+        }
+    }
+    
+    if (needsSave) {
+        await settings.save();
+    }
+    
     return settings;
 }
 
@@ -809,9 +862,14 @@ async function studentAuthWithToken(req, res, next) {
             return res.status(401).json({ message: "Session expired or invalid. Please login again." });
         }
 
+        // Fetch the full student document
+        const student = await Student.findOne({ student_id: decoded.student_id });
+        if (!student) {
+            return res.status(404).json({ message: "Student not found" });
+        }
+
         if (decoded.role === 'medpub') {
-            const student = await Student.findOne({ student_id: decoded.student_id });
-            if (!student || student.role !== 'medpub') {
+            if (student.role !== 'medpub') {
                 await SessionToken.updateOne({ _id: sessionToken._id }, { is_revoked: true });
                 return res.status(403).json({ 
                     message: "Your MedPub access has been revoked. Please login again.",
@@ -821,6 +879,7 @@ async function studentAuthWithToken(req, res, next) {
         }
 
         req.user = decoded;
+        req.student = student;
         req.sessionToken = sessionToken;
         next();
     } catch (err) {
@@ -2413,13 +2472,21 @@ app.get('/apis/settings', studentAuth, async (req, res) => {
 
 app.put('/apis/settings', auth, adminActionAuth, async (req, res) => {
     try {
-        const { userRegister, userLogin } = req.body;
+        const { userRegister, userLogin, rfidScanner } = req.body;
         
         let settings = await Settings.findOne();
         if (!settings) {
             settings = new Settings({
                 userRegister: userRegister || { register: true, message: "" },
-                userLogin: userLogin || { login: true, message: "" }
+                userLogin: userLogin || { login: true, message: "" },
+                rfidScanner: rfidScanner || { 
+                    checkInEnabled: true, 
+                    checkOutEnabled: true,
+                    autoDisableCheckIn: false,
+                    autoDisableCheckOut: false,
+                    checkInDisableAt: null,
+                    checkOutDisableAt: null
+                }
             });
         } else {
             if (userRegister !== undefined) {
@@ -2427,6 +2494,12 @@ app.put('/apis/settings', auth, adminActionAuth, async (req, res) => {
             }
             if (userLogin !== undefined) {
                 settings.userLogin = userLogin;
+            }
+            if (rfidScanner !== undefined) {
+                settings.rfidScanner = {
+                    ...settings.rfidScanner,
+                    ...rfidScanner
+                };
             }
         }
         
@@ -3258,7 +3331,7 @@ app.get('/apis/attendance/events', auth, async (req, res) => {
 });
 
 // Get active attendance events (for students)
-app.get('/apis/attendance/events/active', studentAuth, async (req, res) => {
+app.get('/apis/attendance/events/active', studentAuthWithToken, async (req, res) => {
     try {
         const events = await AttendanceEvent.find({ status: 'active' })
             .sort({ event_date: -1 });
@@ -3428,6 +3501,44 @@ app.post('/apis/attendance/events/:id/check', auth, async (req, res) => {
             return res.status(400).json({ message: "RFID code is required" });
         }
         
+        // Get global RFID scanner settings
+        let settings = await Settings.findOne();
+        if (!settings) {
+            settings = new Settings();
+            await settings.save();
+        }
+        const rfidSettings = settings.rfidScanner || { checkInEnabled: true, checkOutEnabled: true };
+        
+        // Check if auto-disable timers have expired
+        const now = new Date();
+        let settingsChanged = false;
+        
+        if (rfidSettings.autoDisableCheckIn && rfidSettings.checkInDisableAt) {
+            const disableAt = new Date(rfidSettings.checkInDisableAt);
+            if (now >= disableAt) {
+                rfidSettings.checkInEnabled = false;
+                rfidSettings.autoDisableCheckIn = false;
+                rfidSettings.checkInDisableAt = null;
+                settingsChanged = true;
+            }
+        }
+        
+        if (rfidSettings.autoDisableCheckOut && rfidSettings.checkOutDisableAt) {
+            const disableAt = new Date(rfidSettings.checkOutDisableAt);
+            if (now >= disableAt) {
+                rfidSettings.checkOutEnabled = false;
+                rfidSettings.autoDisableCheckOut = false;
+                rfidSettings.checkOutDisableAt = null;
+                settingsChanged = true;
+            }
+        }
+        
+        // Save settings if timers expired
+        if (settingsChanged) {
+            settings.rfidScanner = rfidSettings;
+            await settings.save();
+        }
+        
         const event = await AttendanceEvent.findById(req.params.id);
         if (!event) {
             return res.status(404).json({ message: "Event not found" });
@@ -3474,10 +3585,10 @@ app.post('/apis/attendance/events/:id/check', auth, async (req, res) => {
         let action = '';
         
         if (!log) {
-            // Check if check-in is locked
-            if (event.check_in_locked) {
+            // Check if check-in is enabled globally
+            if (!rfidSettings.checkInEnabled) {
                 return res.status(403).json({ 
-                    message: "Check-in is currently locked for this event.",
+                    message: "Check-in is currently disabled. Please wait for the admin to enable it.",
                     student_name: `${student.first_name} ${student.last_name}`,
                     locked: 'check_in'
                 });
@@ -3495,10 +3606,10 @@ app.post('/apis/attendance/events/:id/check', auth, async (req, res) => {
             });
             action = 'check_in';
         } else if (!log.check_out_at) {
-            // Check if check-out is locked
-            if (event.check_out_locked) {
+            // Check if check-out is enabled globally
+            if (!rfidSettings.checkOutEnabled) {
                 return res.status(403).json({ 
-                    message: "Check-out is currently locked for this event. Student is already checked in.",
+                    message: "Check-out is currently disabled. Student is already checked in.",
                     student_name: log.student_name,
                     check_in_at: log.check_in_at,
                     locked: 'check_out'

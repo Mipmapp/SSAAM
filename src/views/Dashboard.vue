@@ -550,6 +550,98 @@
 
             <!-- RFID Scanner Tab -->
             <div v-if="attendanceTab === 'scanner'" class="space-y-4">
+              <!-- RFID Scanner Lock Controls -->
+              <div class="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-4 mb-4">
+                <h3 class="font-semibold text-purple-900 mb-4 flex items-center gap-2">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                  Check-In/Out Controls
+                </h3>
+                <div class="grid md:grid-cols-2 gap-6">
+                  <!-- Check-In Control -->
+                  <div class="bg-white rounded-lg p-4 shadow-sm">
+                    <div class="flex items-center justify-between mb-3">
+                      <span class="font-medium text-gray-700">Check-In</span>
+                      <button 
+                        @click="toggleCheckIn" 
+                        :disabled="rfidScannerSaving"
+                        :class="['relative inline-flex h-8 w-14 items-center rounded-full transition-colors duration-300', appSettings.rfidScanner.checkInEnabled ? 'bg-green-500' : 'bg-gray-300']"
+                      >
+                        <span :class="['inline-block h-6 w-6 transform rounded-full bg-white shadow-lg transition-transform duration-300', appSettings.rfidScanner.checkInEnabled ? 'translate-x-7' : 'translate-x-1']"></span>
+                      </button>
+                    </div>
+                    <span :class="['text-sm font-medium px-3 py-1 rounded-full', appSettings.rfidScanner.checkInEnabled ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700']">
+                      {{ appSettings.rfidScanner.checkInEnabled ? 'Enabled' : 'Disabled' }}
+                    </span>
+                    <!-- Timer controls -->
+                    <div v-if="appSettings.rfidScanner.checkInEnabled" class="mt-3 pt-3 border-t border-gray-100">
+                      <p class="text-xs text-gray-500 mb-2">Auto-disable after:</p>
+                      <div class="flex items-center gap-2">
+                        <input 
+                          v-model.number="checkInTimerMinutes" 
+                          type="number" 
+                          min="1" 
+                          max="1440"
+                          class="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-purple-500 outline-none"
+                        />
+                        <span class="text-sm text-gray-600">minutes</span>
+                        <button 
+                          @click="setCheckInTimer" 
+                          :disabled="rfidScannerSaving"
+                          class="px-3 py-1 text-xs bg-purple-100 text-purple-700 rounded hover:bg-purple-200 transition"
+                        >
+                          Set Timer
+                        </button>
+                      </div>
+                      <p v-if="appSettings.rfidScanner.autoDisableCheckIn && appSettings.rfidScanner.checkInDisableAt" class="text-xs text-orange-600 mt-2">
+                        Will disable at: {{ new Date(appSettings.rfidScanner.checkInDisableAt).toLocaleTimeString() }}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <!-- Check-Out Control -->
+                  <div class="bg-white rounded-lg p-4 shadow-sm">
+                    <div class="flex items-center justify-between mb-3">
+                      <span class="font-medium text-gray-700">Check-Out</span>
+                      <button 
+                        @click="toggleCheckOut" 
+                        :disabled="rfidScannerSaving"
+                        :class="['relative inline-flex h-8 w-14 items-center rounded-full transition-colors duration-300', appSettings.rfidScanner.checkOutEnabled ? 'bg-green-500' : 'bg-gray-300']"
+                      >
+                        <span :class="['inline-block h-6 w-6 transform rounded-full bg-white shadow-lg transition-transform duration-300', appSettings.rfidScanner.checkOutEnabled ? 'translate-x-7' : 'translate-x-1']"></span>
+                      </button>
+                    </div>
+                    <span :class="['text-sm font-medium px-3 py-1 rounded-full', appSettings.rfidScanner.checkOutEnabled ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700']">
+                      {{ appSettings.rfidScanner.checkOutEnabled ? 'Enabled' : 'Disabled' }}
+                    </span>
+                    <!-- Timer controls -->
+                    <div v-if="appSettings.rfidScanner.checkOutEnabled" class="mt-3 pt-3 border-t border-gray-100">
+                      <p class="text-xs text-gray-500 mb-2">Auto-disable after:</p>
+                      <div class="flex items-center gap-2">
+                        <input 
+                          v-model.number="checkOutTimerMinutes" 
+                          type="number" 
+                          min="1" 
+                          max="1440"
+                          class="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-purple-500 outline-none"
+                        />
+                        <span class="text-sm text-gray-600">minutes</span>
+                        <button 
+                          @click="setCheckOutTimer" 
+                          :disabled="rfidScannerSaving"
+                          class="px-3 py-1 text-xs bg-purple-100 text-purple-700 rounded hover:bg-purple-200 transition"
+                        >
+                          Set Timer
+                        </button>
+                      </div>
+                      <p v-if="appSettings.rfidScanner.autoDisableCheckOut && appSettings.rfidScanner.checkOutDisableAt" class="text-xs text-orange-600 mt-2">
+                        Will disable at: {{ new Date(appSettings.rfidScanner.checkOutDisableAt).toLocaleTimeString() }}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <p class="text-xs text-gray-500 mt-3 text-center">These settings control whether students can check-in or check-out using the RFID scanner globally for all events.</p>
+              </div>
+
               <div v-if="!selectedEvent" class="text-center py-8">
                 <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h4v4H3V4zm0 8h4v4H3v-4zm0 8h4v4H3v-4zm8-16h4v4h-4V4zm0 8h4v4h-4v-4zm0 8h4v4h-4v-4zm8-16h4v4h-4V4zm0 8h4v4h-4v-4zm0 8h4v4h-4v-4z"></path></svg>
                 <p class="text-gray-500 mb-4">Select an event to start scanning RFID cards</p>
@@ -1971,8 +2063,19 @@ const settingsLoading = ref(false)
 const settingsSaving = ref(false)
 const appSettings = ref({
   userRegister: { register: true, message: '' },
-  userLogin: { login: true, message: '' }
+  userLogin: { login: true, message: '' },
+  rfidScanner: { 
+    checkInEnabled: true, 
+    checkOutEnabled: true,
+    autoDisableCheckIn: false,
+    autoDisableCheckOut: false,
+    checkInDisableAt: null,
+    checkOutDisableAt: null
+  }
 })
+const rfidScannerSaving = ref(false)
+const checkInTimerMinutes = ref(30)
+const checkOutTimerMinutes = ref(30)
 
 // Pending students management
 const pendingStudents = ref([])
@@ -2785,7 +2888,15 @@ const fetchSettings = async () => {
     if (response.ok && data) {
       appSettings.value = {
         userRegister: data.userRegister || { register: true, message: '' },
-        userLogin: data.userLogin || { login: true, message: '' }
+        userLogin: data.userLogin || { login: true, message: '' },
+        rfidScanner: data.rfidScanner || { 
+          checkInEnabled: true, 
+          checkOutEnabled: true,
+          autoDisableCheckIn: false,
+          autoDisableCheckOut: false,
+          checkInDisableAt: null,
+          checkOutDisableAt: null
+        }
       }
     }
   } catch (error) {
@@ -2813,7 +2924,8 @@ const saveSettingsImpl = async () => {
       },
       body: JSON.stringify({
         userRegister: appSettings.value.userRegister,
-        userLogin: appSettings.value.userLogin
+        userLogin: appSettings.value.userLogin,
+        rfidScanner: appSettings.value.rfidScanner
       })
     })
     
@@ -2841,6 +2953,92 @@ const saveSettingsImpl = async () => {
 
 // Save settings (with admin action check)
 const saveSettings = () => withAdminAction(saveSettingsImpl)()
+
+// RFID Scanner lock control functions
+const saveRfidScannerSettings = async () => {
+  if (!currentUser.value.isMaster && currentUser.value.role !== 'admin') return
+  
+  rfidScannerSaving.value = true
+  try {
+    const token = localStorage.getItem('authToken')
+    const response = await fetch('https://ssaam-api.vercel.app/apis/settings', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        'X-SSAAM-TS': encodeTimestamp(),
+        ...getAdminActionHeaders()
+      },
+      body: JSON.stringify({
+        rfidScanner: appSettings.value.rfidScanner
+      })
+    })
+    
+    if (response.ok) {
+      showNotification('RFID Scanner settings saved!', 'success')
+    } else {
+      if (response.status === 403) {
+        const handled = await handleAdminActionError(response)
+        if (!handled) {
+          pendingAdminAction.value = () => saveRfidScannerSettings()
+          showAdminKeyModal.value = true
+        }
+        return
+      }
+      const error = await response.json()
+      showNotification(error.message || 'Failed to save RFID settings', 'error')
+    }
+  } catch (error) {
+    console.error('Failed to save RFID settings:', error)
+    showNotification('Failed to save RFID settings', 'error')
+  } finally {
+    rfidScannerSaving.value = false
+  }
+}
+
+const toggleCheckIn = async () => {
+  appSettings.value.rfidScanner.checkInEnabled = !appSettings.value.rfidScanner.checkInEnabled
+  // Clear timer when disabling
+  if (!appSettings.value.rfidScanner.checkInEnabled) {
+    appSettings.value.rfidScanner.autoDisableCheckIn = false
+    appSettings.value.rfidScanner.checkInDisableAt = null
+  }
+  await saveRfidScannerSettings()
+}
+
+const toggleCheckOut = async () => {
+  appSettings.value.rfidScanner.checkOutEnabled = !appSettings.value.rfidScanner.checkOutEnabled
+  // Clear timer when disabling
+  if (!appSettings.value.rfidScanner.checkOutEnabled) {
+    appSettings.value.rfidScanner.autoDisableCheckOut = false
+    appSettings.value.rfidScanner.checkOutDisableAt = null
+  }
+  await saveRfidScannerSettings()
+}
+
+const setCheckInTimer = async () => {
+  if (checkInTimerMinutes.value < 1) {
+    showNotification('Timer must be at least 1 minute', 'error')
+    return
+  }
+  const disableAt = new Date(Date.now() + checkInTimerMinutes.value * 60 * 1000)
+  appSettings.value.rfidScanner.autoDisableCheckIn = true
+  appSettings.value.rfidScanner.checkInDisableAt = disableAt.toISOString()
+  await saveRfidScannerSettings()
+  showNotification(`Check-in will be disabled at ${disableAt.toLocaleTimeString()}`, 'info')
+}
+
+const setCheckOutTimer = async () => {
+  if (checkOutTimerMinutes.value < 1) {
+    showNotification('Timer must be at least 1 minute', 'error')
+    return
+  }
+  const disableAt = new Date(Date.now() + checkOutTimerMinutes.value * 60 * 1000)
+  appSettings.value.rfidScanner.autoDisableCheckOut = true
+  appSettings.value.rfidScanner.checkOutDisableAt = disableAt.toISOString()
+  await saveRfidScannerSettings()
+  showNotification(`Check-out will be disabled at ${disableAt.toLocaleTimeString()}`, 'info')
+}
 
 const handleLogout = () => {
   showLogoutConfirmation.value = true
