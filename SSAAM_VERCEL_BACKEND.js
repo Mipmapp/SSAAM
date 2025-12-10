@@ -402,8 +402,6 @@ mongoose.connection.on('error', (err) => {
 connectWithRetry();
 
 const STUDENT_ID_REGEX = /^[0-9]{2}-[A-Z]-[0-9]{5}$/;
-// Updated regex to allow enye (Ñ) and other common special letters in names
-const NAME_REGEX = /^[A-ZÑ\s'-]+$/;
 const UPPERCASE_ONLY_REGEX = /^[A-ZÑ\s'-]+$/;
 
 const sessionTokenSchema = new mongoose.Schema({
@@ -412,13 +410,36 @@ const sessionTokenSchema = new mongoose.Schema({
     user_type: { type: String, enum: ['student', 'master'], required: true },
     created_at: { type: Date, default: Date.now },
     expires_at: { type: Date, required: true },
-    is_revoked: { type: Boolean, default: false }
+    is_revoked: { type: Boolean, default: false },
+    last_used_at: { type: Date, default: Date.now }
 });
 
 sessionTokenSchema.index({ expires_at: 1 }, { expireAfterSeconds: 0 });
 sessionTokenSchema.index({ user_id: 1 });
+sessionTokenSchema.index({ last_used_at: 1 });
 
 const SessionToken = mongoose.model("SessionToken", sessionTokenSchema);
+
+const SESSION_INACTIVITY_MS = 12 * 60 * 60 * 1000;
+
+async function cleanupInactiveSessionTokens() {
+    try {
+        const cutoffTime = new Date(Date.now() - SESSION_INACTIVITY_MS);
+        const result = await SessionToken.deleteMany({
+            $or: [
+                { last_used_at: { $lt: cutoffTime } },
+                { last_used_at: null, created_at: { $lt: cutoffTime } }
+            ]
+        });
+        if (result.deletedCount > 0) {
+            console.log(`Cleaned up ${result.deletedCount} inactive session tokens`);
+        }
+    } catch (err) {
+        console.error('Session token cleanup error:', err.message);
+    }
+}
+
+setInterval(cleanupInactiveSessionTokens, 60 * 60 * 1000);
 
 const adminActionTokenSchema = new mongoose.Schema({
     token_hash: { type: String, required: true, unique: true },
@@ -617,6 +638,17 @@ notificationSchema.index({ created_at: -1 });
 
 const Notification = mongoose.model("Notification", notificationSchema);
 
+const notificationSeenSchema = new mongoose.Schema({
+    user_id: { type: mongoose.Schema.Types.ObjectId, required: true },
+    notification_id: { type: mongoose.Schema.Types.ObjectId, required: true, ref: 'Notification' },
+    seen_at: { type: Date, default: Date.now }
+});
+
+notificationSeenSchema.index({ user_id: 1, notification_id: 1 }, { unique: true });
+notificationSeenSchema.index({ notification_id: 1 });
+
+const NotificationSeen = mongoose.model("NotificationSeen", notificationSeenSchema);
+
 // ==================== ATTENDANCE SCHEMAS ====================
 
 // Attendance Event Schema - Events created by admin for attendance tracking
@@ -728,11 +760,15 @@ async function auth(req, res, next) {
         const decoded = jwt.verify(token, SSAAM_API_KEY);
         
         const tokenHash = hashToken(token);
-        const sessionToken = await SessionToken.findOne({ 
-            token_hash: tokenHash,
-            is_revoked: false,
-            expires_at: { $gt: new Date() }
-        });
+        const sessionToken = await SessionToken.findOneAndUpdate(
+            { 
+                token_hash: tokenHash,
+                is_revoked: false,
+                expires_at: { $gt: new Date() }
+            },
+            { last_used_at: new Date() },
+            { new: true }
+        );
 
         if (!sessionToken) {
             return res.status(401).json({ message: "Session expired or invalid. Please login again." });
@@ -757,14 +793,29 @@ async function studentAuthWithToken(req, res, next) {
         const decoded = jwt.verify(token, SSAAM_API_KEY);
         
         const tokenHash = hashToken(token);
-        const sessionToken = await SessionToken.findOne({ 
-            token_hash: tokenHash,
-            is_revoked: false,
-            expires_at: { $gt: new Date() }
-        });
+        const sessionToken = await SessionToken.findOneAndUpdate(
+            { 
+                token_hash: tokenHash,
+                is_revoked: false,
+                expires_at: { $gt: new Date() }
+            },
+            { last_used_at: new Date() },
+            { new: true }
+        );
 
         if (!sessionToken) {
             return res.status(401).json({ message: "Session expired or invalid. Please login again." });
+        }
+
+        if (decoded.role === 'medpub') {
+            const student = await Student.findOne({ student_id: decoded.student_id });
+            if (!student || student.role !== 'medpub') {
+                await SessionToken.updateOne({ _id: sessionToken._id }, { is_revoked: true });
+                return res.status(403).json({ 
+                    message: "Your MedPub access has been revoked. Please login again.",
+                    code: 'MEDPUB_ACCESS_REVOKED'
+                });
+            }
         }
 
         req.user = decoded;
@@ -1104,6 +1155,85 @@ app.get('/apis/debug/pending', async (req, res) => {
         });
     } catch (err) {
         res.status(500).json({ message: err.message, stack: err.stack });
+    }
+});
+
+// Debug endpoint to view and clear session tokens
+app.get('/apis/debug/session-tokens', auth, async (req, res) => {
+    try {
+        if (!req.master.isMaster) {
+            return res.status(403).json({ message: "Admin access required" });
+        }
+        
+        const totalTokens = await SessionToken.countDocuments({});
+        const activeTokens = await SessionToken.countDocuments({ 
+            is_revoked: false, 
+            expires_at: { $gt: new Date() } 
+        });
+        const expiredTokens = await SessionToken.countDocuments({
+            $or: [
+                { expires_at: { $lte: new Date() } },
+                { is_revoked: true }
+            ]
+        });
+        
+        const cutoffTime = new Date(Date.now() - SESSION_INACTIVITY_MS);
+        const inactiveTokens = await SessionToken.countDocuments({
+            $or: [
+                { last_used_at: { $lt: cutoffTime } },
+                { last_used_at: null, created_at: { $lt: cutoffTime } }
+            ]
+        });
+        
+        res.json({
+            message: "Session token statistics",
+            stats: {
+                total: totalTokens,
+                active: activeTokens,
+                expired_or_revoked: expiredTokens,
+                inactive_12hrs: inactiveTokens
+            }
+        });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+app.delete('/apis/debug/session-tokens/clear', auth, adminActionAuth, async (req, res) => {
+    try {
+        const { type } = req.query;
+        let result;
+        
+        if (type === 'all') {
+            result = await SessionToken.deleteMany({});
+        } else if (type === 'inactive') {
+            const cutoffTime = new Date(Date.now() - SESSION_INACTIVITY_MS);
+            result = await SessionToken.deleteMany({
+                $or: [
+                    { last_used_at: { $lt: cutoffTime } },
+                    { last_used_at: null, created_at: { $lt: cutoffTime } }
+                ]
+            });
+        } else if (type === 'expired') {
+            result = await SessionToken.deleteMany({
+                $or: [
+                    { expires_at: { $lte: new Date() } },
+                    { is_revoked: true }
+                ]
+            });
+        } else {
+            return res.status(400).json({ 
+                message: "Invalid type. Use: 'all', 'inactive', or 'expired'" 
+            });
+        }
+        
+        res.json({
+            message: `Cleared ${result.deletedCount} session tokens`,
+            type,
+            deletedCount: result.deletedCount
+        });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
     }
 });
 
@@ -1531,18 +1661,20 @@ app.put('/apis/students/:student_id/reject', auth, adminActionAuth, async (req, 
     try {
         const { reason } = req.body;
         
-        const student = await Student.findOneAndUpdate(
-            { student_id: req.params.student_id, status: 'pending' },
-            { 
-                status: 'rejected',
-                rejection_reason: reason || ''
-            },
-            { new: true }
-        );
+        const student = await Student.findOne({ student_id: req.params.student_id, status: 'pending' });
 
         if (!student) {
             return res.status(404).json({ message: "Pending student not found" });
         }
+
+        const studentInfo = {
+            student_id: student.student_id,
+            first_name: student.first_name,
+            last_name: student.last_name,
+            email: student.email,
+            program: student.program,
+            year_level: student.year_level
+        };
 
         if (student.email) {
             try {
@@ -1552,9 +1684,15 @@ app.put('/apis/students/:student_id/reject', auth, adminActionAuth, async (req, 
             }
         }
 
+        await AttendanceLog.deleteMany({ student_id: student._id });
+        await NotificationSeen.deleteMany({ user_id: student._id });
+        await SessionToken.deleteMany({ user_id: student._id });
+        await Student.deleteOne({ _id: student._id });
+
         res.json({
-            message: "Student rejected",
-            student
+            message: "Student rejected and removed from database",
+            removed_student: studentInfo,
+            rejection_reason: reason || ''
         });
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -2605,17 +2743,20 @@ async function canPostNotification(req, res, next) {
         const decoded = jwt.verify(token, SSAAM_API_KEY);
         
         const tokenHash = hashToken(token);
-        const sessionToken = await SessionToken.findOne({ 
-            token_hash: tokenHash,
-            is_revoked: false,
-            expires_at: { $gt: new Date() }
-        });
+        const sessionToken = await SessionToken.findOneAndUpdate(
+            { 
+                token_hash: tokenHash,
+                is_revoked: false,
+                expires_at: { $gt: new Date() }
+            },
+            { last_used_at: new Date() },
+            { new: true }
+        );
 
         if (!sessionToken) {
             return res.status(401).json({ message: "Session expired or invalid. Please login again." });
         }
 
-        // Check if master/admin
         if (decoded.isMaster) {
             req.poster = {
                 id: decoded.id,
@@ -2625,17 +2766,31 @@ async function canPostNotification(req, res, next) {
             return next();
         }
 
-        // Check if student with medpub role
         if (decoded.student_id) {
             const student = await Student.findOne({ student_id: decoded.student_id });
-            if (student && student.role === 'medpub') {
-                req.poster = {
-                    id: decoded.id,
-                    name: student.first_name + ' ' + student.last_name,
-                    type: 'medpub'
-                };
-                return next();
+            if (!student) {
+                await SessionToken.updateOne({ _id: sessionToken._id }, { is_revoked: true });
+                return res.status(403).json({ 
+                    message: "Student account not found. Please login again.",
+                    code: 'STUDENT_NOT_FOUND'
+                });
             }
+            
+            if (student.role !== 'medpub') {
+                await SessionToken.updateOne({ _id: sessionToken._id }, { is_revoked: true });
+                return res.status(403).json({ 
+                    message: "Your MedPub access has been revoked. Please login again.",
+                    code: 'MEDPUB_ACCESS_REVOKED'
+                });
+            }
+            
+            req.poster = {
+                id: decoded.id,
+                studentId: student._id,
+                name: student.first_name + ' ' + student.last_name,
+                type: 'medpub'
+            };
+            return next();
         }
 
         return res.status(403).json({ message: "Only admins and MedPub users can post notifications" });
@@ -2888,6 +3043,59 @@ app.delete('/apis/notifications/:id', canPostNotification, async (req, res) => {
     }
 });
 
+// Mark notifications as seen (stores in database, not localStorage)
+app.post('/apis/notifications/mark-seen', studentAuthWithToken, async (req, res) => {
+    try {
+        const { notification_ids } = req.body;
+        
+        if (!notification_ids || !Array.isArray(notification_ids) || notification_ids.length === 0) {
+            return res.status(400).json({ message: "notification_ids array is required" });
+        }
+        
+        const userId = req.user.id || req.user._id;
+        const seenRecords = notification_ids.map(notifId => ({
+            user_id: userId,
+            notification_id: notifId,
+            seen_at: new Date()
+        }));
+        
+        await NotificationSeen.bulkWrite(
+            seenRecords.map(record => ({
+                updateOne: {
+                    filter: { user_id: record.user_id, notification_id: record.notification_id },
+                    update: { $setOnInsert: record },
+                    upsert: true
+                }
+            }))
+        );
+        
+        res.json({ 
+            message: "Notifications marked as seen",
+            marked_count: notification_ids.length
+        });
+    } catch (err) {
+        console.error("Mark notifications seen error:", err);
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// Get seen notification IDs for current user
+app.get('/apis/notifications/seen', studentAuthWithToken, async (req, res) => {
+    try {
+        const userId = req.user.id || req.user._id;
+        const seenRecords = await NotificationSeen.find({ user_id: userId })
+            .select('notification_id seen_at')
+            .lean();
+        
+        res.json({
+            seen_notification_ids: seenRecords.map(r => r.notification_id.toString()),
+            seen_records: seenRecords
+        });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
 // Toggle like on notification (requires valid JWT authentication with session validation)
 app.post('/apis/notifications/:id/like', async (req, res) => {
     try {
@@ -2973,6 +3181,50 @@ app.post('/apis/notifications/:id/like', async (req, res) => {
 });
 
 // ==================== ATTENDANCE API ENDPOINTS ====================
+
+async function autoUpdateEventStatuses() {
+    try {
+        const now = new Date();
+        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+        
+        const completedResult = await AttendanceEvent.updateMany(
+            { 
+                status: 'active',
+                event_date: { $lt: todayStart }
+            },
+            { 
+                $set: { 
+                    status: 'closed',
+                    closed_at: now
+                }
+            }
+        );
+        
+        if (completedResult.modifiedCount > 0) {
+            console.log(`Auto-closed ${completedResult.modifiedCount} past events`);
+        }
+    } catch (err) {
+        console.error('Auto-update event status error:', err.message);
+    }
+}
+
+setInterval(autoUpdateEventStatuses, 60 * 60 * 1000);
+
+function getEventAutoStatus(eventDate) {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    const eventDay = new Date(eventDate);
+    
+    if (eventDay >= todayStart && eventDay <= todayEnd) {
+        return 'active';
+    } else if (eventDay > todayEnd) {
+        return 'draft';
+    } else {
+        return 'closed';
+    }
+}
 
 // Get all attendance events (admin only)
 app.get('/apis/attendance/events', auth, async (req, res) => {
@@ -3301,10 +3553,34 @@ app.get('/apis/attendance/my-records', studentAuth, async (req, res) => {
             return res.status(404).json({ message: "Student not found" });
         }
         
-        const events = await AttendanceEvent.find({ status: { $in: ['active', 'closed'] } })
-            .sort({ event_date: -1 });
+        const studentCreatedDate = new Date(student.created_date);
+        
+        const events = await AttendanceEvent.find({ 
+            status: { $in: ['active', 'closed'] },
+            $or: [
+                { status: 'active' },
+                { 
+                    status: 'closed',
+                    $or: [
+                        { activated_at: { $gte: studentCreatedDate } },
+                        { closed_at: { $gte: studentCreatedDate } }
+                    ]
+                }
+            ]
+        }).sort({ event_date: -1 });
         
         const records = await Promise.all(events.map(async (event) => {
+            const eventActivatedDate = event.activated_at ? new Date(event.activated_at) : null;
+            
+            if (event.status === 'closed' && eventActivatedDate) {
+                const eventEndOfDay = new Date(eventActivatedDate);
+                eventEndOfDay.setHours(23, 59, 59, 999);
+                
+                if (studentCreatedDate > eventEndOfDay) {
+                    return null;
+                }
+            }
+            
             const log = await AttendanceLog.findOne({
                 event_id: event._id,
                 student_id: student._id
@@ -3314,6 +3590,10 @@ app.get('/apis/attendance/my-records', studentAuth, async (req, res) => {
             if (log) {
                 if (log.check_in_at && log.check_out_at) status = 'present';
                 else if (log.check_in_at) status = 'incomplete';
+            }
+            
+            if (event.status === 'closed' && !log) {
+                return null;
             }
             
             return {
@@ -3339,7 +3619,9 @@ app.get('/apis/attendance/my-records', studentAuth, async (req, res) => {
             };
         }));
         
-        res.json({ data: records });
+        const filteredRecords = records.filter(r => r !== null);
+        
+        res.json({ data: filteredRecords });
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
