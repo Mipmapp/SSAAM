@@ -367,12 +367,39 @@ function antiBotProtection(req, res, next) {
     next();
 }
 
-mongoose.connect(MONGO_URI, { serverSelectionTimeoutMS: 5000 })
-.then(() => {
-    console.log('Connected to MongoDB Atlas');
-    app.listen(PORT, () => console.log(`Server running on ${PORT}`));
-})
-.catch(err => console.error('MongoDB error:', err));
+const connectWithRetry = async (retryCount = 0, maxRetries = 10, retryDelay = 5000) => {
+    try {
+        await mongoose.connect(MONGO_URI, { 
+            serverSelectionTimeoutMS: 10000,
+            socketTimeoutMS: 45000,
+            maxPoolSize: 10,
+            minPoolSize: 5,
+            retryWrites: true,
+            w: 'majority'
+        });
+        console.log('Connected to MongoDB Atlas');
+        app.listen(PORT, () => console.log(`Server running on ${PORT}`));
+    } catch (err) {
+        console.error(`MongoDB connection attempt ${retryCount + 1} failed:`, err.message);
+        if (retryCount < maxRetries) {
+            console.log(`Retrying in ${retryDelay / 1000} seconds...`);
+            setTimeout(() => connectWithRetry(retryCount + 1, maxRetries, retryDelay), retryDelay);
+        } else {
+            console.error('Max retries reached. Could not connect to MongoDB.');
+            process.exit(1);
+        }
+    }
+};
+
+mongoose.connection.on('disconnected', () => {
+    console.log('MongoDB disconnected. Attempting to reconnect...');
+});
+
+mongoose.connection.on('error', (err) => {
+    console.error('MongoDB connection error:', err.message);
+});
+
+connectWithRetry();
 
 const STUDENT_ID_REGEX = /^[0-9]{2}-[A-Z]-[0-9]{5}$/;
 // Updated regex to allow enye (Ñ) and other common special letters in names
@@ -2520,33 +2547,46 @@ app.post('/apis/upload-image', canPostNotification, async (req, res) => {
 // Get all notifications (requires authentication - student or admin token)
 app.get('/apis/notifications', studentAuth, async (req, res) => {
     try {
-        // Select only necessary fields to reduce payload size
         const notifications = await Notification.find()
-            .select('title message priority image_url posted_by posted_by_id posted_by_name like_count liked_by seen_by was_edited created_at updated_at')
+            .select('title message priority image_url posted_by posted_by_id posted_by_name liked_by was_edited created_at updated_at')
             .sort({ created_at: -1 })
-            .limit(50);
+            .limit(50)
+            .lean();
         
-        // Enrich medpub notifications with poster photo (only fetch photo field)
-        const enrichedNotifications = await Promise.all(notifications.map(async (notif) => {
-            const notifObj = notif.toObject();
-            
-            // For medpub posts, fetch the poster's photo from Student collection
-            if (notifObj.posted_by === 'medpub' && notifObj.posted_by_id) {
-                try {
-                    const poster = await Student.findById(notifObj.posted_by_id).select('photo');
-                    if (poster) {
-                        notifObj.poster_photo = poster.photo || null;
-                        notifObj.poster_image_url = poster.photo || null;
-                    }
-                } catch (e) {
-                    // If lookup fails, continue without photo
-                }
-            }
-            
-            return notifObj;
+        const medpubPosterIds = notifications
+            .filter(n => n.posted_by === 'medpub' && n.posted_by_id)
+            .map(n => n.posted_by_id);
+        
+        let posterPhotos = {};
+        if (medpubPosterIds.length > 0) {
+            const posters = await Student.find({ _id: { $in: medpubPosterIds } })
+                .select('_id photo')
+                .lean();
+            posterPhotos = posters.reduce((acc, p) => {
+                acc[p._id.toString()] = p.photo || null;
+                return acc;
+            }, {});
+        }
+        
+        const cleanNotifications = notifications.map(notif => ({
+            _id: notif._id,
+            title: notif.title,
+            message: notif.message,
+            priority: notif.priority || 'normal',
+            image_url: notif.image_url || null,
+            posted_by: notif.posted_by,
+            posted_by_name: notif.posted_by_name,
+            posted_by_id: notif.posted_by_id,
+            poster_photo: notif.posted_by === 'medpub' && notif.posted_by_id 
+                ? posterPhotos[notif.posted_by_id.toString()] || null 
+                : null,
+            liked_by: notif.liked_by || [],
+            was_edited: notif.was_edited || false,
+            created_at: notif.created_at,
+            updated_at: notif.updated_at
         }));
         
-        res.json({ data: enrichedNotifications });
+        res.json({ data: cleanNotifications });
     } catch (err) {
         console.error("Fetch notifications error:", err);
         res.status(500).json({ message: err.message });

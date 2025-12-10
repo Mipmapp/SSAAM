@@ -800,8 +800,8 @@
             </div>
 
             <div v-else class="space-y-4">
-              <div v-for="notif in notifications" :key="notif._id" :class="['rounded-xl p-4 md:p-6 border-l-4', notif.posted_by === 'admin' ? 'bg-gradient-to-r from-purple-50 to-pink-50 border-purple-500' : 'bg-gradient-to-r from-yellow-50 to-amber-50 border-yellow-500']">
-                <div class="flex items-start gap-4">
+              <div v-for="notif in notifications" :key="notif._id" :class="['rounded-xl p-4 md:p-5 border-l-4', notif.posted_by === 'admin' ? 'bg-gradient-to-r from-purple-50 to-pink-50 border-purple-500' : 'bg-gradient-to-r from-yellow-50 to-amber-50 border-yellow-500']">
+                <div class="flex items-start gap-3">
                   <!-- Admin: JRMSU Logo -->
                   <div v-if="notif.posted_by === 'admin'" class="w-12 h-12 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden bg-gradient-to-br from-purple-500 to-pink-500">
                     <img src="/src/assets/jrmsu-logo.webp" alt="JRMSU" class="w-10 h-10 object-contain" />
@@ -858,9 +858,9 @@
                         Edited: {{ formatNotificationDate(notif.updated_at) }}
                       </span>
                     </div>
-                    <h3 class="text-lg font-semibold text-gray-900 mb-2">{{ notif.title }}</h3>
-                    <p class="text-gray-700 whitespace-pre-wrap mb-3" v-html="formatMessageWithLinks(notif.message || notif.content)"></p>
-                    <div v-if="notif.image_url" class="mb-3">
+                    <h3 class="text-base md:text-lg font-semibold text-gray-900 mb-1.5">{{ notif.title }}</h3>
+                    <p class="text-gray-700 whitespace-pre-wrap break-words leading-relaxed text-sm md:text-base flex-1" v-html="formatMessageWithLinks(notif.message || notif.content)"></p>
+                    <div v-if="notif.image_url" class="mt-3">
                       <div class="relative group inline-block max-w-full">
                         <div v-if="notifImageRetries[notif._id] > 0 && !notifImageFailed[notif._id]" class="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-lg z-10">
                           <div class="text-center">
@@ -887,7 +887,7 @@
                         </div>
                       </div>
                     </div>
-                    <div class="flex items-center justify-between mt-4 relative z-10">
+                    <div class="flex items-center justify-between mt-3 pt-2 border-t border-gray-200 border-opacity-50 relative z-10">
                       <button @click.stop="toggleLike(notif)" :disabled="isLikeDisabled(notif._id)" :class="['flex items-center gap-2 transition group px-3 py-2 -ml-3 rounded-lg', isLikeDisabled(notif._id) ? 'text-gray-300 cursor-not-allowed' : 'text-gray-500 hover:text-pink-500 hover:bg-pink-50 active:scale-95']" :title="isLikeDisabled(notif._id) ? 'Please wait...' : (isLikedByCurrentUser(notif) ? 'Unlike' : 'Like')">
                         <svg v-if="likeInProgress[notif._id]" class="w-6 h-6 animate-spin text-pink-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -3375,6 +3375,15 @@ const fetchAttendanceData = async () => {
 const createAttendanceEvent = async () => {
   const token = localStorage.getItem('token')
   try {
+    const eventPayload = {
+      title: newEvent.value.title,
+      description: newEvent.value.description || '',
+      location: newEvent.value.location || '',
+      event_date: newEvent.value.date,
+      start_time: newEvent.value.startTime,
+      end_time: newEvent.value.endTime,
+      status: newEvent.value.status || 'draft'
+    }
     const response = await fetch('https://ssaam-api.vercel.app/apis/attendance/events', {
       method: 'POST',
       headers: {
@@ -3383,7 +3392,7 @@ const createAttendanceEvent = async () => {
         'X-SSAAM-TS': encodeTimestamp(),
         ...getAdminActionHeaders()
       },
-      body: JSON.stringify(newEvent.value)
+      body: JSON.stringify(eventPayload)
     })
     
     if (response.ok) {
