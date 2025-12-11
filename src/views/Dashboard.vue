@@ -1902,6 +1902,72 @@
     </div>
   </div>
 
+  <!-- Custom Calendar Picker Modal -->
+  <div v-if="showCalendarPicker" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]" @click.self="showCalendarPicker = false">
+    <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full mx-4">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">Select Date</h3>
+        <button @click="showCalendarPicker = false" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+      </div>
+      
+      <!-- Calendar Header -->
+      <div class="flex items-center justify-between mb-4">
+        <button @click="changeCalendarMonth(-1)" class="w-10 h-10 flex items-center justify-center rounded-full bg-gradient-to-r from-purple-100 to-pink-100 hover:from-purple-200 hover:to-pink-200 text-purple-700 transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+        </button>
+        <div class="text-center">
+          <span class="text-lg font-bold bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">{{ calendarMonthName }} {{ calendarYear }}</span>
+        </div>
+        <button @click="changeCalendarMonth(1)" class="w-10 h-10 flex items-center justify-center rounded-full bg-gradient-to-r from-purple-100 to-pink-100 hover:from-purple-200 hover:to-pink-200 text-purple-700 transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+        </button>
+      </div>
+      
+      <!-- Day Headers -->
+      <div class="grid grid-cols-7 gap-1 mb-2">
+        <div v-for="day in ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']" :key="day" class="text-center text-xs font-semibold text-purple-600 py-2">{{ day }}</div>
+      </div>
+      
+      <!-- Calendar Grid -->
+      <div class="grid grid-cols-7 gap-1">
+        <div v-for="(day, index) in calendarDays" :key="index" class="aspect-square">
+          <button 
+            v-if="day.date"
+            @click="selectCalendarDate(day.date)"
+            :class="[
+              'w-full h-full rounded-xl text-sm font-medium transition-all duration-200 flex items-center justify-center',
+              day.isToday && !day.isSelected ? 'bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 ring-2 ring-purple-400' : '',
+              day.isSelected ? 'bg-gradient-to-r from-purple-600 to-pink-500 text-white shadow-lg scale-110' : '',
+              !day.isToday && !day.isSelected && day.isCurrentMonth ? 'text-gray-700 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 hover:text-purple-700' : '',
+              !day.isCurrentMonth ? 'text-gray-300' : ''
+            ]"
+          >
+            {{ day.day }}
+          </button>
+        </div>
+      </div>
+      
+      <!-- Quick Actions -->
+      <div class="flex gap-2 mt-4 pt-4 border-t border-gray-100">
+        <button @click="selectToday" class="flex-1 px-3 py-2 text-sm font-medium text-purple-600 bg-purple-50 rounded-lg hover:bg-purple-100 transition">Today</button>
+        <button @click="clearCalendarDate" class="flex-1 px-3 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition">Clear</button>
+      </div>
+      
+      <!-- Selected Date Display -->
+      <div class="mt-4 p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl">
+        <p class="text-sm text-center">
+          <span class="text-gray-500">Selected: </span>
+          <span class="font-bold bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">{{ selectedCalendarDateDisplay || 'No date selected' }}</span>
+        </p>
+      </div>
+      
+      <div class="flex gap-3 mt-4">
+        <button @click="showCalendarPicker = false" class="flex-1 bg-gray-200 text-gray-800 py-3 px-4 rounded-lg font-medium hover:bg-gray-300 transition">Cancel</button>
+        <button @click="confirmCalendarDate" :disabled="!calendarSelectedDate" class="flex-1 bg-gradient-to-r from-purple-600 to-pink-500 text-white py-3 px-4 rounded-lg font-medium hover:from-purple-700 hover:to-pink-600 transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">Confirm</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Time Picker Modal - Clock Design -->
   <div v-if="showTimePicker" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]" @click.self="showTimePicker = false">
     <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4">
@@ -1916,13 +1982,13 @@
         <div class="absolute inset-2 rounded-full bg-white shadow-lg flex items-center justify-center">
           <div class="text-center">
             <div class="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
-              {{ timePickerHour }}:{{ timePickerMinute.toString().padStart(2, '0') }}
+              {{ timePickerHour.toString().padStart(2, '0') }}:{{ timePickerMinute.toString().padStart(2, '0') }}
             </div>
             <div class="text-lg font-semibold text-purple-600 mt-1">{{ timePickerPeriod }}</div>
           </div>
         </div>
         <!-- Clock hour markers -->
-        <div v-for="i in 12" :key="i" class="absolute w-1 h-1 bg-purple-300 rounded-full" :style="{ top: `${50 - 42 * Math.cos((i * 30 - 90) * Math.PI / 180)}%`, left: `${50 + 42 * Math.sin((i * 30 - 90) * Math.PI / 180)}%` }"></div>
+        <div v-for="i in 12" :key="i" class="absolute w-1.5 h-1.5 bg-purple-300 rounded-full" :style="{ top: `${50 - 42 * Math.cos((i * 30 - 90) * Math.PI / 180)}%`, left: `${50 + 42 * Math.sin((i * 30 - 90) * Math.PI / 180)}%` }"></div>
       </div>
       
       <!-- Time Input Controls -->
@@ -1934,14 +2000,9 @@
             <button @click="timePickerHour = timePickerHour < 12 ? timePickerHour + 1 : 1" class="text-purple-600 hover:text-pink-500 p-1 transition">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg>
             </button>
-            <input 
-              type="number" 
-              v-model.number="timePickerHour" 
-              @input="timePickerHour = Math.max(1, Math.min(12, timePickerHour || 1))"
-              min="1" 
-              max="12" 
-              class="w-16 h-16 text-center text-2xl font-bold bg-gradient-to-br from-purple-500 to-pink-500 text-white rounded-xl shadow-lg outline-none"
-            />
+            <div class="w-16 h-16 flex items-center justify-center text-2xl font-bold bg-gradient-to-br from-purple-500 to-pink-500 text-white rounded-xl shadow-lg">
+              {{ timePickerHour.toString().padStart(2, '0') }}
+            </div>
             <button @click="timePickerHour = timePickerHour > 1 ? timePickerHour - 1 : 12" class="text-purple-600 hover:text-pink-500 p-1 transition">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
             </button>
@@ -1950,25 +2011,21 @@
         
         <span class="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent mt-5">:</span>
         
-        <!-- Minute Control -->
+        <!-- Minute Control (30-minute intervals only) -->
         <div class="flex flex-col items-center">
           <label class="text-xs text-gray-500 mb-1 font-medium">Minute</label>
           <div class="flex flex-col items-center">
-            <button @click="timePickerMinute = timePickerMinute < 59 ? timePickerMinute + 1 : 0" class="text-purple-600 hover:text-pink-500 p-1 transition">
+            <button @click="timePickerMinute = timePickerMinute === 0 ? 30 : 0" class="text-purple-600 hover:text-pink-500 p-1 transition">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg>
             </button>
-            <input 
-              type="number" 
-              v-model.number="timePickerMinute" 
-              @input="timePickerMinute = Math.max(0, Math.min(59, timePickerMinute || 0))"
-              min="0" 
-              max="59" 
-              class="w-16 h-16 text-center text-2xl font-bold bg-gradient-to-br from-purple-500 to-pink-500 text-white rounded-xl shadow-lg outline-none"
-            />
-            <button @click="timePickerMinute = timePickerMinute > 0 ? timePickerMinute - 1 : 59" class="text-purple-600 hover:text-pink-500 p-1 transition">
+            <div class="w-16 h-16 flex items-center justify-center text-2xl font-bold bg-gradient-to-br from-purple-500 to-pink-500 text-white rounded-xl shadow-lg">
+              {{ timePickerMinute.toString().padStart(2, '0') }}
+            </div>
+            <button @click="timePickerMinute = timePickerMinute === 30 ? 0 : 30" class="text-purple-600 hover:text-pink-500 p-1 transition">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
             </button>
           </div>
+          <span class="text-xs text-gray-400 mt-1">30 min intervals</span>
         </div>
         
         <!-- Period Control -->
@@ -2010,7 +2067,10 @@
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">Date *</label>
-          <input v-model="newEvent.date" type="date" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none" />
+          <button @click="openCalendarPicker('newEvent')" type="button" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none text-left flex items-center justify-between hover:bg-gray-50 transition">
+            <span :class="newEvent.date ? 'text-gray-900' : 'text-gray-400'">{{ formatCalendarDisplayDate(newEvent.date) }}</span>
+            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+          </button>
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div>
@@ -2066,7 +2126,10 @@
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">Date *</label>
-          <input v-model="selectedEvent.date" type="date" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none" />
+          <button @click="openCalendarPicker('editEvent')" type="button" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none text-left flex items-center justify-between hover:bg-gray-50 transition">
+            <span :class="selectedEvent.date ? 'text-gray-900' : 'text-gray-400'">{{ formatCalendarDisplayDate(selectedEvent.date) }}</span>
+            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+          </button>
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div>
@@ -2493,6 +2556,144 @@ const timePickerHour = ref(8)
 const timePickerMinute = ref(0)
 const timePickerPeriod = ref('AM')
 
+const showCalendarPicker = ref(false)
+const calendarPickerTarget = ref('')
+const calendarMonth = ref(new Date().getMonth())
+const calendarYear = ref(new Date().getFullYear())
+const calendarSelectedDate = ref('')
+
+const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+
+const calendarMonthName = computed(() => monthNames[calendarMonth.value])
+
+const calendarDays = computed(() => {
+  const days = []
+  const firstDay = new Date(calendarYear.value, calendarMonth.value, 1)
+  const lastDay = new Date(calendarYear.value, calendarMonth.value + 1, 0)
+  const startDay = firstDay.getDay()
+  const prevMonthLastDay = new Date(calendarYear.value, calendarMonth.value, 0).getDate()
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  
+  for (let i = startDay - 1; i >= 0; i--) {
+    const date = new Date(calendarYear.value, calendarMonth.value - 1, prevMonthLastDay - i)
+    days.push({
+      day: prevMonthLastDay - i,
+      date: date.toISOString().split('T')[0],
+      isCurrentMonth: false,
+      isToday: false,
+      isSelected: calendarSelectedDate.value === date.toISOString().split('T')[0]
+    })
+  }
+  
+  for (let i = 1; i <= lastDay.getDate(); i++) {
+    const date = new Date(calendarYear.value, calendarMonth.value, i)
+    const dateStr = date.toISOString().split('T')[0]
+    days.push({
+      day: i,
+      date: dateStr,
+      isCurrentMonth: true,
+      isToday: date.getTime() === today.getTime(),
+      isSelected: calendarSelectedDate.value === dateStr
+    })
+  }
+  
+  const remaining = 42 - days.length
+  for (let i = 1; i <= remaining; i++) {
+    const date = new Date(calendarYear.value, calendarMonth.value + 1, i)
+    days.push({
+      day: i,
+      date: date.toISOString().split('T')[0],
+      isCurrentMonth: false,
+      isToday: false,
+      isSelected: calendarSelectedDate.value === date.toISOString().split('T')[0]
+    })
+  }
+  
+  return days
+})
+
+const selectedCalendarDateDisplay = computed(() => {
+  if (!calendarSelectedDate.value) return ''
+  const date = new Date(calendarSelectedDate.value + 'T00:00:00')
+  return date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+})
+
+const openCalendarPicker = (target) => {
+  calendarPickerTarget.value = target
+  let currentDate = ''
+  if (target === 'newEvent') {
+    currentDate = newEvent.value.date
+  } else if (target === 'editEvent') {
+    currentDate = selectedEvent.value?.date || selectedEvent.value?.event_date || ''
+  }
+  
+  if (currentDate) {
+    const date = new Date(currentDate + 'T00:00:00')
+    calendarMonth.value = date.getMonth()
+    calendarYear.value = date.getFullYear()
+    calendarSelectedDate.value = currentDate
+  } else {
+    const today = new Date()
+    calendarMonth.value = today.getMonth()
+    calendarYear.value = today.getFullYear()
+    calendarSelectedDate.value = ''
+  }
+  showCalendarPicker.value = true
+}
+
+const changeCalendarMonth = (delta) => {
+  calendarMonth.value += delta
+  if (calendarMonth.value > 11) {
+    calendarMonth.value = 0
+    calendarYear.value++
+  } else if (calendarMonth.value < 0) {
+    calendarMonth.value = 11
+    calendarYear.value--
+  }
+}
+
+const selectCalendarDate = (date) => {
+  calendarSelectedDate.value = date
+}
+
+const selectToday = () => {
+  const today = new Date()
+  calendarMonth.value = today.getMonth()
+  calendarYear.value = today.getFullYear()
+  calendarSelectedDate.value = today.toISOString().split('T')[0]
+}
+
+const clearCalendarDate = () => {
+  calendarSelectedDate.value = ''
+}
+
+const confirmCalendarDate = () => {
+  if (calendarPickerTarget.value === 'newEvent') {
+    newEvent.value.date = calendarSelectedDate.value
+  } else if (calendarPickerTarget.value === 'editEvent') {
+    selectedEvent.value.date = calendarSelectedDate.value
+  }
+  showCalendarPicker.value = false
+}
+
+const formatCalendarDisplayDate = (date) => {
+  if (!date) return 'Select date'
+  const d = new Date(date + 'T00:00:00')
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+const calculateEndTime = (startTimeStr) => {
+  const [h, m] = startTimeStr.split(':').map(Number)
+  let endHour = h + 1
+  let endMinute = m
+  if (endHour >= 24) {
+    endHour = 23
+    endMinute = 30
+  }
+  return `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`
+}
+
 const openTimePicker = (target) => {
   timePickerTarget.value = target
   let currentTime = ''
@@ -2506,7 +2707,7 @@ const openTimePicker = (target) => {
   if (currentTime) {
     const [h, m] = currentTime.split(':').map(Number)
     timePickerHour.value = h > 12 ? h - 12 : (h === 0 ? 12 : h)
-    timePickerMinute.value = m
+    timePickerMinute.value = m >= 30 ? 30 : 0
     timePickerPeriod.value = h >= 12 ? 'PM' : 'AM'
   } else {
     timePickerHour.value = 8
@@ -2525,10 +2726,16 @@ const confirmTimePicker = () => {
   
   if (timePickerTarget.value === 'startTime') {
     newEvent.value.startTime = timeStr
+    if (!newEvent.value.endTime) {
+      newEvent.value.endTime = calculateEndTime(timeStr)
+    }
   } else if (timePickerTarget.value === 'endTime') {
     newEvent.value.endTime = timeStr
   } else if (timePickerTarget.value === 'edit_start_time') {
     selectedEvent.value.start_time = timeStr
+    if (!selectedEvent.value.end_time) {
+      selectedEvent.value.end_time = calculateEndTime(timeStr)
+    }
   } else if (timePickerTarget.value === 'edit_end_time') {
     selectedEvent.value.end_time = timeStr
   }
@@ -2540,7 +2747,7 @@ const formatDisplayTime = (time) => {
   const [h, m] = time.split(':').map(Number)
   const hour12 = h > 12 ? h - 12 : (h === 0 ? 12 : h)
   const period = h >= 12 ? 'PM' : 'AM'
-  return `${hour12}:${m.toString().padStart(2, '0')} ${period}`
+  return `${hour12.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')} ${period}`
 }
 
 const handlePosterImageError = async (notifId, imageUrl) => {
