@@ -978,8 +978,8 @@
                         <td class="px-4 py-3 text-gray-600">{{ (record.check_in_at || record.check_in_time) ? new Date(record.check_in_at || record.check_in_time).toLocaleTimeString() : '-' }}</td>
                         <td class="px-4 py-3 text-gray-600">{{ (record.check_out_at || record.check_out_time) ? new Date(record.check_out_at || record.check_out_time).toLocaleTimeString() : '-' }}</td>
                         <td class="px-4 py-3">
-                          <span :class="['px-2 py-1 rounded-full text-xs font-medium', (record.check_out_at || record.check_out_time) ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800']">
-                            {{ (record.check_out_at || record.check_out_time) ? 'Present' : 'Incomplete' }}
+                          <span :class="['px-2 py-1 rounded-full text-xs font-medium', getRecordStatusClass(record)]">
+                            {{ getRecordStatusLabel(record) }}
                           </span>
                         </td>
                       </tr>
@@ -2934,78 +2934,64 @@ const submitAdminKey = async () => {
 const editNotificationData = ref(null)
 const savingEditedNotification = ref(false)
 
-// Notification seen tracking for badge counter - using user-specific keys with both IDs and timestamp for reliability
-// These refs are for reactivity only - actual data is loaded from user-specific localStorage keys
+// Notification seen tracking for badge counter - using MongoDB for persistent read status
 const seenNotificationIds = ref(new Set())
-const lastSeenNotificationTimestamp = ref(null)
+const loadingSeenNotifications = ref(false)
 
 const unreadNotificationCount = computed(() => {
   if (!notifications.value || notifications.value.length === 0) return 0
-  const userId = currentUser.value?._id || currentUser.value?.student_id || 'guest'
-  const userSeenKey = `seenNotificationIds_${userId}`
-  const userTimestampKey = `lastSeenNotificationTimestamp_${userId}`
-  
-  // Load user-specific seen IDs if available
-  let userSeenIds = seenNotificationIds.value
-  try {
-    const stored = localStorage.getItem(userSeenKey)
-    if (stored) {
-      userSeenIds = new Set(JSON.parse(stored))
-    }
-  } catch {}
-  
-  // Get last seen timestamp for this user
-  const lastTimestamp = localStorage.getItem(userTimestampKey)
-  
-  return notifications.value.filter(n => {
-    // Check if notification is in seen IDs
-    if (userSeenIds.has(n._id)) return false
-    // If we have a last seen timestamp, only count notifications newer than that
-    if (lastTimestamp && n.created_at) {
-      const notifTime = new Date(n.created_at).getTime()
-      const lastSeenTime = parseInt(lastTimestamp) || 0
-      if (notifTime <= lastSeenTime) return false
-    }
-    return true
-  }).length
+  return notifications.value.filter(n => !seenNotificationIds.value.has(n._id)).length
 })
 
-const markNotificationsAsSeen = () => {
-  if (!notifications.value || notifications.value.length === 0) return
-  const userId = currentUser.value?._id || currentUser.value?.student_id || 'guest'
-  const userSeenKey = `seenNotificationIds_${userId}`
-  const userTimestampKey = `lastSeenNotificationTimestamp_${userId}`
+const loadSeenNotifications = async () => {
+  const token = localStorage.getItem('ssaamToken')
+  if (!token) return
   
-  // Load existing user-specific seen IDs
-  let userSeenIds
   try {
-    const stored = localStorage.getItem(userSeenKey)
-    userSeenIds = stored ? new Set(JSON.parse(stored)) : new Set()
-  } catch {
-    userSeenIds = new Set()
-  }
-  
-  // Add all current notification IDs
-  notifications.value.forEach(n => userSeenIds.add(n._id))
-  
-  // Find the latest notification timestamp
-  let maxTimestamp = 0
-  notifications.value.forEach(n => {
-    if (n.created_at) {
-      const ts = new Date(n.created_at).getTime()
-      if (ts > maxTimestamp) maxTimestamp = ts
+    loadingSeenNotifications.value = true
+    const response = await fetch('https://ssaam-api.vercel.app/apis/notifications/seen', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+    
+    if (response.ok) {
+      const result = await response.json()
+      seenNotificationIds.value = new Set(result.seen_notification_ids || [])
     }
-  })
-  
-  // Store user-specific data
-  localStorage.setItem(userSeenKey, JSON.stringify([...userSeenIds]))
-  if (maxTimestamp > 0) {
-    localStorage.setItem(userTimestampKey, maxTimestamp.toString())
+  } catch (error) {
+    console.error('Failed to load seen notifications:', error)
+  } finally {
+    loadingSeenNotifications.value = false
   }
+}
+
+const markNotificationsAsSeen = async () => {
+  if (!notifications.value || notifications.value.length === 0) return
   
-  // Also update the ref for reactivity
-  seenNotificationIds.value = userSeenIds
-  lastSeenNotificationTimestamp.value = maxTimestamp.toString()
+  const token = localStorage.getItem('ssaamToken')
+  if (!token) return
+  
+  const unseenIds = notifications.value
+    .filter(n => !seenNotificationIds.value.has(n._id))
+    .map(n => n._id)
+  
+  if (unseenIds.length === 0) return
+  
+  try {
+    const response = await fetch('https://ssaam-api.vercel.app/apis/notifications/mark-seen', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ notification_ids: unseenIds })
+    })
+    
+    if (response.ok) {
+      unseenIds.forEach(id => seenNotificationIds.value.add(id))
+    }
+  } catch (error) {
+    console.error('Failed to mark notifications as seen:', error)
+  }
 }
 
 // Password change management with email verification
@@ -3171,8 +3157,9 @@ onMounted(async () => {
     users.value = JSON.parse(localStorage.getItem('users') || '[]')
   }
   
-  // Fetch notifications for badge counter
+  // Fetch notifications for badge counter and load seen status from database
   fetchNotifications()
+  await loadSeenNotifications()
   
   // Fetch attendance data for students to show notification banner
   if (!user.isMaster && user.role !== 'admin') {
@@ -4635,6 +4622,35 @@ const getStatusBadgeClass = (status) => {
     case 'active': return 'bg-blue-100 text-blue-800'
     case 'draft': return 'bg-gray-100 text-gray-800'
     case 'closed': return 'bg-red-100 text-red-800'
+    default: return 'bg-gray-100 text-gray-800'
+  }
+}
+
+const getRecordStatusLabel = (record) => {
+  const hasCheckIn = record.check_in_at || record.check_in_time
+  const hasCheckOut = record.check_out_at || record.check_out_time
+  
+  if (hasCheckIn && hasCheckOut) return 'Present'
+  if (hasCheckIn && !hasCheckOut) {
+    const event = record.event || attendanceEvents.value.find(e => e._id === record.event_id)
+    const eventEnded = event ? hasEventEndedPH(event) : false
+    return eventEnded ? 'Incomplete' : 'Incomplete'
+  }
+  if (!hasCheckIn && hasCheckOut) return 'Incomplete'
+  
+  const event = record.event || attendanceEvents.value.find(e => e._id === record.event_id)
+  const eventEnded = event ? hasEventEndedPH(event) : true
+  
+  return eventEnded ? 'Absent' : 'Pending'
+}
+
+const getRecordStatusClass = (record) => {
+  const label = getRecordStatusLabel(record)
+  switch (label) {
+    case 'Present': return 'bg-green-100 text-green-800'
+    case 'Incomplete': return 'bg-yellow-100 text-yellow-800'
+    case 'Absent': return 'bg-red-100 text-red-800'
+    case 'Pending': return 'bg-blue-100 text-blue-800'
     default: return 'bg-gray-100 text-gray-800'
   }
 }
