@@ -3107,7 +3107,7 @@ const loadingSeenNotifications = ref(false)
 
 const unreadNotificationCount = computed(() => {
   if (!notifications.value || notifications.value.length === 0) return 0
-  return notifications.value.filter(n => !seenNotificationIds.value.has(n._id)).length
+  return notifications.value.filter(n => !seenNotificationIds.value.has(String(n._id))).length
 })
 
 const loadSeenNotifications = async () => {
@@ -3138,8 +3138,8 @@ const markNotificationsAsSeen = async () => {
   if (!token) return
   
   const unseenIds = notifications.value
-    .filter(n => !seenNotificationIds.value.has(n._id))
-    .map(n => n._id)
+    .filter(n => !seenNotificationIds.value.has(String(n._id)))
+    .map(n => String(n._id))
   
   if (unseenIds.length === 0) return
   
