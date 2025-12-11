@@ -316,7 +316,7 @@
                     class="w-12 h-14 text-center text-2xl font-bold border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-purple-600 outline-none"
                   />
                 </div>
-                <p class="text-xs text-gray-500 mt-3 text-center">Code expires in 10 minutes</p>
+                <p class="text-xs text-gray-500 mt-3 text-center">Code expires in 30 minutes</p>
               </div>
               
               <!-- Important Password Notice -->
@@ -585,7 +585,7 @@
                   class="w-10 h-12 text-center text-xl font-bold border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-purple-600 outline-none"
                 />
               </div>
-              <p class="text-xs text-gray-500 mt-3 text-center">Code expires in 10 minutes</p>
+              <p class="text-xs text-gray-500 mt-3 text-center">Code expires in 30 minutes</p>
             </div>
             
             <!-- Important Password Notice -->
@@ -950,22 +950,29 @@ const sendVerificationCode = async () => {
     await new Promise(resolve => setTimeout(resolve, 300))
   }
 
-  const response = await fetch('https://ssaam-api.vercel.app/apis/students/send-verification', {
-    method: 'POST',
-    headers: { 
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer SSAAMStudents'
-    },
-    body: JSON.stringify(formData)
-  })
+  try {
+    const response = await fetch('https://ssaam-api.vercel.app/apis/students/send-verification', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer SSAAMStudents'
+      },
+      body: JSON.stringify(formData)
+    })
 
-  const data = await response.json()
+    const data = await response.json()
 
-  if (!response.ok) {
-    throw new Error(data.message || 'Failed to send verification code')
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to send verification code')
+    }
+
+    return data
+  } catch (error) {
+    if (error.message === 'Failed to fetch' || error.name === 'TypeError') {
+      throw new Error('Network connection error. Please check your internet connection and try again.')
+    }
+    throw error
   }
-
-  return data
 }
 
 const showNotification = ref(false)
@@ -1120,12 +1127,22 @@ const handleNext = async () => {
           router.push('/')
         }, 4000)
       } else {
-        errorMessage.value = data.message || "Registration failed. Please try again."
-        showErrorNotification.value = true
+        // Check if verification code expired - inform user but don't auto-reset
+        if (data.resetRegistration || data.code === 'TOKEN_EXPIRED') {
+          errorMessage.value = "Your verification code has expired. Please click 'Back' to start over and receive a new code."
+          showErrorNotification.value = true
+        } else {
+          errorMessage.value = data.message || "Registration failed. Please try again."
+          showErrorNotification.value = true
+        }
       }
     } catch (error) {
       isRegistering.value = false
-      errorMessage.value = "Server error. Please try again later."
+      if (error.message === 'Failed to fetch' || error.name === 'TypeError') {
+        errorMessage.value = "Network connection error. Please check your internet connection and try again."
+      } else {
+        errorMessage.value = "Server error. Please try again later."
+      }
       showErrorNotification.value = true
     }
 

@@ -1613,10 +1613,10 @@
         <div v-if="currentPage === 'dashboard' && (currentUser.role === 'admin' || currentUser.isMaster)" class="bg-white rounded-lg shadow-lg p-4 md:p-8 mb-8">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
             <h2 class="text-xl md:text-2xl font-bold text-purple-900">Registered Students</h2>
-            <button @click="refreshStudents" :disabled="isRefreshing" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-all duration-200 hover:scale-105 active:scale-95 font-medium text-sm flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed" title="Refresh Statistics">
-              <svg v-if="isRefreshing" class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+            <button @click="handleStatsRefresh" :disabled="statsLoading" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-all duration-200 hover:scale-105 active:scale-95 font-medium text-sm flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed" title="Refresh Statistics">
+              <svg v-if="statsLoading" class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
               <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-              {{ isRefreshing ? 'Refreshing...' : 'Refresh' }}
+              {{ statsLoading ? 'Refreshing...' : 'Refresh' }}
             </button>
           </div>
 
@@ -2401,15 +2401,37 @@ const notifImageFailed = ref({})
 const MAX_NOTIF_IMAGE_RETRIES = 3
 const showEditNotificationModal = ref(false)
 
-// Admin action token management
-const adminActionToken = ref(null)
-const adminActionTokenExpiry = ref(null)
+// Admin action token management with 10-minute localStorage persistence
+const ADMIN_ACTION_TOKEN_KEY = 'ssaam_admin_action_token'
+const ADMIN_ACTION_TOKEN_EXPIRY_KEY = 'ssaam_admin_action_token_expiry'
+const ADMIN_ACTION_TOKEN_DURATION_MS = 10 * 60 * 1000 // 10 minutes
+
+const adminActionToken = ref(localStorage.getItem(ADMIN_ACTION_TOKEN_KEY) || null)
+const adminActionTokenExpiry = ref(localStorage.getItem(ADMIN_ACTION_TOKEN_EXPIRY_KEY) ? new Date(localStorage.getItem(ADMIN_ACTION_TOKEN_EXPIRY_KEY)) : null)
 const showAdminKeyModal = ref(false)
 const adminKeyInput = ref('')
 const adminKeyError = ref('')
 const adminKeyLoading = ref(false)
 const pendingAdminAction = ref(null)
 const isPrimaryAdmin = ref(false)
+
+// Persist admin action token to localStorage
+const saveAdminActionToken = (token, expiryDate) => {
+  adminActionToken.value = token
+  adminActionTokenExpiry.value = expiryDate
+  if (token && expiryDate) {
+    localStorage.setItem(ADMIN_ACTION_TOKEN_KEY, token)
+    localStorage.setItem(ADMIN_ACTION_TOKEN_EXPIRY_KEY, expiryDate.toISOString())
+  } else {
+    localStorage.removeItem(ADMIN_ACTION_TOKEN_KEY)
+    localStorage.removeItem(ADMIN_ACTION_TOKEN_EXPIRY_KEY)
+  }
+}
+
+// Clear admin action token
+const clearAdminActionToken = () => {
+  saveAdminActionToken(null, null)
+}
 
 // Poster image handling for MedPub posts
 const posterImageFailed = ref({})
@@ -2537,7 +2559,13 @@ const handlePosterImageError = async (notifId, imageUrl) => {
 
 const isAdminActionTokenValid = () => {
   if (!adminActionToken.value || !adminActionTokenExpiry.value) return false
-  return new Date() < new Date(adminActionTokenExpiry.value)
+  const expiryDate = new Date(adminActionTokenExpiry.value)
+  const isValid = new Date() < expiryDate
+  // Clear expired tokens from localStorage
+  if (!isValid) {
+    clearAdminActionToken()
+  }
+  return isValid
 }
 
 const checkAdminActionStatus = async () => {
@@ -2584,8 +2612,9 @@ const requestAdminActionToken = async (adminKey) => {
     throw new Error(data.message || 'Failed to verify admin key')
   }
   
-  adminActionToken.value = data.action_token
-  adminActionTokenExpiry.value = data.expires_at
+  // Use 10-minute client-side expiry for better UX
+  const expiryDate = new Date(Date.now() + ADMIN_ACTION_TOKEN_DURATION_MS)
+  saveAdminActionToken(data.action_token, expiryDate)
   return data
 }
 
@@ -2605,8 +2634,7 @@ const handleAdminActionError = async (response) => {
       return true
     }
     if (data.code === 'ACTION_TOKEN_REQUIRED' || data.code === 'INVALID_ACTION_TOKEN' || data.code === 'ACTION_TOKEN_EXPIRED') {
-      adminActionToken.value = null
-      adminActionTokenExpiry.value = null
+      clearAdminActionToken()
       return false
     }
   }
@@ -2920,6 +2948,16 @@ onMounted(async () => {
   isPageLoading.value = false
 })
 
+// Handle stats refresh button click
+const handleStatsRefresh = async () => {
+  try {
+    await fetchStats()
+    showNotification('Statistics refreshed successfully!', 'success')
+  } catch (error) {
+    console.error('Stats refresh error:', error)
+  }
+}
+
 // Fetch statistics from separate endpoint
 const fetchStats = async () => {
   statsLoading.value = true
@@ -2930,8 +2968,11 @@ const fetchStats = async () => {
         'Authorization': `Bearer SSAAMStudents`
       }
     })
+    if (!response.ok) {
+      throw new Error('Failed to fetch statistics')
+    }
     const data = await response.json()
-    if (response.ok && data.stats) {
+    if (data.stats) {
       statsData.value = data.stats
       if (data.pendingCount !== undefined) {
         pendingCount.value = data.pendingCount
@@ -2939,6 +2980,9 @@ const fetchStats = async () => {
     }
   } catch (error) {
     console.error('Failed to fetch statistics:', error)
+    if (error.message === 'Failed to fetch' || error.name === 'TypeError') {
+      showNetworkError()
+    }
   } finally {
     statsLoading.value = false
   }
@@ -3468,6 +3512,11 @@ const showNotification = (message, type = 'info') => {
   setTimeout(() => {
     notification.value.show = false
   }, 3000)
+}
+
+// Network error notification
+const showNetworkError = () => {
+  showNotification('Network connection error. Please check your internet connection and try again.', 'error')
 }
 
 const compressImage = (file) => {

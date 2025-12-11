@@ -660,7 +660,11 @@ const handleLogin = async () => {
     showErrorNotification.value = true
   } catch (error) {
     console.error("Login error:", error);
-    errorMessage.value = "Server error. Please try again later."
+    if (error.message === 'Failed to fetch' || error.name === 'TypeError') {
+      errorMessage.value = "Network connection error. Please check your internet connection and try again."
+    } else {
+      errorMessage.value = "Server error. Please try again later."
+    }
     showErrorNotification.value = true
   } finally {
     isLoading.value = false

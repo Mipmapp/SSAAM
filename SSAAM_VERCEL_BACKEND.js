@@ -186,7 +186,7 @@ async function sendVerificationEmail(toEmail, code, studentName) {
                     <div style="background: white; border: 2px solid #7c3aed; border-radius: 10px; padding: 20px; text-align: center; margin: 20px 0;">
                         <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #7c3aed;">${code}</span>
                     </div>
-                    <p style="color: #4b5563;">This code will expire in <strong>10 minutes</strong>.</p>
+                    <p style="color: #4b5563;">This code will expire in <strong>30 minutes</strong>.</p>
                     <p style="color: #6b7280; font-size: 14px;">If you didn't request this code, please ignore this email.</p>
                     <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
                     <p style="color: #9ca3af; font-size: 12px; text-align: center;">Powered by CCS - Creatives Committee</p>
@@ -1582,7 +1582,7 @@ app.post('/apis/students/send-verification', studentAuth, antiBotProtection, asy
         await VerificationCode.deleteMany({ email: data.email });
 
         const code = generateVerificationCode();
-        const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+        const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes instead of 10
 
         const firstName = firstNameValidation.value;
         const middleName = data.middle_name ? data.middle_name.toUpperCase().trim() : "";
@@ -1646,7 +1646,17 @@ app.post('/apis/students/verify-and-register', studentAuth, timestampAuth, async
         });
 
         if (!verification) {
-            return res.status(400).json({ message: "Invalid or expired verification code" });
+            // Check if there's an expired verification for this email (single query approach)
+            const anyVerification = await VerificationCode.findOneAndDelete({ email, code });
+            if (anyVerification) {
+                // Found and deleted an expired verification
+                return res.status(400).json({ 
+                    message: "Your verification code has expired. Please go back and register again to receive a new code.",
+                    code: "TOKEN_EXPIRED",
+                    resetRegistration: true
+                });
+            }
+            return res.status(400).json({ message: "Invalid verification code. Please check and try again." });
         }
 
         const studentData = verification.student_data;
