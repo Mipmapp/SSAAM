@@ -286,7 +286,7 @@ function decodeTimestamp(encodedString) {
     }
 }
 
-function isValidTimestamp(encodedString, maxAgeMinutes = 1) {
+function isValidTimestamp(encodedString, maxAgeMinutes = 5) {
     const timestamp = decodeTimestamp(encodedString);
     if (!timestamp) return false;
 
@@ -295,7 +295,7 @@ function isValidTimestamp(encodedString, maxAgeMinutes = 1) {
         const now = new Date();
         const diffMinutes = (now - requestTime) / (1000 * 60);
 
-        return diffMinutes >= -0.5 && diffMinutes <= maxAgeMinutes;
+        return diffMinutes >= -2 && diffMinutes <= maxAgeMinutes;
     } catch (e) {
         return false;
     }
