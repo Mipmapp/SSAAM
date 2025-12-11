@@ -126,6 +126,33 @@ The following UI/UX enhancements were implemented to match the SSAAM aesthetic:
 
 2. **MongoDB-Based Notification Read Tracking:** Replaced localStorage-based notification read status with MongoDB storage using the `NotificationSeen` collection. This ensures read status persists across devices and browser sessions.
 
+## Feature Improvements (December 2024)
+
+1. **Manual-Only Attendance Refresh:** Removed automatic 30-second attendance refresh for students. Users now must use the manual Refresh button to update attendance data, reducing server load and giving users control.
+
+2. **Event Ended Notification (Dismissible):** When an event ends, a modal notification appears showing the event has ended. The notification:
+   - Only shows once per event (tracked in localStorage)
+   - Can be dismissed with "Got it, don't show again" button
+   - Never shows again for that specific event after dismissal
+
+3. **Duplicate Records Search (Admin Settings):** New admin feature to search for duplicate records:
+   - Search by RFID code, Student ID, or Email address
+   - Shows all matching records with categorized match types (RFID/Email/ID/Name)
+   - Flags true duplicates with a red "DUPLICATE!" badge when multiple records share the same value
+   - Displays notification when duplicates are found
+
+4. **Gmail-Only Registration:** Registration is now restricted to Gmail addresses only:
+   - Frontend validation: Only `@gmail.com` emails accepted
+   - Backend validation: Same restriction enforced server-side
+   - Clear error message: "Only Gmail addresses (@gmail.com) are allowed for registration"
+
+5. **Duplicate Email Prevention:** Backend now checks for duplicate email addresses during registration:
+   - Case-insensitive comparison (normalized to lowercase)
+   - Prevents the same email from being registered twice
+   - Error message: "This email address is already registered"
+
+6. **Notification Badge (Verified):** The notification badge correctly shows unread count using server-side tracking via MongoDB. Read status persists across devices and sessions.
+
 ## External Dependencies
 - **Backend API:** `https://ssaam-api.vercel.app` (Vercel deployment)
 - **Image Hosting:** ImgBB (for image uploads and storage)

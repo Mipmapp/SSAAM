@@ -1019,8 +1019,8 @@ const handleNext = async () => {
       showErrorNotification.value = true
       return
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      errorMessage.value = "Please enter a valid email address."
+    if (!/^[^\s@]+@gmail\.com$/i.test(formData.email)) {
+      errorMessage.value = "Only Gmail addresses (@gmail.com) are allowed for registration."
       showErrorNotification.value = true
       return
     }

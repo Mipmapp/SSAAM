@@ -1716,6 +1716,12 @@ app.post('/apis/students/send-verification', studentAuth, antiBotProtection, asy
         if (!data.email || !data.email.includes('@')) {
             return res.status(400).json({ message: "Valid email is required" });
         }
+        
+        // Validate Gmail-only emails
+        const gmailRegex = /^[^\s@]+@gmail\.com$/i;
+        if (!gmailRegex.test(data.email)) {
+            return res.status(400).json({ message: "Only Gmail addresses (@gmail.com) are allowed for registration" });
+        }
 
         if (!STUDENT_ID_REGEX.test(data.student_id)) {
             return res.status(400).json({ message: "Invalid student_id format. Use 19-A-12345" });
@@ -1765,6 +1771,15 @@ app.post('/apis/students/send-verification', studentAuth, antiBotProtection, asy
         const existingStudent = await Student.findOne({ student_id: data.student_id });
         if (existingStudent) {
             return res.status(400).json({ message: "Student ID already registered" });
+        }
+        
+        // Check for duplicate email (case-insensitive, normalized to lowercase)
+        const normalizedEmail = data.email.toLowerCase().trim();
+        const existingEmail = await Student.findOne({ 
+            email: { $regex: `^${normalizedEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' }
+        });
+        if (existingEmail) {
+            return res.status(400).json({ message: "This email address is already registered" });
         }
 
         // Check rate limit for verification code requests

@@ -1,4 +1,24 @@
 <template>
+  <!-- Event Ended Modal -->
+  <div v-if="eventEndedModalVisible" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="closeEventEndedModal">
+    <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4">
+      <div class="text-center mb-6">
+        <div class="w-16 h-16 mx-auto mb-4 bg-blue-100 rounded-full flex items-center justify-center">
+          <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        </div>
+        <h3 class="text-xl font-bold text-purple-900 mb-2">Event Ended</h3>
+        <p class="text-gray-600">
+          The event "<span class="font-semibold">{{ eventEndedModalEvent?.title }}</span>" has ended.
+        </p>
+      </div>
+      <button @click="closeEventEndedModal" class="w-full bg-gradient-to-r from-purple-600 to-pink-500 text-white py-3 px-4 rounded-lg font-medium hover:from-purple-700 hover:to-pink-600 transition">
+        Got it, don't show again
+      </button>
+    </div>
+  </div>
+
   <!-- Image Preview Modal -->
   <div v-if="showImagePreviewModal" class="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50" @click.self="showImagePreviewModal = false">
     <button @click="showImagePreviewModal = false" class="absolute top-4 right-4 text-white text-4xl hover:text-gray-300 z-10">&times;</button>
@@ -566,6 +586,70 @@
                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent outline-none resize-none"
                   rows="3"
                 ></textarea>
+              </div>
+            </div>
+
+            <!-- Search for Duplicates Section -->
+            <div class="border border-blue-200 rounded-xl p-6 bg-blue-50">
+              <div class="mb-4">
+                <h3 class="text-lg font-semibold text-blue-900 flex items-center gap-2">
+                  <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                  Search for Duplicate Records
+                </h3>
+                <p class="text-sm text-blue-700 mt-1">Find students with duplicate RFID codes, Student IDs, or Gmail addresses</p>
+              </div>
+              <div class="bg-white rounded-lg p-4 border border-blue-200 space-y-4">
+                <div class="flex flex-col md:flex-row gap-3">
+                  <input 
+                    v-model="duplicateSearchQuery" 
+                    type="text" 
+                    placeholder="Enter RFID, Student ID, or Email to search..." 
+                    class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  />
+                  <button 
+                    @click="searchForDuplicates" 
+                    :disabled="duplicateSearchLoading || !duplicateSearchQuery.trim()"
+                    class="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <svg v-if="duplicateSearchLoading" class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                    <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    {{ duplicateSearchLoading ? 'Searching...' : 'Search' }}
+                  </button>
+                </div>
+                
+                <div v-if="duplicateSearchResults.length > 0" class="mt-4">
+                  <h4 class="text-sm font-semibold text-gray-700 mb-2">Found {{ duplicateSearchResults.length }} matching record(s):</h4>
+                  <div class="space-y-2 max-h-60 overflow-y-auto">
+                    <div v-for="result in duplicateSearchResults" :key="result.student_id" class="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                      <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 flex items-center justify-center text-white text-sm font-bold overflow-hidden">
+                          <img v-if="result.photo" :src="result.photo" class="w-full h-full object-cover" />
+                          <span v-else>{{ (result.first_name || '?').charAt(0) }}</span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                          <p class="font-medium text-gray-900 truncate">{{ result.first_name }} {{ result.last_name }}</p>
+                          <p class="text-xs text-gray-500">ID: {{ result.student_id }} | {{ result.program }} - {{ result.year_level }}</p>
+                          <p class="text-xs text-gray-500">Email: {{ result.email }}</p>
+                          <p v-if="result.rfid_code" class="text-xs text-blue-600">RFID: {{ result.rfid_code }}</p>
+                        </div>
+                        <div class="flex flex-col items-end gap-1">
+                          <span :class="['text-xs px-2 py-1 rounded-full', result.match_type === 'rfid' ? 'bg-orange-100 text-orange-700' : result.match_type === 'email' ? 'bg-purple-100 text-purple-700' : result.match_type === 'id' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700']">
+                            {{ result.match_type === 'rfid' ? 'RFID Match' : result.match_type === 'email' ? 'Email Match' : result.match_type === 'id' ? 'ID Match' : 'Name Match' }}
+                          </span>
+                          <span v-if="result.is_duplicate" class="text-xs px-2 py-1 rounded-full bg-red-100 text-red-700 font-semibold">
+                            DUPLICATE!
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div v-else-if="duplicateSearchPerformed && duplicateSearchResults.length === 0" class="mt-4 text-center py-4">
+                  <svg class="w-12 h-12 mx-auto text-green-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                  <p class="text-green-700 font-medium">No duplicates found!</p>
+                  <p class="text-sm text-gray-500">The searched value is unique in the database.</p>
+                </div>
               </div>
             </div>
 
@@ -2384,6 +2468,12 @@ const checkOutTimerMinutes = ref(30)
 const showClearSessionsConfirm = ref(false)
 const clearingSessionTokens = ref(false)
 
+// Duplicate search management
+const duplicateSearchQuery = ref('')
+const duplicateSearchLoading = ref(false)
+const duplicateSearchResults = ref([])
+const duplicateSearchPerformed = ref(false)
+
 // RFID Fullscreen mode
 const rfidFullscreenMode = ref(false)
 const rfidFullscreenInputRef = ref(null)
@@ -3628,6 +3718,92 @@ const clearAllSessionTokens = async () => {
     showNotification('Failed to clear session tokens', 'error')
   } finally {
     clearingSessionTokens.value = false
+  }
+}
+
+// Search for duplicate records (RFID, Student ID, Email)
+// This finds all students matching the query to help admins identify duplicates
+const searchForDuplicates = async () => {
+  if (!duplicateSearchQuery.value.trim()) return
+  
+  duplicateSearchLoading.value = true
+  duplicateSearchPerformed.value = false
+  duplicateSearchResults.value = []
+  
+  try {
+    const token = localStorage.getItem('authToken')
+    const query = duplicateSearchQuery.value.trim()
+    const lowerQuery = query.toLowerCase()
+    
+    // Search for matching students by RFID, Student ID, or Email
+    const response = await fetch(`https://ssaam-api.vercel.app/apis/students/search?search=${encodeURIComponent(query)}&limit=100`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    
+    if (response.ok) {
+      const result = await response.json()
+      const students = result.data || []
+      
+      // Categorize matches by type and check for exact duplicates
+      const rfidCounts = {}
+      const emailCounts = {}
+      const idCounts = {}
+      
+      // Count occurrences for exact duplicate detection
+      students.forEach(s => {
+        if (s.rfid_code) {
+          const key = s.rfid_code.toLowerCase()
+          rfidCounts[key] = (rfidCounts[key] || 0) + 1
+        }
+        if (s.email) {
+          const key = s.email.toLowerCase()
+          emailCounts[key] = (emailCounts[key] || 0) + 1
+        }
+        if (s.student_id) {
+          const key = s.student_id.toLowerCase()
+          idCounts[key] = (idCounts[key] || 0) + 1
+        }
+      })
+      
+      // Mark students with exact match type and flag true duplicates
+      duplicateSearchResults.value = students.map(student => {
+        let matchType = 'name'
+        let isDuplicate = false
+        
+        // Determine primary match type
+        if (student.rfid_code && student.rfid_code.toLowerCase().includes(lowerQuery)) {
+          matchType = 'rfid'
+          isDuplicate = rfidCounts[student.rfid_code.toLowerCase()] > 1
+        } else if (student.email && student.email.toLowerCase().includes(lowerQuery)) {
+          matchType = 'email'
+          isDuplicate = emailCounts[student.email.toLowerCase()] > 1
+        } else if (student.student_id && student.student_id.toLowerCase().includes(lowerQuery)) {
+          matchType = 'id'
+          isDuplicate = idCounts[student.student_id.toLowerCase()] > 1
+        }
+        
+        return { ...student, match_type: matchType, is_duplicate: isDuplicate }
+      })
+      
+      duplicateSearchPerformed.value = true
+      
+      // Alert if duplicates found
+      const duplicateCount = duplicateSearchResults.value.filter(r => r.is_duplicate).length
+      if (duplicateCount > 0) {
+        showNotification(`Found ${duplicateCount} records with duplicate values!`, 'warning')
+      }
+    } else {
+      showNotification('Failed to search for duplicates', 'error')
+    }
+  } catch (error) {
+    console.error('Duplicate search error:', error)
+    showNotification('Failed to search for duplicates', 'error')
+  } finally {
+    duplicateSearchLoading.value = false
   }
 }
 
@@ -5363,10 +5539,30 @@ const completePasswordChange = async () => {
   }
 }
 
+// Get dismissed event ended notifications from localStorage
+const getDismissedEndedEvents = () => {
+  try {
+    return new Set(JSON.parse(localStorage.getItem('dismissedEndedEvents') || '[]'))
+  } catch {
+    return new Set()
+  }
+}
+
+// Save dismissed event ended notification to localStorage
+const dismissEndedEventNotification = (eventId) => {
+  const dismissed = getDismissedEndedEvents()
+  dismissed.add(eventId)
+  localStorage.setItem('dismissedEndedEvents', JSON.stringify([...dismissed]))
+}
+
+// Track if we've shown the ended notification this session (to avoid duplicates)
+const shownEndedNotificationsThisSession = ref(new Set())
+
 // Calculate time remaining for each active event
 const updateEventTimeRemaining = () => {
   const nowPH = getPhilippineTime()
   const isAdmin = currentUser.value.role === 'admin' || currentUser.value.isMaster
+  const dismissedEvents = getDismissedEndedEvents()
   
   attendanceEvents.value.forEach(event => {
     if (event.status === 'active' && event.end_time) {
@@ -5377,11 +5573,13 @@ const updateEventTimeRemaining = () => {
       
       if (diff <= 0) {
         // Event has ended
-        if (!eventEndedNotifications.value.has(event._id)) {
-          eventEndedNotifications.value.add(event._id)
-          showNotification(`Event "${event.title}" has ended!`, 'info')
-        }
         eventTimeRemaining.value[event._id] = 'Ended'
+        
+        // Only show notification once per session AND if not previously dismissed
+        if (!shownEndedNotificationsThisSession.value.has(event._id) && !dismissedEvents.has(event._id)) {
+          shownEndedNotificationsThisSession.value.add(event._id)
+          showEventEndedModal(event)
+        }
       } else {
         const hoursLeft = Math.floor(diff / (1000 * 60 * 60))
         const minutesLeft = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
@@ -5404,22 +5602,32 @@ const updateEventTimeRemaining = () => {
   })
 }
 
+// Show event ended modal with dismiss option
+const eventEndedModalVisible = ref(false)
+const eventEndedModalEvent = ref(null)
+
+const showEventEndedModal = (event) => {
+  eventEndedModalEvent.value = event
+  eventEndedModalVisible.value = true
+}
+
+const closeEventEndedModal = () => {
+  if (eventEndedModalEvent.value) {
+    // Permanently dismiss this notification
+    dismissEndedEventNotification(eventEndedModalEvent.value._id)
+  }
+  eventEndedModalVisible.value = false
+  eventEndedModalEvent.value = null
+}
+
 // Get time remaining for a specific event
 const getEventTimeRemaining = (eventId) => {
   return eventTimeRemaining.value[eventId] || ''
 }
 
 // Start auto-refresh for attendance data (for students)
+// Note: Automatic refresh removed - users can manually refresh using the Refresh button
 const startAttendanceAutoRefresh = () => {
-  const isAdmin = currentUser.value.role === 'admin' || currentUser.value.isMaster
-  
-  // Auto-refresh attendance data every 30 seconds for students to catch RFID check-ins
-  if (!isAdmin) {
-    attendanceRefreshInterval.value = setInterval(() => {
-      fetchAttendanceData()
-    }, 30000) // 30 seconds
-  }
-  
   // Update event time remaining every second
   eventTimeInterval.value = setInterval(() => {
     updateEventTimeRemaining()
