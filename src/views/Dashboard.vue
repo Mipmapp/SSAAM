@@ -141,23 +141,23 @@
   </div>
 
   <!-- RFID Scanner Fullscreen Modal -->
-  <div v-if="rfidFullscreenMode" class="fixed inset-0 bg-gradient-to-br from-purple-900 via-purple-800 to-pink-900 flex flex-col items-center justify-center z-[70]">
-    <button @click="rfidFullscreenMode = false" class="absolute top-6 right-6 text-white hover:text-pink-300 transition">
-      <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+  <div v-if="rfidFullscreenMode" class="fixed inset-0 bg-gradient-to-br from-purple-900 via-purple-800 to-pink-900 flex flex-col items-center justify-center z-[70] p-4 overflow-y-auto">
+    <button @click="rfidFullscreenMode = false" class="absolute top-4 right-4 md:top-6 md:right-6 text-white hover:text-pink-300 transition z-10">
+      <svg class="w-8 h-8 md:w-10 md:h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
     </button>
     
-    <div class="text-center mb-8">
-      <img src="/src/assets/jrmsu-logo.webp" alt="JRMSU" class="w-24 h-24 mx-auto mb-4 drop-shadow-2xl" />
-      <h1 class="text-4xl md:text-5xl font-bold text-white mb-2">SSAAM</h1>
-      <p class="text-white text-opacity-80 text-lg">{{ selectedEvent?.title || 'Select an Event' }}</p>
-      <p v-if="selectedEvent" class="text-white text-opacity-60 text-sm mt-1">{{ formatEventDate(selectedEvent.date || selectedEvent.event_date) }}</p>
+    <div class="text-center mb-4 md:mb-8">
+      <img src="/src/assets/jrmsu-logo.webp" alt="JRMSU" class="w-16 h-16 md:w-24 md:h-24 mx-auto mb-2 md:mb-4 drop-shadow-2xl" />
+      <h1 class="text-2xl sm:text-3xl md:text-5xl font-bold text-white mb-1 md:mb-2">SSAAM</h1>
+      <p class="text-white text-opacity-80 text-sm md:text-lg">{{ selectedEvent?.title || 'Select an Event' }}</p>
+      <p v-if="selectedEvent" class="text-white text-opacity-60 text-xs md:text-sm mt-1">{{ formatEventDate(selectedEvent.date || selectedEvent.event_date) }}</p>
     </div>
     
-    <div class="bg-white bg-opacity-10 backdrop-blur-lg rounded-3xl p-8 md:p-12 max-w-2xl w-full mx-4 border border-white border-opacity-20">
-      <div class="text-center mb-8">
-        <svg class="w-24 h-24 mx-auto mb-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 4h4v4H3V4zm0 8h4v4H3v-4zm0 8h4v4H3v-4zm8-16h4v4h-4V4zm0 8h4v4h-4v-4zm0 8h4v4h-4v-4zm8-16h4v4h-4V4zm0 8h4v4h-4v-4zm0 8h4v4h-4v-4z"></path></svg>
-        <p class="text-2xl font-semibold text-white mb-2">Ready for RFID Scan</p>
-        <p class="text-white text-opacity-70">Scan your RFID card to check in/out</p>
+    <div class="bg-white bg-opacity-10 backdrop-blur-lg rounded-2xl md:rounded-3xl p-4 sm:p-6 md:p-12 max-w-2xl w-full border border-white border-opacity-20 shadow-2xl">
+      <div class="text-center mb-4 md:mb-8">
+        <svg class="w-16 h-16 md:w-24 md:h-24 mx-auto mb-2 md:mb-4 text-white opacity-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 4h4v4H3V4zm0 8h4v4H3v-4zm0 8h4v4H3v-4zm8-16h4v4h-4V4zm0 8h4v4h-4v-4zm0 8h4v4h-4v-4zm8-16h4v4h-4V4zm0 8h4v4h-4v-4zm0 8h4v4h-4v-4z"></path></svg>
+        <p class="text-lg sm:text-xl md:text-2xl font-semibold text-white mb-1 md:mb-2">Ready for RFID Scan</p>
+        <p class="text-white text-opacity-70 text-sm md:text-base">Scan your RFID card to check in/out</p>
       </div>
       
       <input 
@@ -166,48 +166,48 @@
         @keydown="handleRfidKeydown"
         type="text"
         placeholder="Waiting for RFID scan..."
-        class="w-full px-6 py-4 text-center text-xl bg-white bg-opacity-20 border-2 border-white border-opacity-30 rounded-2xl focus:border-pink-400 focus:ring-4 focus:ring-pink-300 focus:ring-opacity-50 outline-none text-white placeholder-white placeholder-opacity-50"
+        class="w-full px-4 md:px-6 py-3 md:py-4 text-center text-base md:text-xl bg-white bg-opacity-20 border-2 border-white border-opacity-30 rounded-xl md:rounded-2xl focus:border-pink-400 focus:ring-4 focus:ring-pink-300 focus:ring-opacity-50 outline-none text-white placeholder-white placeholder-opacity-50 transition-all"
         :disabled="rfidProcessing"
         autofocus
       />
       
-      <div v-if="rfidProcessing" class="mt-6 flex items-center justify-center gap-3 text-white">
-        <svg class="w-8 h-8 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
-        <span class="text-xl">Processing...</span>
+      <div v-if="rfidProcessing" class="mt-4 md:mt-6 flex items-center justify-center gap-2 md:gap-3 text-white">
+        <svg class="w-6 h-6 md:w-8 md:h-8 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+        <span class="text-base md:text-xl">Processing...</span>
       </div>
       
       <!-- RFID Result Display with Photo -->
       <transition name="fade">
-        <div v-if="rfidResult" :class="['mt-6 p-6 rounded-2xl text-center', rfidResult.success ? 'bg-gradient-to-r from-purple-500 to-pink-500' : 'bg-red-500 bg-opacity-80']">
+        <div v-if="rfidResult" :class="['mt-4 md:mt-6 p-4 md:p-6 rounded-xl md:rounded-2xl text-center', rfidResult.success ? 'bg-gradient-to-r from-purple-500 to-pink-500 shadow-lg' : 'bg-red-500 bg-opacity-80']">
           <div v-if="rfidResult.success && rfidResult.student" class="flex flex-col items-center">
-            <div class="w-24 h-24 rounded-full bg-white bg-opacity-20 flex items-center justify-center overflow-hidden mb-4 ring-4 ring-white ring-opacity-50">
+            <div class="w-16 h-16 md:w-24 md:h-24 rounded-full bg-white bg-opacity-20 flex items-center justify-center overflow-hidden mb-3 md:mb-4 ring-4 ring-white ring-opacity-50">
               <img v-if="rfidResult.student.photo" :src="rfidResult.student.photo" class="w-full h-full object-cover" @error="$event.target.style.display='none'" />
-              <span v-else class="text-4xl font-bold text-white">{{ rfidResult.student.full_name?.charAt(0) || '?' }}</span>
+              <span v-else class="text-2xl md:text-4xl font-bold text-white">{{ rfidResult.student.full_name?.charAt(0) || '?' }}</span>
             </div>
-            <p class="text-2xl font-bold text-white mb-1">{{ rfidResult.action === 'check_in' ? 'Check-in Successful!' : 'Check-out Successful!' }}</p>
-            <p class="text-xl text-white text-opacity-90">{{ rfidResult.student.full_name }}</p>
-            <p class="text-sm text-white text-opacity-70 mt-1">{{ rfidResult.student.program }} | {{ rfidResult.student.year_level }}</p>
+            <p class="text-lg sm:text-xl md:text-2xl font-bold text-white mb-1">{{ rfidResult.action === 'check_in' ? 'Check-in Successful!' : 'Check-out Successful!' }}</p>
+            <p class="text-base md:text-xl text-white text-opacity-90">{{ rfidResult.student.full_name }}</p>
+            <p class="text-xs md:text-sm text-white text-opacity-70 mt-1">{{ rfidResult.student.program }} | {{ rfidResult.student.year_level }}</p>
           </div>
           <div v-else-if="rfidResult.success && rfidResult.student_name" class="flex flex-col items-center">
-            <div class="w-24 h-24 rounded-full bg-white bg-opacity-20 flex items-center justify-center overflow-hidden mb-4 ring-4 ring-white ring-opacity-50">
-              <span class="text-4xl font-bold text-white">{{ rfidResult.student_name?.charAt(0) || '?' }}</span>
+            <div class="w-16 h-16 md:w-24 md:h-24 rounded-full bg-white bg-opacity-20 flex items-center justify-center overflow-hidden mb-3 md:mb-4 ring-4 ring-white ring-opacity-50">
+              <span class="text-2xl md:text-4xl font-bold text-white">{{ rfidResult.student_name?.charAt(0) || '?' }}</span>
             </div>
-            <p class="text-2xl font-bold text-white mb-1">{{ rfidResult.action === 'check_in' ? 'Check-in Successful!' : rfidResult.action === 'check_out' ? 'Check-out Successful!' : rfidResult.action === 'already_checked_in' ? 'Already Checked In' : 'Success' }}</p>
-            <p class="text-xl text-white text-opacity-90">{{ rfidResult.student_name }}</p>
-            <p v-if="rfidResult.message" class="text-sm text-white text-opacity-70 mt-1">{{ rfidResult.message }}</p>
+            <p class="text-lg sm:text-xl md:text-2xl font-bold text-white mb-1">{{ rfidResult.action === 'check_in' ? 'Check-in Successful!' : rfidResult.action === 'check_out' ? 'Check-out Successful!' : rfidResult.action === 'already_checked_in' ? 'Already Checked In' : 'Success' }}</p>
+            <p class="text-base md:text-xl text-white text-opacity-90">{{ rfidResult.student_name }}</p>
+            <p v-if="rfidResult.message" class="text-xs md:text-sm text-white text-opacity-70 mt-1">{{ rfidResult.message }}</p>
           </div>
           <div v-else-if="!rfidResult.success">
-            <p class="text-2xl font-bold text-white mb-2">Scan Failed</p>
-            <p class="text-lg text-white text-opacity-90">{{ rfidResult.message }}</p>
+            <p class="text-lg sm:text-xl md:text-2xl font-bold text-white mb-2">Scan Failed</p>
+            <p class="text-sm md:text-lg text-white text-opacity-90">{{ rfidResult.message }}</p>
           </div>
           <div v-else>
-            <p class="text-2xl font-bold text-white mb-1">{{ rfidResult.message || 'Success' }}</p>
+            <p class="text-lg sm:text-xl md:text-2xl font-bold text-white mb-1">{{ rfidResult.message || 'Success' }}</p>
           </div>
         </div>
       </transition>
     </div>
     
-    <p class="text-white text-opacity-50 text-sm mt-8">Press ESC or click X to exit fullscreen</p>
+    <p class="text-white text-opacity-50 text-xs md:text-sm mt-4 md:mt-8">Press ESC or click X to exit fullscreen</p>
   </div>
 
   <!-- Admin Key Modal -->
@@ -622,10 +622,6 @@
                 </div>
               </div>
               <div class="flex gap-2 flex-wrap">
-                <button @click="launchFullscreenScanner" class="bg-gradient-to-r from-green-600 to-emerald-500 text-white px-4 py-2 rounded-lg hover:from-green-700 hover:to-emerald-600 transition flex items-center gap-2 shadow-md">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h4v4H3V4zm0 8h4v4H3v-4zm0 8h4v4H3v-4zm8-16h4v4h-4V4zm0 8h4v4h-4v-4zm0 8h4v4h-4v-4zm8-16h4v4h-4V4zm0 8h4v4h-4v-4zm0 8h4v4h-4v-4z"></path></svg>
-                  Scan Now
-                </button>
                 <button @click="fetchAttendanceData" :disabled="attendanceLoading" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition flex items-center gap-2">
                   <svg :class="['w-4 h-4', attendanceLoading ? 'animate-spin' : '']" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                   Refresh
@@ -1929,36 +1925,7 @@
         <div v-for="i in 12" :key="i" class="absolute w-1 h-1 bg-purple-300 rounded-full" :style="{ top: `${50 - 42 * Math.cos((i * 30 - 90) * Math.PI / 180)}%`, left: `${50 + 42 * Math.sin((i * 30 - 90) * Math.PI / 180)}%` }"></div>
       </div>
       
-      <!-- Direct Time Input -->
-      <div class="mb-6">
-        <p class="text-xs text-gray-500 mb-2 text-center font-medium">Type time directly or use controls below</p>
-        <div class="flex items-center justify-center gap-2">
-          <input 
-            type="number" 
-            v-model.number="timePickerHour" 
-            @input="timePickerHour = Math.max(1, Math.min(12, timePickerHour || 1))"
-            min="1" 
-            max="12" 
-            class="w-16 h-12 text-center text-xl font-bold border-2 border-purple-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-purple-600 outline-none"
-            placeholder="HH"
-          />
-          <span class="text-2xl font-bold text-purple-600">:</span>
-          <input 
-            type="number" 
-            v-model.number="timePickerMinute" 
-            @input="timePickerMinute = Math.max(0, Math.min(59, timePickerMinute || 0))"
-            min="0" 
-            max="59" 
-            class="w-16 h-12 text-center text-xl font-bold border-2 border-purple-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-purple-600 outline-none"
-            placeholder="MM"
-          />
-          <div class="flex flex-col gap-1 ml-2">
-            <button @click="timePickerPeriod = 'AM'" :class="['px-3 py-1.5 rounded-lg text-sm font-medium transition shadow-sm', timePickerPeriod === 'AM' ? 'bg-gradient-to-r from-purple-600 to-pink-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200']">AM</button>
-            <button @click="timePickerPeriod = 'PM'" :class="['px-3 py-1.5 rounded-lg text-sm font-medium transition shadow-sm', timePickerPeriod === 'PM' ? 'bg-gradient-to-r from-purple-600 to-pink-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200']">PM</button>
-          </div>
-        </div>
-      </div>
-
+      <!-- Time Input Controls -->
       <div class="flex items-center justify-center gap-4 mb-6">
         <!-- Hour Control -->
         <div class="flex flex-col items-center">
@@ -1967,9 +1934,14 @@
             <button @click="timePickerHour = timePickerHour < 12 ? timePickerHour + 1 : 1" class="text-purple-600 hover:text-pink-500 p-1 transition">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg>
             </button>
-            <div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center text-3xl font-bold text-white shadow-lg">
-              {{ timePickerHour }}
-            </div>
+            <input 
+              type="number" 
+              v-model.number="timePickerHour" 
+              @input="timePickerHour = Math.max(1, Math.min(12, timePickerHour || 1))"
+              min="1" 
+              max="12" 
+              class="w-16 h-16 text-center text-2xl font-bold bg-gradient-to-br from-purple-500 to-pink-500 text-white rounded-xl shadow-lg outline-none"
+            />
             <button @click="timePickerHour = timePickerHour > 1 ? timePickerHour - 1 : 12" class="text-purple-600 hover:text-pink-500 p-1 transition">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
             </button>
@@ -1985,9 +1957,14 @@
             <button @click="timePickerMinute = timePickerMinute < 59 ? timePickerMinute + 1 : 0" class="text-purple-600 hover:text-pink-500 p-1 transition">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg>
             </button>
-            <div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center text-3xl font-bold text-white shadow-lg">
-              {{ timePickerMinute.toString().padStart(2, '0') }}
-            </div>
+            <input 
+              type="number" 
+              v-model.number="timePickerMinute" 
+              @input="timePickerMinute = Math.max(0, Math.min(59, timePickerMinute || 0))"
+              min="0" 
+              max="59" 
+              class="w-16 h-16 text-center text-2xl font-bold bg-gradient-to-br from-purple-500 to-pink-500 text-white rounded-xl shadow-lg outline-none"
+            />
             <button @click="timePickerMinute = timePickerMinute > 0 ? timePickerMinute - 1 : 59" class="text-purple-600 hover:text-pink-500 p-1 transition">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
             </button>
@@ -1997,9 +1974,9 @@
         <!-- Period Control -->
         <div class="flex flex-col items-center ml-2">
           <label class="text-xs text-gray-500 mb-1 font-medium">Period</label>
-          <div class="flex flex-col gap-1 mt-1">
-            <button @click="timePickerPeriod = 'AM'" :class="['px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm', timePickerPeriod === 'AM' ? 'bg-gradient-to-r from-purple-600 to-pink-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200']">AM</button>
-            <button @click="timePickerPeriod = 'PM'" :class="['px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm', timePickerPeriod === 'PM' ? 'bg-gradient-to-r from-purple-600 to-pink-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200']">PM</button>
+          <div class="flex flex-col gap-2 mt-1">
+            <button @click="timePickerPeriod = 'AM'" :class="['px-4 py-3 rounded-xl text-sm font-bold transition shadow-md', timePickerPeriod === 'AM' ? 'bg-gradient-to-r from-purple-600 to-pink-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200']">AM</button>
+            <button @click="timePickerPeriod = 'PM'" :class="['px-4 py-3 rounded-xl text-sm font-bold transition shadow-md', timePickerPeriod === 'PM' ? 'bg-gradient-to-r from-purple-600 to-pink-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200']">PM</button>
           </div>
         </div>
       </div>
