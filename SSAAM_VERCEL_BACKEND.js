@@ -4289,9 +4289,38 @@ app.get('/apis/attendance/my-records', studentAuthWithToken, async (req, res) =>
             });
 
             let status = 'absent';
+            let checkInTime = null;
+            let checkOutTime = null;
+            
             if (log) {
-                if (log.check_in_at && log.check_out_at) status = 'present';
-                else if (log.check_in_at) status = 'incomplete';
+                // Check for session-specific fields first, then legacy fields
+                const hasMorningSession = log.morning_check_in_at || log.morning_check_out_at;
+                const hasAfternoonSession = log.afternoon_check_in_at || log.afternoon_check_out_at;
+                
+                if (hasMorningSession || hasAfternoonSession) {
+                    // Dual session mode - get earliest check-in and latest check-out
+                    checkInTime = log.morning_check_in_at || log.afternoon_check_in_at;
+                    checkOutTime = log.afternoon_check_out_at || log.morning_check_out_at;
+                    
+                    const morningComplete = log.morning_check_in_at && log.morning_check_out_at;
+                    const afternoonComplete = log.afternoon_check_in_at && log.afternoon_check_out_at;
+                    
+                    if (morningComplete && afternoonComplete) {
+                        status = (log.is_morning_late || log.is_afternoon_late) ? 'late' : 'present';
+                    } else if (morningComplete || afternoonComplete || log.morning_check_in_at || log.afternoon_check_in_at) {
+                        status = 'incomplete';
+                    }
+                } else {
+                    // Legacy single session mode
+                    checkInTime = log.check_in_at;
+                    checkOutTime = log.check_out_at;
+                    
+                    if (log.check_in_at && log.check_out_at) {
+                        status = log.is_late ? 'late' : 'present';
+                    } else if (log.check_in_at) {
+                        status = 'incomplete';
+                    }
+                }
             }
 
             if (event.status === 'closed' && !log) {
@@ -4310,8 +4339,13 @@ app.get('/apis/attendance/my-records', studentAuthWithToken, async (req, res) =>
                     status: event.status
                 },
                 attendance: log ? {
-                    check_in_at: log.check_in_at,
-                    check_out_at: log.check_out_at,
+                    check_in_at: checkInTime,
+                    check_out_at: checkOutTime,
+                    morning_check_in_at: log.morning_check_in_at,
+                    morning_check_out_at: log.morning_check_out_at,
+                    afternoon_check_in_at: log.afternoon_check_in_at,
+                    afternoon_check_out_at: log.afternoon_check_out_at,
+                    is_late: log.is_late || log.is_morning_late || log.is_afternoon_late,
                     status
                 } : {
                     check_in_at: null,

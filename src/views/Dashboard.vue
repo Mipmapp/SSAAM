@@ -5327,7 +5327,20 @@ const fetchAttendanceData = async () => {
       }
       if (myRecordsRes.ok) {
         const recordsResult = await myRecordsRes.json()
-        myAttendanceRecords.value = recordsResult.data || []
+        const records = recordsResult.data || []
+        myAttendanceRecords.value = records.map(r => ({
+          ...r,
+          event_id: r.event?._id,
+          event_title: r.event?.title,
+          check_in_at: r.attendance?.check_in_at,
+          check_out_at: r.attendance?.check_out_at,
+          morning_check_in_at: r.attendance?.morning_check_in_at,
+          morning_check_out_at: r.attendance?.morning_check_out_at,
+          afternoon_check_in_at: r.attendance?.afternoon_check_in_at,
+          afternoon_check_out_at: r.attendance?.afternoon_check_out_at,
+          is_late: r.attendance?.is_late,
+          status: r.attendance?.status || 'absent'
+        }))
       }
     }
   } catch (error) {
