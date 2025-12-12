@@ -3424,11 +3424,11 @@ const fetchStats = async () => {
   }
 }
 
-// Fetch pending students for approval
+// Fetch pending students for approval (fetch all by using high limit)
 const fetchPendingStudents = async () => {
   pendingLoading.value = true
   try {
-    const response = await fetch('https://ssaam-api.vercel.app/apis/students/pending', {
+    const response = await fetch('https://ssaam-api.vercel.app/apis/students/pending?limit=1000', {
       method: 'GET',
       headers: {
         'Authorization': `Bearer SSAAMStudents`
@@ -3462,10 +3462,9 @@ const approveStudentImpl = async (student) => {
     })
     
     if (response.ok) {
-      pendingStudents.value = pendingStudents.value.filter(s => s.student_id !== student.student_id)
-      pendingCount.value = pendingStudents.value.length
       showNotification('Student approved successfully! They will receive an email notification.', 'success')
       fetchStats()
+      await fetchPendingStudents()
     } else {
       if (response.status === 403) {
         const handled = await handleAdminActionError(response)
@@ -3515,12 +3514,11 @@ const confirmRejectStudentImpl = async () => {
     })
     
     if (response.ok) {
-      pendingStudents.value = pendingStudents.value.filter(s => s.student_id !== studentToReject.value.student_id)
-      pendingCount.value = pendingStudents.value.length
       showRejectModal.value = false
       studentToReject.value = null
       rejectReason.value = ''
       showNotification('Student registration rejected. They will receive an email notification.', 'success')
+      await fetchPendingStudents()
     } else {
       if (response.status === 403) {
         const handled = await handleAdminActionError(response)
