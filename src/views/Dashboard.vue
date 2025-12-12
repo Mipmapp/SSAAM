@@ -3783,6 +3783,11 @@ onMounted(async () => {
     // Check admin action status for primary admin
     checkAdminActionStatus()
     
+    // Restore rfidScannerVerified if there's a valid admin action token
+    if (isAdminActionTokenValid()) {
+      rfidScannerVerified.value = true
+    }
+    
     try {
       // Fetch only current page (10-20 students)
       const response = await fetch(`https://ssaam-api.vercel.app/apis/students?page=${currentPageNum.value}&limit=${itemsPerPage.value}`, {
@@ -5837,7 +5842,8 @@ const handleRfidKeydown = (event) => {
 }
 
 const switchToScannerTab = () => {
-  if (rfidScannerVerified.value) {
+  if (rfidScannerVerified.value || isAdminActionTokenValid()) {
+    rfidScannerVerified.value = true
     attendanceTab.value = 'scanner'
   } else {
     pendingAdminAction.value = () => {
@@ -5854,7 +5860,8 @@ const launchFullscreenScanner = () => {
     return
   }
   
-  if (rfidScannerVerified.value) {
+  if (rfidScannerVerified.value || isAdminActionTokenValid()) {
+    rfidScannerVerified.value = true
     rfidFullscreenMode.value = true
     nextTick(() => {
       if (rfidFullscreenInputRef.value) {
