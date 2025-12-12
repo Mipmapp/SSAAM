@@ -3667,6 +3667,17 @@ app.get('/apis/attendance/events/active', studentAuthWithToken, async (req, res)
     }
 });
 
+// Get upcoming (draft) attendance events (for students)
+app.get('/apis/attendance/events/upcoming', studentAuthWithToken, async (req, res) => {
+    try {
+        const events = await AttendanceEvent.find({ status: 'draft' })
+            .sort({ event_date: 1 });
+        res.json({ data: events });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
 // Get single attendance event
 app.get('/apis/attendance/events/:id', studentAuth, async (req, res) => {
     try {

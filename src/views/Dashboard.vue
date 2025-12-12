@@ -949,7 +949,7 @@
                     <div class="flex-1">
                       <div class="flex items-center gap-3 mb-2">
                         <h3 class="font-semibold text-lg text-purple-900">{{ event.title }}</h3>
-                        <span :class="['px-2 py-1 rounded-full text-xs font-medium', getStatusBadgeClass(event.status)]">{{ event.status === 'active' ? 'Active' : event.status === 'draft' ? 'Draft' : event.status === 'closed' ? 'Closed' : event.status }}</span>
+                        <span :class="['px-2 py-1 rounded-full text-xs font-medium', getStatusBadgeClass(event.status)]">{{ event.status === 'active' ? 'Active' : event.status === 'draft' ? 'Upcoming' : event.status === 'closed' ? 'Closed' : event.status }}</span>
                         <span v-if="event.status === 'active' && getEventTimeRemaining(event._id)" :class="['px-2 py-1 rounded-full text-xs font-medium', getEventTimeRemaining(event._id) === 'Ended' ? 'bg-red-100 text-red-800' : 'bg-orange-100 text-orange-800']">
                           {{ getEventTimeRemaining(event._id) }}
                         </span>
@@ -3235,6 +3235,7 @@ const getPosterPhotoFallbackStyle = (notif) => {
 
 // Attendance management
 const attendanceEvents = ref([])
+const upcomingEventsData = ref([])
 const attendanceLogs = ref([])
 const myAttendanceRecords = ref([])
 const attendanceLoading = ref(false)
@@ -3288,7 +3289,11 @@ const activeNonEndedEvents = computed(() => {
 
 // Computed property for upcoming events (draft status)
 const upcomingEvents = computed(() => {
-  return attendanceEvents.value.filter(event => event.status === 'draft')
+  // For admin, filter from attendanceEvents; for students, use dedicated upcomingEventsData
+  if (currentUser.value.role === 'admin' || currentUser.value.isMaster) {
+    return attendanceEvents.value.filter(event => event.status === 'draft')
+  }
+  return upcomingEventsData.value
 })
 
 const copyRfidToClipboard = async (rfidCode) => {
@@ -5489,8 +5494,15 @@ const fetchAttendanceData = async () => {
         attendanceEvents.value = result.data || []
       }
     } else {
-      const [eventsRes, myRecordsRes] = await Promise.all([
+      const [eventsRes, upcomingRes, myRecordsRes] = await Promise.all([
         fetch('https://ssaam-api.vercel.app/apis/attendance/events/active', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'X-SSAAM-TS': encodeTimestamp()
+          }
+        }),
+        fetch('https://ssaam-api.vercel.app/apis/attendance/events/upcoming', {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -5509,6 +5521,10 @@ const fetchAttendanceData = async () => {
       if (eventsRes.ok) {
         const eventsResult = await eventsRes.json()
         attendanceEvents.value = eventsResult.data || []
+      }
+      if (upcomingRes.ok) {
+        const upcomingResult = await upcomingRes.json()
+        upcomingEventsData.value = upcomingResult.data || []
       }
       if (myRecordsRes.ok) {
         const recordsResult = await myRecordsRes.json()
