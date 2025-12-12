@@ -788,7 +788,7 @@
                   <svg :class="['w-4 h-4', attendanceLoading ? 'animate-spin' : '']" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                   Refresh
                 </button>
-                <button @click="showCreateEventModal = true" class="bg-gradient-to-r from-purple-600 to-pink-500 text-white px-4 py-2 rounded-lg hover:from-purple-700 hover:to-pink-600 transition flex items-center gap-2">
+                <button @click="openCreateEventModal" class="bg-gradient-to-r from-purple-600 to-pink-500 text-white px-4 py-2 rounded-lg hover:from-purple-700 hover:to-pink-600 transition flex items-center gap-2">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                   Create Event
                 </button>
@@ -2735,6 +2735,12 @@ const eventTimeRemaining = ref({})
 const eventEndedNotifications = ref(new Set())
 const showCreateEventModal = ref(false)
 const showEditEventModal = ref(false)
+
+// Open create event modal with admin action verification
+const openCreateEventModalImpl = async () => {
+  showCreateEventModal.value = true
+}
+const openCreateEventModal = () => withAdminAction(openCreateEventModalImpl)()
 const showEventLogsModal = ref(false)
 const selectedEvent = ref(null)
 const newEvent = ref({
