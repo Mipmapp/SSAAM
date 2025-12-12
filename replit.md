@@ -153,6 +153,24 @@ The following UI/UX enhancements were implemented to match the SSAAM aesthetic:
 
 6. **Notification Badge (Verified):** The notification badge correctly shows unread count using server-side tracking via MongoDB. Read status persists across devices and sessions.
 
+7. **Dual-Mode Attendance Scanner:** RFID scanner now supports two input modes:
+   - **RFID Scan Mode** (default) - For scanning RFID cards
+   - **Student ID Mode** - For manual entry of Student IDs (for students without RFID)
+   - Mode toggle button in scanner interface
+   - Backend tracks input method via `input_method` field in attendance logs
+
+8. **Duplicate Records Edit/Delete:** Auto-scan duplicate results now include action buttons:
+   - **Edit** - Opens student edit modal with pre-filled data
+   - **Delete** - Removes duplicate record with confirmation
+   - Respects admin action token flow to prevent "invalid token" errors
+   - Auto-refreshes scan results after delete
+
+9. **Responsive Calendar Picker:** Event creation calendar modal is now fully responsive:
+   - Properly sized on narrow mobile screens
+   - No overlapping elements
+   - Day headers use single letters on mobile
+   - Scaled buttons and spacing for touch-friendly interaction
+
 ## External Dependencies
 - **Backend API:** `https://ssaam-api.vercel.app` (Vercel deployment)
 - **Image Hosting:** ImgBB (for image uploads and storage)
