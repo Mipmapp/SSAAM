@@ -1885,11 +1885,12 @@
         <!-- Dashboard Page -->
         <div v-if="currentPage === 'dashboard' && currentUser.role !== 'admin' && !currentUser.isMaster" class="bg-white rounded-lg shadow-lg p-4 md:p-8 mb-8">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-            <h2 class="text-xl md:text-2xl font-bold text-purple-900">My Profile</h2>
-            <button @click="refreshCurrentUser" :disabled="refreshingUserData" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-all duration-200 hover:scale-105 active:scale-95 font-medium text-sm flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed" title="Refresh Profile Data">
-              <svg :class="['w-4 h-4', refreshingUserData ? 'animate-spin' : '']" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-              {{ refreshingUserData ? 'Refreshing...' : 'Refresh' }}
-            </button>
+            <div class="flex items-center gap-2">
+              <h2 class="text-xl md:text-2xl font-bold text-purple-900">My Profile</h2>
+              <button @click="refreshCurrentUser" :disabled="refreshingUserData" class="p-2 rounded-full hover:bg-purple-100 transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed" title="Refresh Profile Data">
+                <svg :class="['w-5 h-5 text-purple-600', refreshingUserData ? 'animate-spin' : '']" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+              </button>
+            </div>
           </div>
           
           <!-- Profile Header Section -->
@@ -3894,42 +3895,46 @@ const refreshCurrentUser = async () => {
   refreshingUserData.value = true
   try {
     const studentId = currentUser.value.studentId || currentUser.value.student_id
-    const token = localStorage.getItem('authToken')
     
-    const response = await fetch(`https://ssaam-api.vercel.app/apis/students/${studentId}/profile`, {
+    const response = await fetch(`https://ssaam-api.vercel.app/apis/students/search?search=${encodeURIComponent(studentId)}&limit=1`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer SSAAMStudents`
       }
     })
     
     if (response.ok) {
       const data = await response.json()
-      const updatedUser = data.student || data
+      const students = data.data || []
+      const updatedUser = students.find(s => s.student_id === studentId) || students[0]
       
-      // Update currentUser with the new data
-      currentUser.value = {
-        ...currentUser.value,
-        ...updatedUser,
-        studentId: updatedUser.student_id || currentUser.value.studentId,
-        firstName: updatedUser.first_name || currentUser.value.firstName,
-        middleName: updatedUser.middle_name || currentUser.value.middleName,
-        lastName: updatedUser.last_name || currentUser.value.lastName,
-        yearLevel: updatedUser.year_level || currentUser.value.yearLevel,
-        rfidCode: updatedUser.rfid_code || currentUser.value.rfidCode,
-        rfid_code: updatedUser.rfid_code,
-        rfid_status: updatedUser.rfid_status,
-        rfid_verified_at: updatedUser.rfid_verified_at,
-        rfid_verified_by: updatedUser.rfid_verified_by,
-        image: updatedUser.photo || currentUser.value.image,
-        photo: updatedUser.photo
+      if (updatedUser) {
+        // Update currentUser with the new data
+        currentUser.value = {
+          ...currentUser.value,
+          ...updatedUser,
+          studentId: updatedUser.student_id || currentUser.value.studentId,
+          firstName: updatedUser.first_name || currentUser.value.firstName,
+          middleName: updatedUser.middle_name || currentUser.value.middleName,
+          lastName: updatedUser.last_name || currentUser.value.lastName,
+          yearLevel: updatedUser.year_level || currentUser.value.yearLevel,
+          rfidCode: updatedUser.rfid_code || currentUser.value.rfidCode,
+          rfid_code: updatedUser.rfid_code,
+          rfid_status: updatedUser.rfid_status,
+          rfid_verified_at: updatedUser.rfid_verified_at,
+          rfid_verified_by: updatedUser.rfid_verified_by,
+          image: updatedUser.photo || currentUser.value.image,
+          photo: updatedUser.photo
+        }
+        
+        // Update localStorage
+        localStorage.setItem('currentUser', JSON.stringify(currentUser.value))
+        
+        showNotification('Profile data refreshed successfully!', 'success')
+      } else {
+        showNotification('Could not find your profile data', 'error')
       }
-      
-      // Update localStorage
-      localStorage.setItem('currentUser', JSON.stringify(currentUser.value))
-      
-      showNotification('Profile data refreshed successfully!', 'success')
     } else {
       showNotification('Failed to refresh profile data', 'error')
     }
