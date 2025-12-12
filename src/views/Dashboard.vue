@@ -207,16 +207,26 @@
         <p class="text-white text-opacity-70 text-sm md:text-base">Scan your RFID card to check in/out</p>
       </div>
       
-      <input 
-        ref="rfidFullscreenInputRef"
-        v-model="rfidInput"
-        @keydown="handleRfidKeydown"
-        type="text"
-        placeholder="Waiting for RFID scan..."
-        class="w-full px-4 md:px-6 py-3 md:py-4 text-center text-base md:text-xl bg-white bg-opacity-20 border-2 border-white border-opacity-30 rounded-xl md:rounded-2xl focus:border-pink-400 focus:ring-4 focus:ring-pink-300 focus:ring-opacity-50 outline-none text-white placeholder-white placeholder-opacity-50 transition-all"
-        :disabled="rfidProcessing"
-        autofocus
-      />
+      <div class="flex items-center gap-2">
+        <input 
+          ref="rfidFullscreenInputRef"
+          v-model="rfidInput"
+          @keydown="handleRfidKeydown"
+          type="text"
+          placeholder="Waiting for RFID scan..."
+          class="flex-1 px-4 md:px-6 py-3 md:py-4 text-center text-base md:text-xl bg-white bg-opacity-20 border-2 border-white border-opacity-30 rounded-xl md:rounded-2xl focus:border-pink-400 focus:ring-4 focus:ring-pink-300 focus:ring-opacity-50 outline-none text-white placeholder-white placeholder-opacity-50 transition-all"
+          :disabled="rfidProcessing"
+          autofocus
+        />
+        <button 
+          @click="manualRfidSubmit"
+          :disabled="rfidProcessing || !rfidInput.trim()"
+          class="px-4 md:px-6 py-3 md:py-4 bg-white bg-opacity-20 border-2 border-white border-opacity-30 rounded-xl md:rounded-2xl text-white hover:bg-opacity-30 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+        >
+          <svg class="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+          <span class="hidden md:inline">Enter</span>
+        </button>
+      </div>
       
       <div v-if="rfidProcessing" class="mt-4 md:mt-6 flex items-center justify-center gap-2 md:gap-3 text-white">
         <svg class="w-6 h-6 md:w-8 md:h-8 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
@@ -1025,34 +1035,28 @@
                   <p class="text-sm text-gray-500 mb-4">
                     {{ scanMode === 'rfid' ? 'Scan an RFID card or type the RFID code manually.' : 'Type the Student ID manually to record attendance.' }}
                   </p>
-                  <input 
-                    ref="rfidInputRef"
-                    v-model="rfidInput"
-                    @keydown="handleRfidKeydown"
-                    type="text"
-                    :placeholder="scanMode === 'rfid' ? 'Scan RFID card or type RFID code...' : 'Enter Student ID (e.g., 2023-0001)...'"
-                    class="w-full max-w-md mx-auto px-4 py-3 text-center text-lg border-2 border-purple-300 rounded-lg focus:border-pink-500 focus:ring-2 focus:ring-pink-200 outline-none uppercase"
-                    :disabled="rfidProcessing"
-                  />
+                  <div class="flex items-center justify-center gap-2 max-w-md mx-auto">
+                    <input 
+                      ref="rfidInputRef"
+                      v-model="rfidInput"
+                      @keydown="handleRfidKeydown"
+                      type="text"
+                      :placeholder="scanMode === 'rfid' ? 'Scan RFID card or type RFID code...' : 'Enter Student ID (e.g., 2023-0001)...'"
+                      class="flex-1 px-4 py-3 text-center text-lg border-2 border-purple-300 rounded-lg focus:border-pink-500 focus:ring-2 focus:ring-pink-200 outline-none uppercase"
+                      :disabled="rfidProcessing"
+                    />
+                    <button 
+                      @click="manualRfidSubmit"
+                      :disabled="rfidProcessing || !rfidInput.trim()"
+                      class="px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-lg hover:from-purple-700 hover:to-pink-600 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                      Enter
+                    </button>
+                  </div>
                   <div v-if="rfidProcessing" class="mt-4 flex items-center justify-center gap-2 text-purple-600">
                     <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                     Processing...
-                  </div>
-                  <!-- Result display with photo -->
-                  <div v-if="rfidResult" :class="['mt-4 p-4 rounded-lg', rfidResult.success ? 'bg-gradient-to-r from-purple-100 to-pink-100 border border-purple-200' : 'bg-red-100 text-red-800 border border-red-200']">
-                    <div v-if="rfidResult.success && rfidResult.student" class="flex flex-col items-center">
-                      <div class="w-16 h-16 rounded-full bg-gradient-to-r from-purple-400 to-pink-500 flex items-center justify-center overflow-hidden mb-3 ring-2 ring-white shadow-lg">
-                        <img v-if="rfidResult.student.photo" :src="rfidResult.student.photo" class="w-full h-full object-cover" @error="$event.target.style.display='none'" />
-                        <span v-else class="text-2xl font-bold text-white">{{ rfidResult.student.full_name?.charAt(0) || '?' }}</span>
-                      </div>
-                      <p class="font-bold text-lg bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">{{ rfidResult.action === 'check_in' ? 'Check-in Successful!' : 'Check-out Successful!' }}</p>
-                      <p class="text-purple-800 font-medium">{{ rfidResult.student.full_name }}</p>
-                      <p class="text-sm text-gray-600">{{ rfidResult.student.program }} | {{ rfidResult.student.year_level }}</p>
-                    </div>
-                    <div v-else>
-                      <p class="font-medium">Scan Failed</p>
-                      <p class="text-sm">{{ rfidResult.message }}</p>
-                    </div>
                   </div>
                 </div>
 
@@ -2524,15 +2528,18 @@
     </div>
   </div>
 
-  <!-- Notification Toast -->
-  <div v-if="notification.show" :class="['fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg text-white font-medium transition-all duration-300 z-40', notification.type === 'success' ? 'bg-green-500' : notification.type === 'error' ? 'bg-red-500' : 'bg-blue-500']">
-    <div class="flex items-center gap-2">
-      <svg v-if="notification.type === 'success'" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
-      <svg v-else-if="notification.type === 'error'" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>
-      <svg v-else class="animate-spin w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-      {{ notification.message }}
+  <!-- Notification Toast - Bottom Left, Always in Front -->
+  <transition name="slide-up">
+    <div v-if="notification.show" :class="['fixed bottom-4 left-4 px-6 py-3 rounded-lg shadow-2xl text-white font-medium transition-all duration-300 z-[100] max-w-sm', notification.type === 'success' ? 'bg-green-500' : notification.type === 'error' ? 'bg-red-500' : notification.type === 'warning' ? 'bg-yellow-500' : 'bg-blue-500']">
+      <div class="flex items-center gap-2">
+        <svg v-if="notification.type === 'success'" class="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+        <svg v-else-if="notification.type === 'error'" class="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>
+        <svg v-else-if="notification.type === 'warning'" class="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+        <svg v-else class="animate-spin w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        <span>{{ notification.message }}</span>
+      </div>
     </div>
-  </div>
+  </transition>
 </template>
 
 <script setup>
@@ -4966,6 +4973,12 @@ const launchFullscreenScanner = () => {
     }
     showAdminKeyModal.value = true
   }
+}
+
+const manualRfidSubmit = () => {
+  if (!rfidInput.value.trim() || rfidProcessing.value) return
+  processRfidScan(rfidInput.value.trim())
+  rfidInput.value = ''
 }
 
 const processRfidScan = async (inputCode) => {

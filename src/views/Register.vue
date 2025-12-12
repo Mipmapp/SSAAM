@@ -346,11 +346,10 @@
               
               <div class="flex items-center justify-center pt-4">
                 <div class="flex space-x-2">
-                  <div class="w-10 h-1 bg-purple-600 rounded"></div>
-                  <div class="w-10 h-1 bg-purple-600 rounded"></div>
-                  <div class="w-10 h-1 bg-purple-600 rounded"></div>
-                  <div class="w-10 h-1 bg-purple-600 rounded"></div>
-                  <div class="w-10 h-1 bg-gray-300 rounded"></div>
+                  <div class="w-12 h-1 bg-purple-600 rounded"></div>
+                  <div class="w-12 h-1 bg-purple-600 rounded"></div>
+                  <div class="w-12 h-1 bg-purple-600 rounded"></div>
+                  <div class="w-12 h-1 bg-gray-300 rounded"></div>
                 </div>
               </div>
               <div class="flex gap-4">
@@ -411,11 +410,10 @@
               </div>
               <div class="flex items-center justify-center pt-4">
                 <div class="flex space-x-2">
-                  <div class="w-10 h-1 bg-purple-600 rounded"></div>
-                  <div class="w-10 h-1 bg-purple-600 rounded"></div>
-                  <div class="w-10 h-1 bg-purple-600 rounded"></div>
-                  <div class="w-10 h-1 bg-purple-600 rounded"></div>
-                  <div class="w-10 h-1 bg-purple-600 rounded"></div>
+                  <div class="w-12 h-1 bg-purple-600 rounded"></div>
+                  <div class="w-12 h-1 bg-purple-600 rounded"></div>
+                  <div class="w-12 h-1 bg-purple-600 rounded"></div>
+                  <div class="w-12 h-1 bg-purple-600 rounded"></div>
                 </div>
               </div>
               <div class="flex gap-4">
@@ -689,11 +687,10 @@
             
             <div class="flex items-center justify-center pt-3 sm:pt-4">
               <div class="flex space-x-2">
-                <div class="w-8 sm:w-10 h-1 bg-purple-600 rounded"></div>
-                <div class="w-8 sm:w-10 h-1 bg-purple-600 rounded"></div>
-                <div class="w-8 sm:w-10 h-1 bg-purple-600 rounded"></div>
-                <div class="w-8 sm:w-10 h-1 bg-purple-600 rounded"></div>
-                <div class="w-8 sm:w-10 h-1 bg-gray-300 rounded"></div>
+                <div class="w-10 sm:w-12 h-1 bg-purple-600 rounded"></div>
+                <div class="w-10 sm:w-12 h-1 bg-purple-600 rounded"></div>
+                <div class="w-10 sm:w-12 h-1 bg-purple-600 rounded"></div>
+                <div class="w-10 sm:w-12 h-1 bg-gray-300 rounded"></div>
               </div>
             </div>
             <div class="flex gap-3 sm:gap-4">
@@ -754,11 +751,10 @@
             </div>
             <div class="flex items-center justify-center pt-3 sm:pt-4">
               <div class="flex space-x-2">
-                <div class="w-8 sm:w-10 h-1 bg-purple-600 rounded"></div>
-                <div class="w-8 sm:w-10 h-1 bg-purple-600 rounded"></div>
-                <div class="w-8 sm:w-10 h-1 bg-purple-600 rounded"></div>
-                <div class="w-8 sm:w-10 h-1 bg-purple-600 rounded"></div>
-                <div class="w-8 sm:w-10 h-1 bg-purple-600 rounded"></div>
+                <div class="w-10 sm:w-12 h-1 bg-purple-600 rounded"></div>
+                <div class="w-10 sm:w-12 h-1 bg-purple-600 rounded"></div>
+                <div class="w-10 sm:w-12 h-1 bg-purple-600 rounded"></div>
+                <div class="w-10 sm:w-12 h-1 bg-purple-600 rounded"></div>
               </div>
             </div>
             <div class="flex gap-3 sm:gap-4">
