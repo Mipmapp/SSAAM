@@ -118,7 +118,28 @@ The following UI/UX enhancements were implemented to match the SSAAM aesthetic:
 
 ## Recent Updates (December 2024)
 
-1. **Enhanced RFID Verification Stats with Expandable Lists:** The admin statistics section now displays three RFID status categories with accurate counts:
+1. **Dual-Session Attendance Support (4-in-a-day):** Events now support two attendance tracking modes:
+   - **Single Session (2-in-a-day):** Traditional check-in and check-out for the whole event
+   - **Dual Session (4-in-a-day):** Morning check-in/out + Afternoon check-in/out
+   - Event creators can select session_type ('single' or 'dual') when creating events
+   - For dual session, afternoon_start_time determines when morning session ends and afternoon begins
+   - Stats aggregation and Excel export both handle both modes appropriately
+   - Time detection uses Philippine timezone (UTC+8) to determine current session
+
+2. **RFID Unreadable Status Support:** Admin can now mark RFID cards as 'Unreadable':
+   - rfid_status field now supports three values: 'verified', 'unverified', 'Unreadable'
+   - When admin checks the "RFID Unreadable" checkbox, rfid_code gets 'UNREADABLE:' prefix AND rfid_status is set to 'Unreadable'
+   - Stats endpoint correctly counts all three status types
+   - Backend PUT /apis/students/:student_id now allows rfid_code and rfid_status updates with validation
+
+3. **Enhanced Excel Export by Year Level:** Excel export for attendance now includes:
+   - Separate sheets for each year level (1st_Year, 2nd_Year, 3rd_Year, 4th_Year)
+   - Summary sheet with aggregated statistics
+   - For single session: Check-In, Check-Out, Status columns
+   - For dual session: AM In, AM Out, PM In, PM Out, Status columns
+   - Status categories: Present (complete), Partial (half-day), Incomplete, Absent
+
+4. **Enhanced RFID Verification Stats with Expandable Lists:** The admin statistics section now displays three RFID status categories with accurate counts:
    - **Verified** - Users with rfid_status set to 'verified'
    - **Unverified** - Users with rfid_status set to 'unverified' or null/empty
    - **Unreadable** - Users with any other rfid_status value (neither verified nor unverified)

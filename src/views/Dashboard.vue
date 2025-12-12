@@ -3939,8 +3939,11 @@ const toggleRfidList = async (type) => {
       } else if (type === 'unverified') {
         rfidListUsers.value = normalizedStudents.filter(s => s.rfid_status === 'unverified' || !s.rfid_status || s.rfid_status === '')
       } else {
-        // Unreadable: check if rfid_code indicates unreadable (e.g., marked with 'UNREADABLE' prefix or special value)
-        rfidListUsers.value = normalizedStudents.filter(s => s.rfid_code && s.rfid_code.startsWith('UNREADABLE'))
+        // Unreadable: check rfid_status for 'Unreadable' OR rfid_code starts with 'UNREADABLE'
+        rfidListUsers.value = normalizedStudents.filter(s => 
+          s.rfid_status === 'Unreadable' || 
+          (s.rfid_code && s.rfid_code.startsWith('UNREADABLE'))
+        )
       }
     }
   } catch (error) {
@@ -4766,7 +4769,8 @@ const openEditModalWithUser = (user) => {
   userCopy.yearLevel = userCopy.yearLevel || userCopy.year_level || ''
   userCopy.rfidCode = userCopy.rfidCode || userCopy.rfid_code || ''
   userCopy.image = userCopy.image || userCopy.photo || ''
-  userCopy.rfidUnreadable = (userCopy.rfidCode || userCopy.rfid_code || '').startsWith('UNREADABLE:')
+  // Check if RFID is unreadable - either by rfid_status or rfid_code prefix
+  userCopy.rfidUnreadable = (userCopy.rfid_status === 'Unreadable') || (userCopy.rfidCode || userCopy.rfid_code || '').startsWith('UNREADABLE:')
   editingUser.value = userCopy
   editImageLoading.value = false
   showEditModal.value = true
@@ -4774,13 +4778,16 @@ const openEditModalWithUser = (user) => {
 
 const handleRfidUnreadableChange = () => {
   if (editingUser.value.rfidUnreadable) {
-    // Mark RFID as unreadable by prefixing the code
+    // Mark RFID as unreadable - set rfid_status to 'Unreadable' 
+    editingUser.value.rfid_status = 'Unreadable'
+    // Also mark the rfid_code with UNREADABLE prefix for visual indication
     const currentCode = editingUser.value.rfidCode || ''
     if (!currentCode.startsWith('UNREADABLE:')) {
       editingUser.value.rfidCode = `UNREADABLE:${currentCode || 'CARD'}`
     }
   } else {
-    // Remove the UNREADABLE prefix if present
+    // Remove the UNREADABLE status and prefix
+    editingUser.value.rfid_status = 'unverified'
     const currentCode = editingUser.value.rfidCode || ''
     if (currentCode.startsWith('UNREADABLE:')) {
       editingUser.value.rfidCode = currentCode.replace('UNREADABLE:', '')
@@ -5073,6 +5080,12 @@ const saveUserImpl = async () => {
   savingUser.value = true
   
   try {
+    // Determine rfid_status based on unreadable checkbox
+    let rfidStatus = editingUser.value.rfid_status || 'unverified'
+    if (editingUser.value.rfidUnreadable) {
+      rfidStatus = 'Unreadable'
+    }
+    
     const updateData = {
       student_id: studentId,
       first_name: (editingUser.value.firstName || editingUser.value.first_name || '').toUpperCase(),
@@ -5080,7 +5093,7 @@ const saveUserImpl = async () => {
       last_name: (editingUser.value.lastName || editingUser.value.last_name || '').toUpperCase(),
       email: editingUser.value.email,
       rfid_code: editingUser.value.rfidCode || editingUser.value.rfid_code || 'N/A',
-      rfid_status: editingUser.value.rfid_status || 'unverified',
+      rfid_status: rfidStatus,
       year_level: editingUser.value.yearLevel || editingUser.value.year_level,
       program: editingUser.value.program,
       photo: editingUser.value.image || editingUser.value.photo || '',
@@ -5528,36 +5541,81 @@ const exportEventAttendanceToExcel = async (event) => {
         return nameA.localeCompare(nameB)
       })
       
-      // Prepare data for worksheet
+      // Prepare data for worksheet - handles both single and dual session modes
       const worksheetData = yearLogs.map((log, index) => {
+        // Single session (2-in-a-day)
         const checkIn = log.check_in_at || log.check_in_time
         const checkOut = log.check_out_at || log.check_out_time
+        // Dual session (4-in-a-day)
+        const morningCheckIn = log.morning_check_in_at
+        const morningCheckOut = log.morning_check_out_at
+        const afternoonCheckIn = log.afternoon_check_in_at
+        const afternoonCheckOut = log.afternoon_check_out_at
+        
         const studentName = log.student?.full_name || log.full_name || `${log.student?.first_name || ''} ${log.student?.last_name || ''}`.trim()
         const studentId = log.student?.student_id || log.student_id || ''
         const program = log.student?.program || log.program || ''
         
-        // Determine attendance status
-        let status = 'Absent'
-        if (checkIn && checkOut) status = 'Present'
-        else if (checkIn && !checkOut) status = 'Incomplete'
+        // Check if dual session mode
+        const isDualSession = morningCheckIn || morningCheckOut || afternoonCheckIn || afternoonCheckOut
         
-        return {
-          '#': index + 1,
-          'Student ID': studentId,
-          'Name': studentName,
-          'Program': program,
-          'Year Level': yearLevel,
-          'Check-In': checkIn ? new Date(checkIn).toLocaleString('en-PH') : '-',
-          'Check-Out': checkOut ? new Date(checkOut).toLocaleString('en-PH') : '-',
-          'Status': status
+        if (isDualSession) {
+          // Determine attendance status for dual session
+          const morningComplete = morningCheckIn && morningCheckOut
+          const afternoonComplete = afternoonCheckIn && afternoonCheckOut
+          let status = 'Absent'
+          if (morningComplete && afternoonComplete) status = 'Present'
+          else if (morningComplete || afternoonComplete) status = 'Partial'
+          else if (morningCheckIn || afternoonCheckIn) status = 'Incomplete'
+          
+          return {
+            '#': index + 1,
+            'Student ID': studentId,
+            'Name': studentName,
+            'Program': program,
+            'Year Level': yearLevel,
+            'AM In': morningCheckIn ? new Date(morningCheckIn).toLocaleString('en-PH') : '-',
+            'AM Out': morningCheckOut ? new Date(morningCheckOut).toLocaleString('en-PH') : '-',
+            'PM In': afternoonCheckIn ? new Date(afternoonCheckIn).toLocaleString('en-PH') : '-',
+            'PM Out': afternoonCheckOut ? new Date(afternoonCheckOut).toLocaleString('en-PH') : '-',
+            'Status': status
+          }
+        } else {
+          // Single session mode
+          let status = 'Absent'
+          if (checkIn && checkOut) status = 'Present'
+          else if (checkIn && !checkOut) status = 'Incomplete'
+          
+          return {
+            '#': index + 1,
+            'Student ID': studentId,
+            'Name': studentName,
+            'Program': program,
+            'Year Level': yearLevel,
+            'Check-In': checkIn ? new Date(checkIn).toLocaleString('en-PH') : '-',
+            'Check-Out': checkOut ? new Date(checkOut).toLocaleString('en-PH') : '-',
+            'Status': status
+          }
         }
       })
       
       // Create worksheet
       const worksheet = XLSX.utils.json_to_sheet(worksheetData)
       
-      // Set column widths
-      const columnWidths = [
+      // Set column widths - check if dual session based on first record
+      const isDualSession = worksheetData.length > 0 && worksheetData[0]['AM In'] !== undefined
+      const columnWidths = isDualSession ? [
+        { wch: 5 },   // #
+        { wch: 15 },  // Student ID
+        { wch: 30 },  // Name
+        { wch: 10 },  // Program
+        { wch: 12 },  // Year Level
+        { wch: 20 },  // AM In
+        { wch: 20 },  // AM Out
+        { wch: 20 },  // PM In
+        { wch: 20 },  // PM Out
+        { wch: 12 }   // Status
+      ] : [
         { wch: 5 },   // #
         { wch: 15 },  // Student ID
         { wch: 30 },  // Name
@@ -5573,20 +5631,47 @@ const exportEventAttendanceToExcel = async (event) => {
       XLSX.utils.book_append_sheet(workbook, worksheet, yearLevel.replace(' ', '_'))
     })
     
-    // Create summary sheet
+    // Create summary sheet - handles both single and dual session modes
     const summaryData = yearLevels.map(yearLevel => {
       const yearLogs = logs.filter(log => {
         const studentYearLevel = log.student?.year_level || log.year_level || ''
         return studentYearLevel === yearLevel
       })
-      const presentCount = yearLogs.filter(log => (log.check_in_at || log.check_in_time) && (log.check_out_at || log.check_out_time)).length
-      const incompleteCount = yearLogs.filter(log => (log.check_in_at || log.check_in_time) && !(log.check_out_at || log.check_out_time)).length
       
-      return {
-        'Year Level': yearLevel,
-        'Total Attendees': yearLogs.length,
-        'Present (Complete)': presentCount,
-        'Incomplete': incompleteCount
+      // Check if dual session mode based on presence of morning/afternoon fields
+      const hasDualSession = yearLogs.some(log => log.morning_check_in_at || log.afternoon_check_in_at)
+      
+      if (hasDualSession) {
+        const fullPresentCount = yearLogs.filter(log => 
+          log.morning_check_in_at && log.morning_check_out_at && 
+          log.afternoon_check_in_at && log.afternoon_check_out_at
+        ).length
+        const partialCount = yearLogs.filter(log => 
+          (log.morning_check_in_at && log.morning_check_out_at && (!log.afternoon_check_in_at || !log.afternoon_check_out_at)) ||
+          ((!log.morning_check_in_at || !log.morning_check_out_at) && log.afternoon_check_in_at && log.afternoon_check_out_at)
+        ).length
+        const incompleteCount = yearLogs.filter(log => 
+          (log.morning_check_in_at && !log.morning_check_out_at) || 
+          (log.afternoon_check_in_at && !log.afternoon_check_out_at)
+        ).length
+        
+        return {
+          'Year Level': yearLevel,
+          'Total Attendees': yearLogs.length,
+          'Present (Full Day)': fullPresentCount,
+          'Partial (Half Day)': partialCount,
+          'Incomplete': incompleteCount
+        }
+      } else {
+        const presentCount = yearLogs.filter(log => (log.check_in_at || log.check_in_time) && (log.check_out_at || log.check_out_time)).length
+        const incompleteCount = yearLogs.filter(log => (log.check_in_at || log.check_in_time) && !(log.check_out_at || log.check_out_time)).length
+        
+        return {
+          'Year Level': yearLevel,
+          'Total Attendees': yearLogs.length,
+          'Present (Complete)': presentCount,
+          'Incomplete': incompleteCount
+        }
       }
     })
     
