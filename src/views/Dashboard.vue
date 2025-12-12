@@ -5471,6 +5471,11 @@ const fetchAttendanceData = async () => {
     console.error('Failed to fetch attendance data:', error)
   } finally {
     attendanceLoading.value = false
+    // After data is loaded, check for ended events and notify user (only for students, only once per event)
+    nextTick(() => {
+      updateEventTimeRemaining()
+      checkAndNotifyEndedEvents()
+    })
   }
 }
 
@@ -6978,28 +6983,40 @@ const completePasswordChange = async () => {
   }
 }
 
-// Track dismissed event ended notifications per session (in-memory) since user doesn't want localStorage
-// Once the user closes the modal or the event is ended/closed, don't show again this session
-const dismissedEndedEventsThisSession = ref(new Set())
+// Permanent storage key for dismissed event ended notifications (per user)
+const getDismissedEventsStorageKey = () => {
+  const userId = currentUser.value.studentId || currentUser.value.student_id || 'unknown'
+  return `ssaam_dismissed_ended_events_${userId}`
+}
 
-// Get dismissed event ended notifications (session-based only)
+// Get dismissed event ended notifications from permanent localStorage
 const getDismissedEndedEvents = () => {
-  return dismissedEndedEventsThisSession.value
+  try {
+    const stored = localStorage.getItem(getDismissedEventsStorageKey())
+    return stored ? new Set(JSON.parse(stored)) : new Set()
+  } catch {
+    return new Set()
+  }
 }
 
-// Save dismissed event ended notification (session-based only)
+// Save dismissed event ended notification to permanent localStorage
 const dismissEndedEventNotification = (eventId) => {
-  dismissedEndedEventsThisSession.value.add(eventId)
+  try {
+    const dismissed = getDismissedEndedEvents()
+    dismissed.add(eventId)
+    localStorage.setItem(getDismissedEventsStorageKey(), JSON.stringify([...dismissed]))
+  } catch (e) {
+    console.error('Failed to save dismissed event:', e)
+  }
 }
 
-// Track if we've shown the ended notification this session (to avoid duplicates)
+// Track if we've shown the ended notification this session (to avoid showing multiple times in one session)
 const shownEndedNotificationsThisSession = ref(new Set())
 
-// Calculate time remaining for each active event
+// Calculate time remaining for each active event (no automatic modal - only updates time display)
 const updateEventTimeRemaining = () => {
   const nowPH = getPhilippineTime()
   const isAdmin = currentUser.value.role === 'admin' || currentUser.value.isMaster
-  const dismissedEvents = getDismissedEndedEvents()
   
   attendanceEvents.value.forEach(event => {
     if (event.status === 'active' && event.end_time) {
@@ -7009,14 +7026,8 @@ const updateEventTimeRemaining = () => {
       const diff = eventEnd - nowPH
       
       if (diff <= 0) {
-        // Event has ended
+        // Event has ended - just update the display, no automatic modal
         eventTimeRemaining.value[event._id] = 'Ended'
-        
-        // Only show notification once per session AND if not previously dismissed
-        if (!shownEndedNotificationsThisSession.value.has(event._id) && !dismissedEvents.has(event._id)) {
-          shownEndedNotificationsThisSession.value.add(event._id)
-          showEventEndedModal(event)
-        }
       } else {
         const hoursLeft = Math.floor(diff / (1000 * 60 * 60))
         const minutesLeft = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
@@ -7034,6 +7045,31 @@ const updateEventTimeRemaining = () => {
         if (isAdmin && diff <= 5 * 60 * 1000 && diff > 4 * 60 * 1000) {
           showNotification(`Event "${event.title}" ends in 5 minutes!`, 'warning')
         }
+      }
+    }
+  })
+}
+
+// Check for ended events and show notification (called when opening attendance section)
+const checkAndNotifyEndedEvents = () => {
+  const isAdmin = currentUser.value.role === 'admin' || currentUser.value.isMaster
+  if (isAdmin) return // Only for students
+  
+  const dismissedEvents = getDismissedEndedEvents()
+  const nowPH = getPhilippineTime()
+  
+  attendanceEvents.value.forEach(event => {
+    if (event.status === 'active' && event.end_time) {
+      const eventEnd = getEventEndTimeInPH(event)
+      if (!eventEnd) return
+      
+      const diff = eventEnd - nowPH
+      
+      // If event has ended and not previously dismissed or shown this session
+      if (diff <= 0 && !dismissedEvents.has(event._id) && !shownEndedNotificationsThisSession.value.has(event._id)) {
+        shownEndedNotificationsThisSession.value.add(event._id)
+        showEventEndedModal(event)
+        return // Only show one at a time
       }
     }
   })
