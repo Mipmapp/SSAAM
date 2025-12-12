@@ -300,7 +300,7 @@
               </div>
               
               <div class="bg-gray-50 rounded-xl p-4 space-y-3">
-                <div class="flex items-center gap-3">
+                <div class="flex flex-col items-center text-center gap-2">
                   <div class="w-16 h-16 rounded-full bg-gray-200 flex-shrink-0 overflow-hidden">
                     <img v-if="imagePreview" :src="imagePreview" class="w-full h-full object-cover" />
                     <div v-else class="w-full h-full flex items-center justify-center text-gray-400">
@@ -643,15 +643,15 @@
             </div>
             
             <div class="bg-gray-50 rounded-xl p-3 sm:p-4 space-y-2 sm:space-y-3">
-              <div class="flex items-center gap-2 sm:gap-3">
+              <div class="flex flex-col items-center text-center gap-2">
                 <div class="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gray-200 flex-shrink-0 overflow-hidden">
                   <img v-if="imagePreview" :src="imagePreview" class="w-full h-full object-cover" />
                   <div v-else class="w-full h-full flex items-center justify-center text-gray-400">
                     <svg class="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
                   </div>
                 </div>
-                <div class="min-w-0 flex-1">
-                  <p class="font-bold text-purple-900 text-sm sm:text-base truncate">{{ formData.first_name }} {{ formData.middle_name }} {{ formData.last_name }} {{ formData.suffix }}</p>
+                <div class="min-w-0">
+                  <p class="font-bold text-purple-900 text-sm sm:text-base">{{ formData.first_name }} {{ formData.middle_name }} {{ formData.last_name }} {{ formData.suffix }}</p>
                   <p class="text-xs sm:text-sm text-gray-600">{{ formData.student_id }}</p>
                 </div>
               </div>

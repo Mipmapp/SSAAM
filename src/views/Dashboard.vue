@@ -115,6 +115,33 @@
     </div>
   </div>
 
+  <!-- Delete Notification Confirmation Modal -->
+  <div v-if="showDeleteNotificationConfirm" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="cancelDeleteNotification">
+    <div class="bg-white rounded-2xl shadow-2xl p-6 md:p-8 max-w-sm w-full mx-4">
+      <div class="text-center mb-6">
+        <div class="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
+          <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+          </svg>
+        </div>
+        <h3 class="text-xl font-bold text-gray-900 mb-2">Delete Announcement</h3>
+        <p class="text-gray-600 text-sm">Are you sure you want to delete this announcement? This action cannot be undone.</p>
+      </div>
+      <div class="flex gap-3">
+        <button @click="cancelDeleteNotification" class="flex-1 bg-gray-200 text-gray-800 py-2.5 px-4 rounded-lg font-medium hover:bg-gray-300 transition" :disabled="deletingNotification">
+          Cancel
+        </button>
+        <button @click="confirmDeleteNotification" class="flex-1 bg-red-600 text-white py-2.5 px-4 rounded-lg font-medium hover:bg-red-700 transition flex items-center justify-center gap-2" :disabled="deletingNotification">
+          <svg v-if="deletingNotification" class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+          </svg>
+          <span>{{ deletingNotification ? 'Deleting...' : 'Delete' }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Clear Sessions Confirmation Modal -->
   <div v-if="showClearSessionsConfirm" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="showClearSessionsConfirm = false">
     <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4">
@@ -1216,20 +1243,20 @@
                     </div>
                     <div class="flex-1 min-w-0">
                       <!-- Admin Header -->
-                      <div v-if="notif.posted_by === 'admin'" class="flex flex-wrap items-center gap-2">
-                        <span class="font-bold text-purple-900 text-sm md:text-base">{{ notif.posted_by_name || notif.poster_name || 'Admin' }}</span>
-                        <span class="text-xs px-2 py-0.5 rounded-full font-medium bg-purple-200 text-purple-800">Admin</span>
+                      <div v-if="notif.posted_by === 'admin'" class="flex flex-wrap items-center gap-1 md:gap-2">
+                        <span class="font-bold text-purple-900 text-xs md:text-base">{{ notif.posted_by_name || notif.poster_name || 'Admin' }}</span>
+                        <span class="text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 rounded-full font-medium bg-purple-200 text-purple-800">Admin</span>
                       </div>
                       <!-- MedPub Header: Organization name with label, then posted by user -->
                       <div v-else>
-                        <div class="flex flex-wrap items-center gap-2 mb-1">
-                          <span class="font-bold text-yellow-900 text-sm md:text-base">Media and Publication</span>
-                          <span class="text-xs px-2 py-0.5 rounded-full font-medium bg-amber-200 text-amber-800">Organization</span>
+                        <div class="flex flex-wrap items-center gap-1 md:gap-2 mb-0.5 md:mb-1">
+                          <span class="font-bold text-yellow-900 text-xs md:text-base">Media and Publication</span>
+                          <span class="text-[10px] md:text-xs px-1.5 md:px-2 py-0.5 rounded-full font-medium bg-amber-200 text-amber-800">Organization</span>
                         </div>
-                        <div class="flex items-center gap-2 text-xs text-gray-600">
+                        <div class="flex items-center gap-1 md:gap-2 text-[10px] md:text-xs text-gray-600">
                           <span>posted by</span>
-                          <div class="flex items-center gap-1.5">
-                            <div class="w-5 h-5 rounded-full overflow-hidden flex-shrink-0" :style="getPosterPhotoFallbackStyle(notif)">
+                          <div class="flex items-center gap-1 md:gap-1.5">
+                            <div class="w-4 h-4 md:w-5 md:h-5 rounded-full overflow-hidden flex-shrink-0" :style="getPosterPhotoFallbackStyle(notif)">
                               <img 
                                 v-if="notif.poster_photo && !posterImageFailed[notif._id]" 
                                 :src="notif.poster_photo" 
@@ -1242,16 +1269,16 @@
                                 v-else 
                                 src="/user.svg" 
                                 alt="User" 
-                                class="w-3 h-3 m-1" 
+                                class="w-2.5 h-2.5 md:w-3 md:h-3 m-0.5 md:m-1" 
                                 style="filter: brightness(0) invert(1);"
                               />
                             </div>
-                            <span class="font-medium text-gray-800">{{ notif.posted_by_name || 'Unknown' }}</span>
-                            <span class="text-xs px-1.5 py-0.5 rounded-full font-medium bg-yellow-200 text-yellow-800">Medpub</span>
+                            <span class="font-medium text-gray-800 text-[10px] md:text-xs">{{ notif.posted_by_name || 'Unknown' }}</span>
+                            <span class="text-[10px] md:text-xs px-1 md:px-1.5 py-0.5 rounded-full font-medium bg-yellow-200 text-yellow-800">Medpub</span>
                           </div>
                         </div>
                       </div>
-                      <div class="flex flex-wrap items-center gap-2 text-xs text-gray-500 mt-1">
+                      <div class="flex flex-wrap items-center gap-1 md:gap-2 text-[10px] md:text-xs text-gray-500 mt-0.5 md:mt-1">
                         <span class="flex items-center gap-1">
                           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                           {{ formatNotificationDate(notif.created_at) }}
@@ -5392,12 +5419,23 @@ const postNotification = async () => {
   }
 }
 
-const deleteNotification = async (notifId) => {
-  if (!confirm('Are you sure you want to delete this announcement?')) return
+const deleteNotification = (notifId) => {
+  notificationToDelete.value = notifId
+  showDeleteNotificationConfirm.value = true
+}
+
+const cancelDeleteNotification = () => {
+  showDeleteNotificationConfirm.value = false
+  notificationToDelete.value = null
+}
+
+const confirmDeleteNotification = async () => {
+  if (!notificationToDelete.value) return
   
+  deletingNotification.value = true
   try {
     const token = localStorage.getItem('authToken') || localStorage.getItem('adminToken')
-    const response = await fetch(`https://ssaam-api.vercel.app/apis/notifications/${notifId}`, {
+    const response = await fetch(`https://ssaam-api.vercel.app/apis/notifications/${notificationToDelete.value}`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${token}`
@@ -5405,7 +5443,7 @@ const deleteNotification = async (notifId) => {
     })
     
     if (response.ok) {
-      notifications.value = notifications.value.filter(n => n._id !== notifId)
+      notifications.value = notifications.value.filter(n => n._id !== notificationToDelete.value)
       showNotification('Announcement deleted successfully', 'success')
     } else {
       const error = await response.json()
@@ -5414,6 +5452,10 @@ const deleteNotification = async (notifId) => {
   } catch (error) {
     console.error('Failed to delete notification:', error)
     showNotification('Failed to delete announcement', 'error')
+  } finally {
+    deletingNotification.value = false
+    showDeleteNotificationConfirm.value = false
+    notificationToDelete.value = null
   }
 }
 
