@@ -1255,21 +1255,15 @@
                         </div>
                         <div class="flex flex-wrap items-center gap-1 text-[10px] md:text-xs text-gray-600 mt-0.5">
                           <span>posted by</span>
-                          <div class="w-3.5 h-3.5 md:w-4 md:h-4 rounded-full overflow-hidden flex-shrink-0" :style="getPosterPhotoFallbackStyle(notif)">
+                          <div class="w-3.5 h-3.5 md:w-4 md:h-4 rounded-full overflow-hidden flex-shrink-0 relative" :style="getPosterPhotoFallbackStyle(notif)">
+                            <span class="absolute inset-0 flex items-center justify-center text-[8px] md:text-[9px] font-bold text-white uppercase">{{ (notif.posted_by_name || 'U').charAt(0) }}</span>
                             <img 
                               v-if="notif.poster_photo && !posterImageFailed[notif._id]" 
                               :src="notif.poster_photo" 
                               :alt="notif.posted_by_name" 
-                              class="w-full h-full object-cover"
+                              class="w-full h-full object-cover absolute inset-0 z-10"
                               @error="handlePosterImageError(notif._id, notif.poster_photo)"
                               @load="posterImageFailed[notif._id] = false"
-                            />
-                            <img 
-                              v-else 
-                              src="/user.svg" 
-                              alt="User" 
-                              class="w-2 h-2 md:w-2.5 md:h-2.5 m-0.5" 
-                              style="filter: brightness(0) invert(1);"
                             />
                           </div>
                           <span class="font-semibold text-gray-800">{{ notif.posted_by_name || 'Unknown' }}</span>
@@ -1294,14 +1288,15 @@
                     <h3 class="text-sm md:text-base lg:text-lg font-semibold text-gray-900 mb-1.5 text-left">{{ notif.title }}</h3>
                     <p class="text-gray-700 whitespace-pre-wrap break-words leading-relaxed text-xs md:text-sm lg:text-base text-left" v-html="formatMessageWithLinks(notif.message || notif.content)"></p>
                     <div v-if="notif.image_url" class="mt-3">
-                      <div class="relative group inline-block max-w-full">
-                        <div v-if="notifImageRetries[notif._id] > 0 && !notifImageFailed[notif._id]" class="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-lg z-10">
-                          <div class="text-center">
-                            <svg class="animate-spin h-8 w-8 text-purple-500 mx-auto mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <div class="relative group inline-block max-w-full w-full">
+                        <div v-if="!notifImageLoaded[notif._id] && !notifImageFailed[notif._id]" class="flex items-center justify-center bg-gray-100 rounded-lg border border-gray-200 min-h-[200px] w-full">
+                          <div class="text-center py-8">
+                            <svg class="animate-spin h-10 w-10 text-purple-500 mx-auto mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
-                            <span class="text-xs text-gray-500">Retrying... ({{ notifImageRetries[notif._id] }}/{{ MAX_NOTIF_IMAGE_RETRIES }})</span>
+                            <span v-if="notifImageRetries[notif._id] > 0" class="text-xs text-gray-500">Retrying... ({{ notifImageRetries[notif._id] }}/{{ MAX_NOTIF_IMAGE_RETRIES }})</span>
+                            <span v-else class="text-xs text-gray-500">Loading image...</span>
                           </div>
                         </div>
                         <div v-if="notifImageFailed[notif._id]" class="bg-gray-100 rounded-lg p-8 text-center border border-gray-200">
@@ -1309,7 +1304,7 @@
                           <p class="text-sm text-gray-500 mb-2">Failed to load image</p>
                           <button @click.stop="retryNotifImage(notif._id, notif.image_url)" class="text-xs text-purple-600 hover:text-purple-800 font-medium">Try again</button>
                         </div>
-                        <img v-show="!notifImageFailed[notif._id]" :src="notif.image_url" alt="Announcement image" class="max-w-full w-full h-auto max-h-[500px] rounded-lg border border-gray-200 object-contain cursor-pointer hover:opacity-90 transition shadow-sm" @click="openImagePreview(notif.image_url)" @error="handleNotifImageError(notif._id, notif.image_url, $event)" />
+                        <img v-show="notifImageLoaded[notif._id] && !notifImageFailed[notif._id]" :src="notif.image_url" alt="Announcement image" class="max-w-full w-full h-auto max-h-[500px] rounded-lg border border-gray-200 object-contain cursor-pointer hover:opacity-90 transition shadow-sm" @click="openImagePreview(notif.image_url)" @load="handleNotifImageLoad(notif._id)" @error="handleNotifImageError(notif._id, notif.image_url, $event)" />
                         <div v-if="!notifImageFailed[notif._id]" class="absolute bottom-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button @click.stop="openImagePreview(notif.image_url)" class="bg-black bg-opacity-60 hover:bg-opacity-80 text-white p-2 rounded-lg transition" title="View full size">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"></path></svg>
@@ -2677,6 +2672,7 @@ const showImagePreviewModal = ref(false)
 const imagePreviewUrl = ref('')
 const notifImageRetries = ref({})
 const notifImageFailed = ref({})
+const notifImageLoaded = ref({})
 const MAX_NOTIF_IMAGE_RETRIES = 3
 const showEditNotificationModal = ref(false)
 
@@ -5305,6 +5301,12 @@ const handleNotifImageError = (notifId, imageUrl, event) => {
 const retryNotifImage = (notifId, imageUrl) => {
   notifImageRetries.value[notifId] = 0
   notifImageFailed.value[notifId] = false
+  notifImageLoaded.value[notifId] = false
+}
+
+const handleNotifImageLoad = (notifId) => {
+  notifImageLoaded.value[notifId] = true
+  notifImageRetries.value[notifId] = 0
 }
 
 const formatNotificationDate = (dateStr) => {
