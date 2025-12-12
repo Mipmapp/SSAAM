@@ -118,6 +118,16 @@ The following UI/UX enhancements were implemented to match the SSAAM aesthetic:
 
 ## Recent Updates (December 2024)
 
+1. **RFID Verification Stats in Admin Dashboard:** The admin statistics section now displays verified and unverified RFID user counts. The implementation handles multiple API response formats (camelCase and snake_case) and includes a fallback calculation.
+
+2. **RFID Status Filter:** Added a new filter dropdown in the admin user management section that allows filtering students by RFID verification status (All, Verified, Unverified). The filter is sent as `rfid_status` query parameter to the backend.
+
+3. **RFID Status Column:** Added a new column in the user management table showing each student's RFID verification status with visual badges (green for verified, yellow for unverified).
+
+4. **Refresh My Data Button:** Added a "Refresh My Data" button in the user profile section that fetches the latest user data from the API and updates localStorage without requiring logout/login. This keeps the session synchronized with server-side changes.
+
+## Previous Updates (December 2024)
+
 1. **Improved Attendance Status Display:** The user dashboard attendance history now displays proper status labels:
    - **Present** - When both check-in AND check-out are recorded
    - **Incomplete** - When only check-in OR only check-out is recorded
