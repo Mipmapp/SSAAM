@@ -1793,8 +1793,8 @@ app.post('/apis/students/send-verification', studentAuth, antiBotProtection, asy
         }
 
         const yearPrefix = parseInt(data.student_id.substring(0, 2), 10);
-        if (yearPrefix < 19 || yearPrefix > 25) {
-            return res.status(400).json({ message: "Student ID must start with 19 to 25" });
+        if (yearPrefix < 18 || yearPrefix > 25) {
+            return res.status(400).json({ message: "Student ID must start with 18 to 25" });
         }
 
         const firstNameValidation = validateName(data.first_name, "First name");
