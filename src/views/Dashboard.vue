@@ -1311,39 +1311,43 @@
               <p>No attendance events or records yet.</p>
             </div>
             <div v-else class="space-y-6">
-              <!-- Active Events Section -->
+              <!-- Active Events Section - Social Media Style -->
               <div v-if="attendanceEvents.length > 0">
-                <h3 class="font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                <h3 class="font-semibold text-gray-700 mb-3 flex items-center gap-2 text-sm">
                   <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
                   Active Events
                 </h3>
-                <div class="space-y-3">
-                  <div v-for="event in attendanceEvents" :key="event._id || event.event_id" class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
-                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <div class="flex-1">
-                        <div class="flex items-center gap-3 mb-2">
-                          <h3 class="font-semibold text-lg text-purple-900">{{ event.title }}</h3>
-                          <span :class="['px-2 py-1 rounded-full text-xs font-medium', getStatusBadgeClass(getAttendanceStatus(event._id || event.event_id))]">
-                            {{ getAttendanceStatus(event._id || event.event_id) === 'present' ? 'Present' : getAttendanceStatus(event._id || event.event_id) === 'incomplete' ? 'Incomplete' : getAttendanceStatus(event._id || event.event_id) === 'active' ? 'Pending Check-in' : (event.status === 'active' ? 'Pending Check-in' : 'Absent') }}
-                          </span>
-                          <span v-if="event.status === 'active' && getEventTimeRemaining(event._id || event.event_id)" :class="['px-2 py-1 rounded-full text-xs font-medium', getEventTimeRemaining(event._id || event.event_id) === 'Ended' ? 'bg-red-100 text-red-800' : 'bg-orange-100 text-orange-800']">
-                            {{ getEventTimeRemaining(event._id || event.event_id) }}
-                          </span>
+                <div class="space-y-4">
+                  <div v-for="event in attendanceEvents" :key="event._id || event.event_id" class="bg-gradient-to-br from-white to-purple-50 rounded-2xl shadow-sm border border-purple-100 overflow-hidden">
+                    <!-- Header with status badges -->
+                    <div class="px-4 pt-4 pb-2">
+                      <div class="flex flex-wrap items-center gap-2 mb-3">
+                        <span :class="['px-3 py-1 rounded-full text-xs font-semibold', getStatusBadgeClass(getAttendanceStatus(event._id || event.event_id))]">
+                          {{ getAttendanceStatus(event._id || event.event_id) === 'present' ? 'Present' : getAttendanceStatus(event._id || event.event_id) === 'incomplete' ? 'Incomplete' : getAttendanceStatus(event._id || event.event_id) === 'active' ? 'Pending Check-in' : (event.status === 'active' ? 'Pending Check-in' : 'Absent') }}
+                        </span>
+                        <span v-if="event.status === 'active' && getEventTimeRemaining(event._id || event.event_id)" :class="['px-3 py-1 rounded-full text-xs font-semibold', getEventTimeRemaining(event._id || event.event_id) === 'Ended' ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700']">
+                          {{ getEventTimeRemaining(event._id || event.event_id) }}
+                        </span>
+                      </div>
+                      <!-- Event Title -->
+                      <h3 class="font-bold text-base md:text-lg text-purple-900 leading-tight mb-2">{{ event.title }}</h3>
+                      <!-- Description -->
+                      <p v-if="event.description" class="text-gray-600 text-sm leading-relaxed mb-3">{{ event.description }}</p>
+                    </div>
+                    <!-- Event Details Footer -->
+                    <div class="bg-white bg-opacity-60 px-4 py-3 border-t border-purple-100">
+                      <div class="flex flex-col gap-2 text-xs text-gray-600">
+                        <div class="flex items-center gap-2">
+                          <svg class="w-4 h-4 text-purple-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                          <span class="font-medium">{{ formatEventDate(event.date || event.event_date) }}</span>
                         </div>
-                        <p v-if="event.description" class="text-gray-600 text-sm mb-2">{{ event.description }}</p>
-                        <div class="flex flex-wrap gap-4 text-sm text-gray-500">
-                          <span class="flex items-center gap-1">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                            {{ formatEventDate(event.date || event.event_date) }}
-                          </span>
-                          <span v-if="event.startTime || event.start_time" class="flex items-center gap-1">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                            {{ formatEventTime(event.startTime || event.start_time) }} - {{ formatEventTime(event.endTime || event.end_time) }}
-                          </span>
-                          <span v-if="event.location" class="flex items-center gap-1">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                            {{ event.location }}
-                          </span>
+                        <div v-if="event.startTime || event.start_time" class="flex items-center gap-2">
+                          <svg class="w-4 h-4 text-purple-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                          <span class="font-medium">{{ formatEventTime(event.startTime || event.start_time) }} - {{ formatEventTime(event.endTime || event.end_time) }}</span>
+                        </div>
+                        <div v-if="event.location" class="flex items-center gap-2">
+                          <svg class="w-4 h-4 text-purple-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                          <span class="font-medium">{{ event.location }}</span>
                         </div>
                       </div>
                     </div>
