@@ -1670,6 +1670,14 @@
                 </select>
                 <svg class="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
               </div>
+              <div class="relative min-w-[140px]">
+                <select v-model="filterRfidStatus" @change="handleSearchChange" class="w-full appearance-none bg-white border border-gray-300 rounded-lg px-4 py-2 pr-8 focus:ring-2 focus:ring-purple-600 focus:border-transparent outline-none text-sm">
+                  <option value="">All RFID Status</option>
+                  <option value="verified">Verified</option>
+                  <option value="unverified">Unverified</option>
+                </select>
+                <svg class="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+              </div>
             </div>
           </div>
 
@@ -1681,6 +1689,7 @@
                   <th class="border border-purple-300 px-4 py-3 text-left font-semibold text-purple-900">Name</th>
                   <th class="border border-purple-300 px-4 py-3 text-left font-semibold text-purple-900">Email</th>
                   <th class="border border-purple-300 px-4 py-3 text-center font-semibold text-purple-900">RFID Code</th>
+                  <th class="border border-purple-300 px-4 py-3 text-center font-semibold text-purple-900">RFID Status</th>
                   <th class="border border-purple-300 px-4 py-3 text-center font-semibold text-purple-900">Program</th>
                   <th class="border border-purple-300 px-4 py-3 text-center font-semibold text-purple-900">School Level</th>
                   <th class="border border-purple-300 px-4 py-3 text-center font-semibold text-purple-900">Actions</th>
@@ -1688,13 +1697,18 @@
               </thead>
               <tbody>
                 <tr v-if="filteredUsers.length === 0" class="hover:bg-gray-50">
-                  <td colspan="7" class="border border-purple-300 px-4 py-8 text-center text-gray-600">No users found matching your search.</td>
+                  <td colspan="8" class="border border-purple-300 px-4 py-8 text-center text-gray-600">No users found matching your search.</td>
                 </tr>
                 <tr v-for="user in filteredUsers" :key="user.studentId || user.student_id" class="hover:bg-gray-50">
                   <td class="border border-purple-300 px-4 py-3 text-gray-700">{{ user.studentId || user.student_id }}</td>
                   <td class="border border-purple-300 px-4 py-3 text-gray-700">{{ (user.firstName || user.first_name) }} {{ (user.lastName || user.last_name) }}</td>
                   <td class="border border-purple-300 px-4 py-3 text-gray-700">{{ user.email }}</td>
                   <td class="border border-purple-300 px-4 py-3 text-center text-gray-700">{{ user.rfidCode || user.rfid_code || '—' }}</td>
+                  <td class="border border-purple-300 px-4 py-3 text-center">
+                    <span :class="['px-2 py-1 rounded-full text-xs font-medium', (user.rfid_status === 'verified') ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800']">
+                      {{ (user.rfid_status === 'verified') ? 'Verified' : 'Unverified' }}
+                    </span>
+                  </td>
                   <td class="border border-purple-300 px-4 py-3 text-center text-gray-700">{{ user.program }}</td>
                   <td class="border border-purple-300 px-4 py-3 text-center text-gray-700">{{ user.yearLevel || user.year_level }}</td>
                   <td class="border border-purple-300 px-4 py-3 text-center">
@@ -1791,7 +1805,13 @@
 
         <!-- Dashboard Page -->
         <div v-if="currentPage === 'dashboard' && currentUser.role !== 'admin' && !currentUser.isMaster" class="bg-white rounded-lg shadow-lg p-4 md:p-8 mb-8">
-          <h2 class="text-xl md:text-2xl font-bold text-purple-900 mb-8">My Profile</h2>
+          <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+            <h2 class="text-xl md:text-2xl font-bold text-purple-900">My Profile</h2>
+            <button @click="refreshCurrentUser" :disabled="refreshingUserData" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-all duration-200 hover:scale-105 active:scale-95 font-medium text-sm flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed" title="Refresh Profile Data">
+              <svg :class="['w-4 h-4', refreshingUserData ? 'animate-spin' : '']" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+              {{ refreshingUserData ? 'Refreshing...' : 'Refresh' }}
+            </button>
+          </div>
           
           <!-- Profile Header Section -->
           <div class="flex flex-col md:flex-row gap-8 mb-8 pb-8 border-b-2 border-gray-200">
@@ -1998,6 +2018,23 @@
             <p class="text-lg font-semibold text-purple-900">
               Total Registered Students: <span class="text-2xl">{{ totalStudents }}</span>
             </p>
+          </div>
+          
+          <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+              <div class="flex items-center justify-center gap-2 mb-2">
+                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span class="text-sm font-medium text-green-700">RFID Verified</span>
+              </div>
+              <p class="text-3xl font-bold text-green-600">{{ verifiedCount }}</p>
+            </div>
+            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
+              <div class="flex items-center justify-center gap-2 mb-2">
+                <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span class="text-sm font-medium text-yellow-700">RFID Unverified</span>
+              </div>
+              <p class="text-3xl font-bold text-yellow-600">{{ unverifiedCount }}</p>
+            </div>
           </div>
         </div>
 
@@ -2676,6 +2713,7 @@ const userToDelete = ref(null)
 const searchQuery = ref('')
 const filterProgram = ref('')
 const filterSchoolLevel = ref('')
+const filterRfidStatus = ref('')
 const isLoggingOut = ref(false)
 const showLogoutAnimation = ref(false)
 const editImageUploading = ref(false)
@@ -2692,6 +2730,7 @@ const profileImageRetries = ref(0)
 const sidebarImageRetries = ref(0)
 const maxRetries = 3
 const studentPhotoUploading = ref(false)
+const refreshingUserData = ref(false)
 
 // Settings management
 const settingsLoading = ref(false)
@@ -3566,6 +3605,64 @@ const handleStatsRefresh = async () => {
   }
 }
 
+// Refresh current user data from the server
+const refreshCurrentUser = async () => {
+  if (!currentUser.value.studentId && !currentUser.value.student_id) return
+  
+  refreshingUserData.value = true
+  try {
+    const studentId = currentUser.value.studentId || currentUser.value.student_id
+    const token = localStorage.getItem('authToken')
+    
+    const response = await fetch(`https://ssaam-api.vercel.app/apis/students/${studentId}/profile`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    
+    if (response.ok) {
+      const data = await response.json()
+      const updatedUser = data.student || data
+      
+      // Update currentUser with the new data
+      currentUser.value = {
+        ...currentUser.value,
+        ...updatedUser,
+        studentId: updatedUser.student_id || currentUser.value.studentId,
+        firstName: updatedUser.first_name || currentUser.value.firstName,
+        middleName: updatedUser.middle_name || currentUser.value.middleName,
+        lastName: updatedUser.last_name || currentUser.value.lastName,
+        yearLevel: updatedUser.year_level || currentUser.value.yearLevel,
+        rfidCode: updatedUser.rfid_code || currentUser.value.rfidCode,
+        rfid_code: updatedUser.rfid_code,
+        rfid_status: updatedUser.rfid_status,
+        rfid_verified_at: updatedUser.rfid_verified_at,
+        rfid_verified_by: updatedUser.rfid_verified_by,
+        image: updatedUser.photo || currentUser.value.image,
+        photo: updatedUser.photo
+      }
+      
+      // Update localStorage
+      localStorage.setItem('currentUser', JSON.stringify(currentUser.value))
+      
+      showNotification('Profile data refreshed successfully!', 'success')
+    } else {
+      showNotification('Failed to refresh profile data', 'error')
+    }
+  } catch (error) {
+    console.error('Failed to refresh user data:', error)
+    if (error.message === 'Failed to fetch' || error.name === 'TypeError') {
+      showNetworkError()
+    } else {
+      showNotification('Failed to refresh profile data. Please try again.', 'error')
+    }
+  } finally {
+    refreshingUserData.value = false
+  }
+}
+
 // Fetch statistics from separate endpoint
 const fetchStats = async () => {
   statsLoading.value = true
@@ -3740,6 +3837,23 @@ const totalStudents = computed(() => {
   return stats.value.BSCS.total + stats.value.BSIS.total + stats.value.BSIT.total
 })
 
+const verifiedCount = computed(() => {
+  if (statsData.value?.verifiedCount !== undefined) {
+    return statsData.value.verifiedCount
+  }
+  return statsData.value?.verified_count || 0
+})
+
+const unverifiedCount = computed(() => {
+  if (statsData.value?.unverifiedCount !== undefined) {
+    return statsData.value.unverifiedCount
+  }
+  if (statsData.value?.unverified_count !== undefined) {
+    return statsData.value.unverified_count
+  }
+  return totalStudents.value - verifiedCount.value
+})
+
 const filteredUsers = computed(() => {
   return users.value
 })
@@ -3754,7 +3868,7 @@ const refreshStudents = async () => {
   
   isRefreshing.value = true
   try {
-    const hasFilters = searchQuery.value.trim() || filterProgram.value || filterSchoolLevel.value
+    const hasFilters = searchQuery.value.trim() || filterProgram.value || filterSchoolLevel.value || filterRfidStatus.value
     const limit = hasFilters ? 100 : itemsPerPage.value
     const page = hasFilters ? 1 : currentPageNum.value
     
@@ -3770,6 +3884,9 @@ const refreshStudents = async () => {
       }
       if (filterSchoolLevel.value) {
         url += `&yearLevel=${encodeURIComponent(filterSchoolLevel.value)}`
+      }
+      if (filterRfidStatus.value) {
+        url += `&rfid_status=${filterRfidStatus.value}`
       }
     }
     
