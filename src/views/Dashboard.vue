@@ -282,12 +282,27 @@
             <span class="text-sm lg:text-base">Processing...</span>
           </div>
           
-          <!-- RFID Result Display with Photo and Initials Fallback -->
+          <!-- Small status indicator for the left panel -->
           <transition name="fade">
-            <div v-if="rfidResult" :class="['mt-3 lg:mt-4 p-3 lg:p-4 rounded-xl text-center', rfidResult.success ? 'bg-gradient-to-r from-purple-500 to-pink-500 shadow-lg' : 'bg-red-500 bg-opacity-80']">
-              <div v-if="rfidResult.success && (rfidResult.student || rfidResult.student_name)" class="flex flex-col items-center">
-                <div class="relative w-12 h-12 lg:w-16 lg:h-16 rounded-full mb-2 lg:mb-3 ring-2 ring-white ring-opacity-50">
-                  <div class="absolute inset-0 rounded-full bg-white bg-opacity-30 flex items-center justify-center text-lg lg:text-2xl font-bold text-white">
+            <div v-if="rfidResult && !rfidProcessing" :class="['mt-3 lg:mt-4 px-4 py-2 rounded-lg text-center text-sm', rfidResult.success ? 'bg-green-500 bg-opacity-30 text-green-300' : 'bg-red-500 bg-opacity-30 text-red-300']">
+              {{ rfidResult.success ? (rfidResult.action === 'check_in' ? 'Scanned! See result on right →' : rfidResult.action === 'check_out' ? 'Checked out! See right →' : 'Success! See right →') : 'Failed - See details on right →' }}
+            </div>
+          </transition>
+        </div>
+        
+        <p class="text-white text-opacity-50 text-xs mt-3 lg:mt-4">Press ESC or click X to exit</p>
+      </div>
+      
+      <!-- Right Panel - Check-in Result & Recent Logs -->
+      <div class="lg:w-1/2 h-1/2 lg:h-full flex flex-col p-4 lg:p-6 overflow-hidden">
+        <!-- Prominent Check-in Result Card with Student Profile -->
+        <transition name="fade">
+          <div v-if="rfidResult && rfidResult.success && (rfidResult.student || rfidResult.student_name)" class="mb-4 lg:mb-6">
+            <div class="bg-white bg-opacity-15 backdrop-blur-lg rounded-2xl p-6 lg:p-8 border-2 border-green-400 border-opacity-50 shadow-2xl">
+              <div class="flex flex-col lg:flex-row items-center gap-4 lg:gap-6">
+                <!-- Large Student Photo -->
+                <div class="relative w-24 h-24 lg:w-32 lg:h-32 rounded-full flex-shrink-0 ring-4 ring-green-400 ring-opacity-60 shadow-xl">
+                  <div class="absolute inset-0 rounded-full bg-gradient-to-br from-pink-400 to-purple-600 flex items-center justify-center text-3xl lg:text-4xl font-bold text-white">
                     {{ getInitials(rfidResult.student?.full_name || rfidResult.student_name) }}
                   </div>
                   <img 
@@ -297,22 +312,51 @@
                     @error="$event.target.style.display='none'" 
                   />
                 </div>
-                <p class="text-sm lg:text-lg font-bold text-white mb-0.5">{{ rfidResult.action === 'check_in' ? 'Check-in Successful!' : rfidResult.action === 'check_out' ? 'Check-out Successful!' : rfidResult.action === 'already_checked_in' ? 'Already Checked In' : 'Success' }}</p>
-                <p class="text-xs lg:text-base text-white text-opacity-90">{{ rfidResult.student?.full_name || rfidResult.student_name }}</p>
-              </div>
-              <div v-else-if="!rfidResult.success">
-                <p class="text-sm lg:text-lg font-bold text-white mb-1">Scan Failed</p>
-                <p class="text-xs lg:text-sm text-white text-opacity-90">{{ rfidResult.message }}</p>
+                
+                <!-- Student Details -->
+                <div class="flex-1 text-center lg:text-left">
+                  <div class="flex items-center justify-center lg:justify-start gap-2 mb-2">
+                    <svg class="w-6 h-6 lg:w-8 lg:h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span class="text-xl lg:text-2xl font-bold text-green-400">
+                      {{ rfidResult.action === 'check_in' ? 'Check-in Successful!' : rfidResult.action === 'check_out' ? 'Check-out Successful!' : rfidResult.action === 'already_checked_in' ? 'Already Checked In' : 'Success' }}
+                    </span>
+                  </div>
+                  <p class="text-xl lg:text-2xl font-bold text-white mb-1">{{ rfidResult.student?.full_name || rfidResult.student_name }}</p>
+                  <div class="flex flex-wrap justify-center lg:justify-start gap-2 mt-2">
+                    <span v-if="rfidResult.student?.student_id" class="px-3 py-1 bg-white bg-opacity-20 rounded-full text-sm text-white">
+                      ID: {{ rfidResult.student.student_id }}
+                    </span>
+                    <span v-if="rfidResult.student?.program" class="px-3 py-1 bg-purple-500 bg-opacity-40 rounded-full text-sm text-white">
+                      {{ rfidResult.student.program }}
+                    </span>
+                    <span v-if="rfidResult.student?.year_level" class="px-3 py-1 bg-pink-500 bg-opacity-40 rounded-full text-sm text-white">
+                      {{ rfidResult.student.year_level }}
+                    </span>
+                  </div>
+                  <p v-if="rfidResult.time" class="text-white text-opacity-70 text-sm mt-2">
+                    {{ new Date(rfidResult.time).toLocaleString('en-PH') }}
+                  </p>
+                </div>
               </div>
             </div>
-          </transition>
-        </div>
+          </div>
+        </transition>
         
-        <p class="text-white text-opacity-50 text-xs mt-3 lg:mt-4">Press ESC or click X to exit</p>
-      </div>
-      
-      <!-- Right Panel - Recent Logs -->
-      <div class="lg:w-1/2 h-1/2 lg:h-full flex flex-col p-4 lg:p-6 overflow-hidden">
+        <!-- Failed Scan Result -->
+        <transition name="fade">
+          <div v-if="rfidResult && !rfidResult.success" class="mb-4 lg:mb-6">
+            <div class="bg-red-500 bg-opacity-30 backdrop-blur-lg rounded-2xl p-6 border-2 border-red-400 border-opacity-50">
+              <div class="flex items-center justify-center gap-3">
+                <svg class="w-10 h-10 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <div class="text-center">
+                  <p class="text-xl font-bold text-red-400">Scan Failed</p>
+                  <p class="text-white text-opacity-90">{{ rfidResult.message }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </transition>
+        
         <h2 class="text-lg lg:text-xl font-bold text-white mb-3 lg:mb-4 flex items-center gap-2">
           <svg class="w-5 h-5 lg:w-6 lg:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
           Recent Logs
@@ -4811,11 +4855,18 @@ const scanAllForDuplicates = async () => {
       const idMap = {}
       
       // Group students by their RFID, Email, and Student ID
+      // Exclude UNREADABLE:N/A from RFID duplicate detection
       students.forEach(student => {
         if (student.rfid_code && student.rfid_code.trim()) {
-          const key = student.rfid_code.toLowerCase().trim()
-          if (!rfidMap[key]) rfidMap[key] = []
-          rfidMap[key].push(student)
+          const rfidValue = student.rfid_code.trim().toUpperCase()
+          // Skip UNREADABLE, N/A, or similar invalid RFID values
+          if (rfidValue === 'UNREADABLE' || rfidValue === 'N/A' || rfidValue === 'UNREADABLE:N/A' || rfidValue === 'NA' || rfidValue === '-') {
+            // Don't add to rfidMap for duplicate detection
+          } else {
+            const key = student.rfid_code.toLowerCase().trim()
+            if (!rfidMap[key]) rfidMap[key] = []
+            rfidMap[key].push(student)
+          }
         }
         if (student.email && student.email.trim()) {
           const key = student.email.toLowerCase().trim()
