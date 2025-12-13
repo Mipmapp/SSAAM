@@ -292,12 +292,6 @@
             <span class="text-sm lg:text-base">Processing...</span>
           </div>
           
-          <!-- Small status indicator for the left panel -->
-          <transition name="fade">
-            <div v-if="rfidResult && !rfidProcessing" :class="['mt-3 lg:mt-4 px-4 py-2 rounded-lg text-center text-sm', rfidResult.success ? 'bg-green-500 bg-opacity-30 text-green-300' : 'bg-red-500 bg-opacity-30 text-red-300']">
-              {{ rfidResult.success ? (rfidResult.action === 'check_in' ? 'Scanned! See result on right →' : rfidResult.action === 'check_out' ? 'Checked out! See right →' : 'Success! See right →') : 'Failed - See details on right →' }}
-            </div>
-          </transition>
         </div>
         
         <p class="text-white text-opacity-50 text-xs mt-3 lg:mt-4">Press ESC or click X to exit</p>
