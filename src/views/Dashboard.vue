@@ -3455,6 +3455,7 @@ const rfidFullscreenInputRef = ref(null)
 const fullscreenLogoRef = ref(null)
 const logoFlipping = ref(false)
 const logoFlipInterval = ref(null)
+const rfidFocusTimeout = ref(null)
 
 const startLogoFlipAnimation = () => {
   if (logoFlipInterval.value) {
@@ -3465,7 +3466,7 @@ const startLogoFlipAnimation = () => {
     setTimeout(() => {
       logoFlipping.value = false
     }, 1000)
-  }, 5000)
+  }, 3000)
 }
 
 const stopLogoFlipAnimation = () => {
@@ -3479,8 +3480,22 @@ const stopLogoFlipAnimation = () => {
 watch(rfidFullscreenMode, (newValue) => {
   if (newValue) {
     startLogoFlipAnimation()
+    // Auto-focus the input when fullscreen mode is enabled
+    if (rfidFocusTimeout.value) {
+      clearTimeout(rfidFocusTimeout.value)
+    }
+    rfidFocusTimeout.value = setTimeout(() => {
+      if (rfidFullscreenMode.value && rfidFullscreenInputRef.value) {
+        rfidFullscreenInputRef.value.focus()
+      }
+    }, 100)
   } else {
     stopLogoFlipAnimation()
+    // Clear pending focus timeout when exiting fullscreen
+    if (rfidFocusTimeout.value) {
+      clearTimeout(rfidFocusTimeout.value)
+      rfidFocusTimeout.value = null
+    }
   }
 })
 
