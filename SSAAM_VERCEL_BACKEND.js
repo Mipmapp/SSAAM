@@ -856,14 +856,23 @@ const attendanceEventSchema = new mongoose.Schema({
     event_date: { type: Date, required: true },
     start_time: { type: String, required: true }, // e.g., "08:00"
     end_time: { type: String, required: true }, // e.g., "17:00"
-    // Session type: 'single' for 2-in-a-day (check-in/out), 'dual' for 4-in-a-day (morning/afternoon)
+    // Session type: 'single' for 2-in-a-day (check-in/out), 'dual' for 4-in-a-day (morning/afternoon), 'half_day' for morning check-in + afternoon check-out only
     session_type: {
         type: String,
-        enum: ['single', 'dual'],
+        enum: ['single', 'dual', 'half_day'],
         default: 'single'
     },
-    // For dual session: afternoon start time (morning ends at this time)
+    // For dual/half_day session: afternoon start time (morning ends at this time)
     afternoon_start_time: { type: String, default: '13:00' }, // e.g., "13:00"
+    // Time window settings for check-in/out periods
+    morning_check_in_start: { type: String, default: null }, // e.g., "07:00" - when morning check-in opens
+    morning_check_in_end: { type: String, default: null }, // e.g., "08:00" - when morning check-in closes (late after this)
+    morning_check_out_start: { type: String, default: null }, // e.g., "10:00" - when morning check-out opens
+    morning_check_out_end: { type: String, default: null }, // e.g., "11:30" - when morning check-out closes
+    afternoon_check_in_start: { type: String, default: null }, // e.g., "13:00" - when afternoon check-in opens
+    afternoon_check_in_end: { type: String, default: null }, // e.g., "14:00" - when afternoon check-in closes (late after this)
+    afternoon_check_out_start: { type: String, default: null }, // e.g., "16:00" - when afternoon check-out opens
+    afternoon_check_out_end: { type: String, default: null }, // e.g., "17:00" - when afternoon check-out closes
     status: { 
         type: String, 
         enum: ['draft', 'active', 'closed'],
@@ -4003,7 +4012,7 @@ app.post('/apis/attendance/events/:id/check', auth, async (req, res) => {
         
         // Helper function to check if we're in afternoon based on event settings
         const isAfternoonSession = () => {
-            if (event.session_type !== 'dual') return false;
+            if (event.session_type !== 'dual' && event.session_type !== 'half_day') return false;
             const afternoonTime = event.afternoon_start_time || '13:00';
             const [afternoonHour, afternoonMinute] = afternoonTime.split(':').map(Number);
             
@@ -4160,6 +4169,106 @@ app.post('/apis/attendance/events/:id/check', auth, async (req, res) => {
                             student_name: log.student_name
                         });
                     }
+                }
+                log.updated_at = now;
+            }
+        } else if (event.session_type === 'half_day') {
+            // Half-day mode: Morning check-in only, Afternoon check-out only
+            const isAfternoon = isAfternoonSession();
+            
+            if (!log) {
+                // First scan - must be morning check-in
+                if (isAfternoon) {
+                    return res.status(400).json({ 
+                        message: "Half-day mode: Morning check-in required first. Cannot check-out without checking in.",
+                        student_name: studentFullName
+                    });
+                }
+                
+                if (event.morning_check_in_locked || !rfidSettings.checkInEnabled) {
+                    return res.status(403).json({ 
+                        message: "Morning check-in is currently disabled.",
+                        student_name: studentFullName,
+                        locked: 'check_in'
+                    });
+                }
+                
+                const isLate = calculateIsLate(event.start_time);
+                
+                log = new AttendanceLog({
+                    event_id: req.params.id,
+                    student_id: student._id,
+                    student_id_number: student.student_id,
+                    rfid_code: student.rfid_code || '',
+                    student_name: studentFullName,
+                    program: student.program,
+                    year_level: student.year_level,
+                    morning_check_in_at: now,
+                    is_morning_late: isLate,
+                    source,
+                    input_method: isManualStudentId ? 'manual_student_id' : 'rfid'
+                });
+                action = 'morning_check_in';
+            } else {
+                // Existing log
+                if (!log.morning_check_in_at) {
+                    // Morning check-in not done yet
+                    if (isAfternoon) {
+                        return res.status(400).json({ 
+                            message: "Half-day mode: Morning check-in required first.",
+                            student_name: log.student_name
+                        });
+                    }
+                    
+                    if (event.morning_check_in_locked || !rfidSettings.checkInEnabled) {
+                        return res.status(403).json({ 
+                            message: "Morning check-in is currently disabled.",
+                            student_name: log.student_name,
+                            locked: 'check_in'
+                        });
+                    }
+                    
+                    log.morning_check_in_at = now;
+                    log.is_morning_late = calculateIsLate(event.start_time);
+                    action = 'morning_check_in';
+                } else if (!log.afternoon_check_out_at) {
+                    // Morning done, waiting for afternoon check-out
+                    if (!isAfternoon) {
+                        const timeSinceCheckIn = now - new Date(log.morning_check_in_at);
+                        if (timeSinceCheckIn < DUPLICATE_PREVENTION_MS) {
+                            const remainingSeconds = Math.ceil((DUPLICATE_PREVENTION_MS - timeSinceCheckIn) / 1000);
+                            return res.status(200).json({ 
+                                message: `Already checked in! Afternoon check-out starts at ${event.afternoon_start_time || '13:00'}.`,
+                                action: 'already_checked_in',
+                                success: true,
+                                student_name: log.student_name,
+                                cooldown_remaining: remainingSeconds
+                            });
+                        }
+                        return res.status(400).json({ 
+                            message: `Half-day mode: Checked in. Afternoon check-out starts at ${event.afternoon_start_time || '13:00'}.`,
+                            student_name: log.student_name,
+                            morning_check_in_at: log.morning_check_in_at
+                        });
+                    }
+                    
+                    if (event.afternoon_check_out_locked || !rfidSettings.checkOutEnabled) {
+                        return res.status(403).json({ 
+                            message: "Afternoon check-out is currently disabled.",
+                            student_name: log.student_name,
+                            locked: 'check_out'
+                        });
+                    }
+                    
+                    log.afternoon_check_out_at = now;
+                    action = 'afternoon_check_out';
+                } else {
+                    return res.status(400).json({ 
+                        message: "Student already completed half-day attendance (morning check-in + afternoon check-out)",
+                        student_name: log.student_name,
+                        morning_check_in_at: log.morning_check_in_at,
+                        afternoon_check_out_at: log.afternoon_check_out_at
+                    });
                 }
                 log.updated_at = now;
             }

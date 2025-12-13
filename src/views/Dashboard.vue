@@ -2853,6 +2853,33 @@
             </button>
           </div>
         </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Session Type</label>
+          <div class="grid grid-cols-3 gap-2">
+            <button type="button" @click="newEvent.session_type = 'single'" :class="['px-3 py-2 rounded-lg text-xs font-medium border-2 transition', newEvent.session_type === 'single' ? 'border-purple-600 bg-purple-50 text-purple-700' : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300']">
+              Single (2 scans)
+            </button>
+            <button type="button" @click="newEvent.session_type = 'dual'" :class="['px-3 py-2 rounded-lg text-xs font-medium border-2 transition', newEvent.session_type === 'dual' ? 'border-purple-600 bg-purple-50 text-purple-700' : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300']">
+              Dual (4 scans)
+            </button>
+            <button type="button" @click="newEvent.session_type = 'half_day'" :class="['px-3 py-2 rounded-lg text-xs font-medium border-2 transition', newEvent.session_type === 'half_day' ? 'border-purple-600 bg-purple-50 text-purple-700' : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300']">
+              Half-Day (2 scans)
+            </button>
+          </div>
+          <div class="mt-2 text-xs text-gray-500">
+            <p v-if="newEvent.session_type === 'single'">Check-in once, check-out once</p>
+            <p v-else-if="newEvent.session_type === 'dual'">Morning check-in/out + Afternoon check-in/out</p>
+            <p v-else-if="newEvent.session_type === 'half_day'">Morning check-in only + Afternoon check-out only</p>
+          </div>
+        </div>
+        <div v-if="newEvent.session_type === 'dual' || newEvent.session_type === 'half_day'">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Afternoon Start Time</label>
+          <button @click="openTimePicker('afternoon_start')" type="button" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none text-left flex items-center justify-between hover:bg-gray-50 transition">
+            <span :class="newEvent.afternoon_start_time ? 'text-gray-900' : 'text-gray-400'">{{ formatDisplayTime(newEvent.afternoon_start_time) || '1:00 PM' }}</span>
+            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          </button>
+          <p class="text-xs text-gray-500 mt-1">When afternoon session begins (morning ends)</p>
+        </div>
         <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
           <p class="text-sm text-blue-800">
             <span class="font-medium">Note:</span> Status will be set automatically based on the event date and time:
@@ -2913,6 +2940,33 @@
               <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             </button>
           </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Session Type</label>
+          <div class="grid grid-cols-3 gap-2">
+            <button type="button" @click="selectedEvent.session_type = 'single'" :class="['px-3 py-2 rounded-lg text-xs font-medium border-2 transition', selectedEvent.session_type === 'single' ? 'border-purple-600 bg-purple-50 text-purple-700' : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300']">
+              Single (2 scans)
+            </button>
+            <button type="button" @click="selectedEvent.session_type = 'dual'" :class="['px-3 py-2 rounded-lg text-xs font-medium border-2 transition', selectedEvent.session_type === 'dual' ? 'border-purple-600 bg-purple-50 text-purple-700' : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300']">
+              Dual (4 scans)
+            </button>
+            <button type="button" @click="selectedEvent.session_type = 'half_day'" :class="['px-3 py-2 rounded-lg text-xs font-medium border-2 transition', selectedEvent.session_type === 'half_day' ? 'border-purple-600 bg-purple-50 text-purple-700' : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300']">
+              Half-Day (2 scans)
+            </button>
+          </div>
+          <div class="mt-2 text-xs text-gray-500">
+            <p v-if="selectedEvent.session_type === 'single' || !selectedEvent.session_type">Check-in once, check-out once</p>
+            <p v-else-if="selectedEvent.session_type === 'dual'">Morning check-in/out + Afternoon check-in/out</p>
+            <p v-else-if="selectedEvent.session_type === 'half_day'">Morning check-in only + Afternoon check-out only</p>
+          </div>
+        </div>
+        <div v-if="selectedEvent.session_type === 'dual' || selectedEvent.session_type === 'half_day'">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Afternoon Start Time</label>
+          <button @click="openTimePicker('edit_afternoon_start')" type="button" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none text-left flex items-center justify-between hover:bg-gray-50 transition">
+            <span :class="selectedEvent.afternoon_start_time ? 'text-gray-900' : 'text-gray-400'">{{ formatDisplayTime(selectedEvent.afternoon_start_time) || '1:00 PM' }}</span>
+            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          </button>
+          <p class="text-xs text-gray-500 mt-1">When afternoon session begins (morning ends)</p>
         </div>
         <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
           <div class="flex items-center gap-2 mb-1">
@@ -3616,7 +3670,9 @@ const newEvent = ref({
   location: '',
   date: '',
   startTime: '',
-  endTime: ''
+  endTime: '',
+  session_type: 'single',
+  afternoon_start_time: '13:00'
 })
 const eventLogsFilter = ref({
   yearLevel: '',
