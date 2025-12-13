@@ -3830,6 +3830,13 @@ const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'Jul
 
 const calendarMonthName = computed(() => monthNames[calendarMonth.value])
 
+const formatLocalDate = (date) => {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 const calendarDays = computed(() => {
   const days = []
   const firstDay = new Date(calendarYear.value, calendarMonth.value, 1)
@@ -3841,18 +3848,19 @@ const calendarDays = computed(() => {
   
   for (let i = startDay - 1; i >= 0; i--) {
     const date = new Date(calendarYear.value, calendarMonth.value - 1, prevMonthLastDay - i)
+    const dateStr = formatLocalDate(date)
     days.push({
       day: prevMonthLastDay - i,
-      date: date.toISOString().split('T')[0],
+      date: dateStr,
       isCurrentMonth: false,
       isToday: false,
-      isSelected: calendarSelectedDate.value === date.toISOString().split('T')[0]
+      isSelected: calendarSelectedDate.value === dateStr
     })
   }
   
   for (let i = 1; i <= lastDay.getDate(); i++) {
     const date = new Date(calendarYear.value, calendarMonth.value, i)
-    const dateStr = date.toISOString().split('T')[0]
+    const dateStr = formatLocalDate(date)
     days.push({
       day: i,
       date: dateStr,
@@ -3865,12 +3873,13 @@ const calendarDays = computed(() => {
   const remaining = 42 - days.length
   for (let i = 1; i <= remaining; i++) {
     const date = new Date(calendarYear.value, calendarMonth.value + 1, i)
+    const dateStr = formatLocalDate(date)
     days.push({
       day: i,
-      date: date.toISOString().split('T')[0],
+      date: dateStr,
       isCurrentMonth: false,
       isToday: false,
-      isSelected: calendarSelectedDate.value === date.toISOString().split('T')[0]
+      isSelected: calendarSelectedDate.value === dateStr
     })
   }
   
@@ -3925,7 +3934,7 @@ const selectToday = () => {
   const today = new Date()
   calendarMonth.value = today.getMonth()
   calendarYear.value = today.getFullYear()
-  calendarSelectedDate.value = today.toISOString().split('T')[0]
+  calendarSelectedDate.value = formatLocalDate(today)
 }
 
 const clearCalendarDate = () => {
