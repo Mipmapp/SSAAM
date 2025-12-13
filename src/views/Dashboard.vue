@@ -224,21 +224,17 @@
     <div class="h-full flex flex-col lg:flex-row">
       <!-- Left Panel - Scanner -->
       <div class="lg:w-1/2 h-1/2 lg:h-full flex flex-col items-center justify-center p-4 lg:p-8 border-b lg:border-b-0 lg:border-r border-white border-opacity-20">
-        <div class="flex items-center gap-4 lg:gap-6 mb-4 lg:mb-6 w-full max-w-md">
-          <div class="w-1/3 flex-shrink-0 flex items-center justify-center">
-            <img 
-              ref="fullscreenLogoRef"
-              src="/src/assets/jrmsu-logo.webp" 
-              alt="JRMSU" 
-              class="w-16 h-16 lg:w-24 lg:h-24 drop-shadow-2xl" 
-              :class="{ 'logo-flip-animation': logoFlipping }"
-            />
-          </div>
-          <div class="w-2/3 text-left">
-            <h1 class="text-xl lg:text-3xl font-bold text-white mb-1">SSAAM</h1>
-            <p class="text-white text-opacity-80 text-xs lg:text-base truncate">{{ selectedEvent?.title || 'Select an Event' }}</p>
-            <p v-if="selectedEvent" class="text-white text-opacity-60 text-xs mt-1">{{ formatEventDate(selectedEvent.date || selectedEvent.event_date) }}</p>
-          </div>
+        <div class="flex flex-col items-center text-center mb-4 lg:mb-6 w-full max-w-md">
+          <img 
+            ref="fullscreenLogoRef"
+            src="/src/assets/jrmsu-logo.webp" 
+            alt="JRMSU" 
+            class="w-16 h-16 lg:w-24 lg:h-24 drop-shadow-2xl mb-2" 
+            :class="{ 'logo-flip-animation': logoFlipping }"
+          />
+          <h1 class="text-xl lg:text-3xl font-bold text-white mb-0.5">SSAAM</h1>
+          <p class="text-white text-opacity-80 text-xs lg:text-base">{{ selectedEvent?.title || 'Select an Event' }}</p>
+          <p v-if="selectedEvent" class="text-white text-opacity-60 text-xs">{{ formatEventDate(selectedEvent.date || selectedEvent.event_date) }}</p>
         </div>
         
         <!-- Scan Mode Toggle -->
