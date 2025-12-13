@@ -3259,7 +3259,7 @@ const exportToExcelByYear = async (event, yearLevel) => {
       const afternoonCheckIn = log.afternoon_check_in_at
       const afternoonCheckOut = log.afternoon_check_out_at
       
-      const studentName = log.student?.full_name || log.full_name || `${log.student?.first_name || ''} ${log.student?.last_name || ''}`.trim()
+      const studentName = log.student?.full_name || log.student_name || log.full_name || `${log.student?.first_name || ''} ${log.student?.last_name || ''}`.trim() || '-'
       const studentId = log.student?.student_id || log.student_id || ''
       const program = log.student?.program || log.program || ''
       
