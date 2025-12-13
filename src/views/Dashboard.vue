@@ -2986,21 +2986,21 @@
       
       <!-- Filters -->
       <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
-        <input v-model="eventLogsFilter.search" type="text" placeholder="Search by name or ID..." class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none" @input="fetchEventLogs(selectedEvent.id)" />
-        <select v-model="eventLogsFilter.yearLevel" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none" @change="fetchEventLogs(selectedEvent.id)">
+        <input v-model="eventLogsFilter.search" type="text" placeholder="Search by name or ID..." class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none" @input="fetchEventLogs(selectedEvent._id)" />
+        <select v-model="eventLogsFilter.yearLevel" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none" @change="fetchEventLogs(selectedEvent._id)">
           <option value="">All Year Levels</option>
           <option value="1st Year">1st Year</option>
           <option value="2nd Year">2nd Year</option>
           <option value="3rd Year">3rd Year</option>
           <option value="4th Year">4th Year</option>
         </select>
-        <select v-model="eventLogsFilter.program" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none" @change="fetchEventLogs(selectedEvent.id)">
+        <select v-model="eventLogsFilter.program" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none" @change="fetchEventLogs(selectedEvent._id)">
           <option value="">All Programs</option>
           <option value="BSCS">BSCS</option>
           <option value="BSIS">BSIS</option>
           <option value="BSIT">BSIT</option>
         </select>
-        <select v-model="eventLogsFilter.status" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none" @change="fetchEventLogs(selectedEvent.id)">
+        <select v-model="eventLogsFilter.status" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 outline-none" @change="applyStatusFilter()">
           <option value="">All Statuses</option>
           <option value="present">Present</option>
           <option value="late">Late</option>
@@ -3011,19 +3011,19 @@
       <!-- Stats Summary -->
       <div class="grid grid-cols-4 gap-4 mb-6">
         <div class="bg-green-50 p-4 rounded-lg text-center">
-          <p class="text-2xl font-bold text-green-600">{{ attendanceLogs.filter(l => l.status === 'present').length }}</p>
+          <p class="text-2xl font-bold text-green-600">{{ filteredAttendanceLogs.filter(l => (l.attendance_status || l.status) === 'present').length }}</p>
           <p class="text-sm text-green-700">Present</p>
         </div>
         <div class="bg-yellow-50 p-4 rounded-lg text-center">
-          <p class="text-2xl font-bold text-yellow-600">{{ attendanceLogs.filter(l => l.status === 'late').length }}</p>
+          <p class="text-2xl font-bold text-yellow-600">{{ filteredAttendanceLogs.filter(l => (l.attendance_status || l.status) === 'late').length }}</p>
           <p class="text-sm text-yellow-700">Late</p>
         </div>
         <div class="bg-red-50 p-4 rounded-lg text-center">
-          <p class="text-2xl font-bold text-red-600">{{ attendanceLogs.filter(l => l.status === 'absent').length }}</p>
+          <p class="text-2xl font-bold text-red-600">{{ filteredAttendanceLogs.filter(l => (l.attendance_status || l.status) === 'absent').length }}</p>
           <p class="text-sm text-red-700">Absent</p>
         </div>
         <div class="bg-purple-50 p-4 rounded-lg text-center">
-          <p class="text-2xl font-bold text-purple-600">{{ attendanceLogs.length }}</p>
+          <p class="text-2xl font-bold text-purple-600">{{ filteredAttendanceLogs.length }}</p>
           <p class="text-sm text-purple-700">Total</p>
         </div>
       </div>
@@ -3070,12 +3070,12 @@
           </button>
           <button 
             @click="exportToExcel(selectedEvent)" 
-            :disabled="exportingExcel || attendanceLogs.length === 0"
+            :disabled="exportingExcel || filteredAttendanceLogs.length === 0"
             class="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-lg hover:from-purple-700 hover:to-pink-600 transition text-sm flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <svg v-if="exportingExcel" class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
             <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-            All Years ({{ attendanceLogs.length }})
+            All Years ({{ filteredAttendanceLogs.length }})
           </button>
         </div>
       </div>
@@ -3103,10 +3103,10 @@
                 Loading logs...
               </td>
             </tr>
-            <tr v-else-if="attendanceLogs.length === 0" class="text-center">
+            <tr v-else-if="filteredAttendanceLogs.length === 0" class="text-center">
               <td colspan="6" class="py-8 text-gray-500">No attendance records found</td>
             </tr>
-            <tr v-else v-for="log in attendanceLogs" :key="log.id" class="hover:bg-gray-50">
+            <tr v-else v-for="log in filteredAttendanceLogs" :key="log.id" class="hover:bg-gray-50">
               <td class="border border-purple-300 px-4 py-3">
                 <div class="flex items-center gap-3">
                   <div class="w-8 h-8 rounded-full bg-gradient-to-r from-pink-400 to-purple-600 flex items-center justify-center text-white text-xs overflow-hidden">
@@ -3216,10 +3216,26 @@ const exportingExcel = ref(false)
 const exportingExcelByYear = ref(null)
 
 const getLogCountByYear = (yearLevel) => {
-  return attendanceLogs.value.filter(log => {
+  return filteredAttendanceLogs.value.filter(log => {
     const logYear = log.student?.year_level || log.year_level || ''
     return logYear === yearLevel
   }).length
+}
+
+const filteredAttendanceLogs = computed(() => {
+  let logs = attendanceLogs.value
+  
+  if (eventLogsFilter.value.status) {
+    logs = logs.filter(log => {
+      const logStatus = log.attendance_status || log.status || ''
+      return logStatus === eventLogsFilter.value.status
+    })
+  }
+  
+  return logs
+})
+
+const applyStatusFilter = () => {
 }
 
 const exportToExcelByYear = async (event, yearLevel) => {
@@ -3615,7 +3631,8 @@ const newEvent = ref({
 const eventLogsFilter = ref({
   yearLevel: '',
   program: '',
-  search: ''
+  search: '',
+  status: ''
 })
 const rfidInput = ref('')
 const rfidInputRef = ref(null)
