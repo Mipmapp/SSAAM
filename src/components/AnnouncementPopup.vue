@@ -2,12 +2,12 @@
   <transition name="popup-slide-up">
     <div v-if="visible && announcements.length > 0" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]" @click.self="close">
       <div 
-        class="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 overflow-hidden max-h-[85vh] flex flex-col"
+        class="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-3 sm:mx-4 overflow-hidden max-h-[80vh] flex flex-col"
         @touchstart="handleTouchStart"
         @touchmove="handleTouchMove"
         @touchend="handleTouchEnd"
       >
-        <div class="bg-gradient-to-r from-purple-600 to-pink-500 px-6 py-4 flex items-center justify-between">
+        <div class="bg-gradient-to-r from-purple-600 to-pink-500 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
               <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -34,8 +34,8 @@
             <div 
               v-for="(announcement, index) in announcements" 
               :key="announcement._id"
-              class="w-full flex-shrink-0 p-6 overflow-y-auto"
-              style="min-height: 200px; max-height: 50vh;"
+              class="w-full flex-shrink-0 p-4 sm:p-6 overflow-y-auto"
+              style="min-height: 150px; max-height: 45vh;"
             >
               <div class="flex items-start gap-3 mb-4">
                 <div class="w-10 h-10 rounded-full bg-gradient-to-br from-pink-400 to-purple-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0 overflow-hidden">
@@ -59,11 +59,11 @@
               <h4 class="text-lg font-bold text-gray-900 mb-2">{{ announcement.title }}</h4>
               <p class="text-gray-700 text-sm whitespace-pre-wrap break-words leading-relaxed">{{ announcement.message }}</p>
 
-              <div v-if="announcement.image_url" class="mt-4">
+              <div v-if="announcement.image_url" class="mt-3">
                 <img 
                   :src="announcement.image_url" 
                   :alt="announcement.title"
-                  class="w-full rounded-lg max-h-48 object-cover cursor-pointer hover:opacity-90 transition"
+                  class="w-full rounded-lg max-h-32 sm:max-h-48 object-cover cursor-pointer hover:opacity-90 transition"
                   @click="$emit('preview-image', announcement.image_url)"
                 />
               </div>
@@ -80,7 +80,7 @@
           </div>
         </div>
 
-        <div class="px-6 py-4 bg-gray-50 border-t flex items-center justify-between">
+        <div class="px-4 sm:px-6 py-3 sm:py-4 bg-gray-50 border-t flex items-center justify-between">
           <button 
             @click="prevSlide" 
             :disabled="currentIndex === 0"
@@ -113,7 +113,7 @@
           </button>
         </div>
 
-        <div class="px-6 pb-4 bg-gray-50">
+        <div class="px-4 sm:px-6 pb-3 sm:pb-4 bg-gray-50">
           <button 
             @click="close" 
             class="w-full bg-gradient-to-r from-purple-600 to-pink-500 text-white py-3 px-4 rounded-lg font-medium hover:from-purple-700 hover:to-pink-600 transition"
