@@ -1,4 +1,12 @@
 <template>
+  <!-- Announcement Popup for Students -->
+  <AnnouncementPopup 
+    :visible="showAnnouncementPopup" 
+    :announcements="announcementPopupData"
+    @close="closeAnnouncementPopup"
+    @preview-image="(url) => { imagePreviewUrl = url; showImagePreviewModal = true; }"
+  />
+
   <!-- Event Ended Modal -->
   <div v-if="eventEndedModalVisible" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="closeEventEndedModal">
     <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4">
@@ -3201,6 +3209,7 @@ import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { encodeTimestamp } from '../utils/ssaamCrypto.js'
 import * as XLSX from 'xlsx'
+import AnnouncementPopup from '../components/AnnouncementPopup.vue'
 
 const router = useRouter()
 const currentUser = ref({})
@@ -3570,6 +3579,43 @@ const notificationsLoading = ref(false)
 const likeCooldowns = ref({})
 const likeInProgress = ref({})
 const LIKE_COOLDOWN_MS = 2000
+
+// Announcement popup state
+const showAnnouncementPopup = ref(false)
+const announcementPopupData = ref([])
+const ANNOUNCEMENT_POPUP_STORAGE_KEY = 'ssaam_last_popup_announcement_id'
+
+const getLatestAnnouncementsForPopup = () => {
+  if (!notifications.value || notifications.value.length === 0) return []
+  const now = new Date()
+  const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000)
+  return notifications.value
+    .filter(n => new Date(n.created_at) > oneDayAgo)
+    .slice(0, 5)
+}
+
+const checkAndShowAnnouncementPopup = () => {
+  const user = currentUser.value
+  if (user.isMaster || user.role === 'admin') return
+  
+  const recentAnnouncements = getLatestAnnouncementsForPopup()
+  if (recentAnnouncements.length === 0) return
+  
+  const lastSeenId = localStorage.getItem(ANNOUNCEMENT_POPUP_STORAGE_KEY)
+  const latestId = recentAnnouncements[0]?._id
+  
+  if (lastSeenId !== latestId) {
+    announcementPopupData.value = recentAnnouncements
+    showAnnouncementPopup.value = true
+  }
+}
+
+const closeAnnouncementPopup = () => {
+  if (announcementPopupData.value.length > 0) {
+    localStorage.setItem(ANNOUNCEMENT_POPUP_STORAGE_KEY, announcementPopupData.value[0]._id)
+  }
+  showAnnouncementPopup.value = false
+}
 
 // ImgBB API keys for image uploads
 const imgbbApiKeys = [
@@ -4379,6 +4425,9 @@ onMounted(async () => {
   // Fetch notifications for badge counter and load last viewed timestamp
   await fetchNotifications()
   loadLastViewedTimestamp()
+  
+  // Check and show announcement popup for students
+  checkAndShowAnnouncementPopup()
   
   // Fetch attendance data for students to show notification banner
   if (!user.isMaster && user.role !== 'admin') {
