@@ -3607,13 +3607,8 @@ const checkAndShowAnnouncementPopup = () => {
   const recentAnnouncements = getLatestAnnouncementsForPopup()
   if (recentAnnouncements.length === 0) return
   
-  const lastSeenId = localStorage.getItem(ANNOUNCEMENT_POPUP_STORAGE_KEY)
-  const latestId = recentAnnouncements[0]?._id
-  
-  if (lastSeenId !== latestId) {
-    announcementPopupData.value = recentAnnouncements
-    showAnnouncementPopup.value = true
-  }
+  announcementPopupData.value = recentAnnouncements
+  showAnnouncementPopup.value = true
 }
 
 const closeAnnouncementPopup = () => {
