@@ -27,6 +27,49 @@
   scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.1);
 }
 
+/* Fullscreen RFID Scanner Scrollbar */
+.fullscreen-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.fullscreen-scroll::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+.fullscreen-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 4px;
+}
+
+.fullscreen-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.fullscreen-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.4) rgba(255, 255, 255, 0.1);
+}
+
+/* Logo Flip Animation */
+@keyframes logoFlipRight {
+  0% {
+    transform: perspective(400px) rotateY(0deg);
+  }
+  50% {
+    transform: perspective(400px) rotateY(180deg);
+  }
+  100% {
+    transform: perspective(400px) rotateY(360deg);
+  }
+}
+
+.logo-flip-animation {
+  animation: logoFlipRight 1s ease-in-out;
+  transform-style: preserve-3d;
+  backface-visibility: visible;
+}
+
 body {
   margin: 0;
   padding: 0;

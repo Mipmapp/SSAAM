@@ -224,11 +224,21 @@
     <div class="h-full flex flex-col lg:flex-row">
       <!-- Left Panel - Scanner -->
       <div class="lg:w-1/2 h-1/2 lg:h-full flex flex-col items-center justify-center p-4 lg:p-8 border-b lg:border-b-0 lg:border-r border-white border-opacity-20">
-        <div class="text-center mb-4 lg:mb-6">
-          <img src="/src/assets/jrmsu-logo.webp" alt="JRMSU" class="w-12 h-12 lg:w-20 lg:h-20 mx-auto mb-2 lg:mb-4 drop-shadow-2xl" />
-          <h1 class="text-xl lg:text-4xl font-bold text-white mb-1">SSAAM</h1>
-          <p class="text-white text-opacity-80 text-xs lg:text-base">{{ selectedEvent?.title || 'Select an Event' }}</p>
-          <p v-if="selectedEvent" class="text-white text-opacity-60 text-xs mt-1">{{ formatEventDate(selectedEvent.date || selectedEvent.event_date) }}</p>
+        <div class="flex items-center gap-4 lg:gap-6 mb-4 lg:mb-6 w-full max-w-md">
+          <div class="w-1/3 flex-shrink-0 flex items-center justify-center">
+            <img 
+              ref="fullscreenLogoRef"
+              src="/src/assets/jrmsu-logo.webp" 
+              alt="JRMSU" 
+              class="w-16 h-16 lg:w-24 lg:h-24 drop-shadow-2xl" 
+              :class="{ 'logo-flip-animation': logoFlipping }"
+            />
+          </div>
+          <div class="w-2/3 text-left">
+            <h1 class="text-xl lg:text-3xl font-bold text-white mb-1">SSAAM</h1>
+            <p class="text-white text-opacity-80 text-xs lg:text-base truncate">{{ selectedEvent?.title || 'Select an Event' }}</p>
+            <p v-if="selectedEvent" class="text-white text-opacity-60 text-xs mt-1">{{ formatEventDate(selectedEvent.date || selectedEvent.event_date) }}</p>
+          </div>
         </div>
         
         <!-- Scan Mode Toggle -->
@@ -367,7 +377,7 @@
             <svg class="w-12 h-12 lg:w-16 lg:h-16 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
             <p class="text-sm">No attendance records yet</p>
           </div>
-          <div v-else class="space-y-2 lg:space-y-3 overflow-y-auto h-full pr-2 scrollbar-thin scrollbar-thumb-white scrollbar-thumb-opacity-30">
+          <div v-else class="space-y-2 lg:space-y-3 overflow-y-auto h-full pr-2 fullscreen-scroll">
             <div 
               v-for="(log, index) in sortedAttendanceLogs.slice(0, 15)" 
               :key="log._id" 
@@ -3217,6 +3227,37 @@ watch(duplicateSearchQuery, (newValue) => {
 // RFID Fullscreen mode
 const rfidFullscreenMode = ref(false)
 const rfidFullscreenInputRef = ref(null)
+const fullscreenLogoRef = ref(null)
+const logoFlipping = ref(false)
+const logoFlipInterval = ref(null)
+
+const startLogoFlipAnimation = () => {
+  if (logoFlipInterval.value) {
+    clearInterval(logoFlipInterval.value)
+  }
+  logoFlipInterval.value = setInterval(() => {
+    logoFlipping.value = true
+    setTimeout(() => {
+      logoFlipping.value = false
+    }, 1000)
+  }, 5000)
+}
+
+const stopLogoFlipAnimation = () => {
+  if (logoFlipInterval.value) {
+    clearInterval(logoFlipInterval.value)
+    logoFlipInterval.value = null
+  }
+  logoFlipping.value = false
+}
+
+watch(rfidFullscreenMode, (newValue) => {
+  if (newValue) {
+    startLogoFlipAnimation()
+  } else {
+    stopLogoFlipAnimation()
+  }
+})
 
 // Pending students management
 const pendingStudents = ref([])
@@ -4087,6 +4128,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   stopStatsAutoRefresh()
+  stopLogoFlipAnimation()
 })
 
 // Handle stats refresh button click
